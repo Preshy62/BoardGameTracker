@@ -270,11 +270,13 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
 
   // In single player games, check if this is a bot game with the special bot user ID
   const isBotGame = players.some(p => p.userId === 9999); // 9999 is BOT_USER_ID from gameManager
+  const isBotTurn = currentTurnPlayerId === 9999; // Check if it's the bot's turn
   
   // Determine if it's the current player's turn
+  // In bot games, allow the player to roll even during bot's turn
   const isCurrentPlayerTurn = isBotGame 
-    ? currentTurnPlayerId === userId // Normal check for player's turn
-    : currentTurnPlayerId === userId; // Same, but easier to modify for special bot logic if needed
+    ? (currentTurnPlayerId === userId || isBotTurn) // In bot games, user can roll on their turn OR on bot's turn
+    : currentTurnPlayerId === userId; // In regular multiplayer, only on their actual turn
 
   // Log the current game state for debugging
   useEffect(() => {

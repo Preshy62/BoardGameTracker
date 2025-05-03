@@ -122,6 +122,16 @@ const GameBoard = ({
                      : "Waiting for another player to roll...") 
                   : "Game is not in progress"}               
               </div>
+              
+              {/* Show bot game indicator */}
+              {players.some(p => p.userId === 9999) && (
+                <div className="mt-1 text-xs text-yellow-300">
+                  Demo mode: Playing against computer
+                  {players.find(p => p.userId === 9999 && !p.hasRolled) && (
+                    <span className="ml-1">(Computer's turn - you can roll for it)</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

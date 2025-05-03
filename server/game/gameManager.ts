@@ -287,9 +287,23 @@ export class GameManager {
       
       const currentPlayer = players[currentPlayerIndex];
       
-      // Check if it's this user's turn
+      // Log current state for debugging
+      console.log(`Roll request - Current player: ${currentPlayer.userId}, Request from: ${userId}, Bot ID: ${this.BOT_USER_ID}`);
+      
+      // Special handling for bot games
+      const isBotGame = players.some(p => p.userId === this.BOT_USER_ID);
+      const isHumanPlayer = players.some(p => p.userId === userId && p.userId !== this.BOT_USER_ID);
+      const isBotTurn = currentPlayer.userId === this.BOT_USER_ID;
+      
+      // Check if it's this user's turn or special bot case
       if (currentPlayer.userId !== userId) {
-        throw new Error("It's not your turn");
+        // In bot games, allow the human player to roll for the bot
+        if (isBotGame && isHumanPlayer && isBotTurn) {
+          console.log("Bot game: allowing human player to roll for bot");
+          // We allow this to continue - human player will roll for bot
+        } else {
+          throw new Error("It's not your turn");
+        }
       }
       
       // Generate a random number for the roll
