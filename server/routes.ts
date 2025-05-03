@@ -21,15 +21,22 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 });
 
 // Initialize session store
+import createMemoryStore from 'memorystore';
+const MemoryStore = createMemoryStore(session);
+
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "bbg-game-secret",
   resave: true,
   saveUninitialized: true,
+  store: new MemoryStore({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  }),
   cookie: {
     httpOnly: true,
     secure: false, // Set to false for development to work with http
     sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000, // 1 day
+    path: '/'
   }
 });
 

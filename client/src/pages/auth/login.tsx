@@ -50,7 +50,15 @@ export default function Login() {
   });
 
   const onSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(data);
+    console.log('Login form submitted with data:', data);
+    loginMutation.mutate(data, {
+      onSuccess: (userData) => {
+        console.log('Login successful. User data:', userData);
+      },
+      onError: (error) => {
+        console.error('Login error:', error);
+      }
+    });
   };
 
   return (
@@ -126,9 +134,17 @@ export default function Login() {
                   className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold"
                   onClick={() => {
                     // Create and log in with a demo account
+                    console.log('Demo login clicked');
                     loginMutation.mutate({
                       username: "demo",
                       password: "demo123"
+                    }, {
+                      onSuccess: (userData) => {
+                        console.log('Demo login successful. User data:', userData);
+                      },
+                      onError: (error) => {
+                        console.error('Demo login error:', error);
+                      }
                     });
                   }}
                   disabled={loginMutation.isPending}

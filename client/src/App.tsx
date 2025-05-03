@@ -13,7 +13,7 @@ import Admin from "@/pages/admin";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import AuthProvider from "@/hooks/use-auth";
+import AuthProvider from "./hooks/use-auth";
 import { ProtectedRoute, AdminRoute } from "@/lib/protected-route";
 
 function Router() {
