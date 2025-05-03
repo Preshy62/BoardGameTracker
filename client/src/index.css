@@ -173,3 +173,30 @@
   animation: basic-spin 0.8s linear infinite;
   box-shadow: 0 0 10px 2px gold !important;
 }
+
+/* Simple and effective dice roll animation */
+@keyframes dice-roll {
+  0%, 100% { 
+    transform: translateY(0) rotate(0deg); 
+    box-shadow: 0 0 5px 2px gold;
+  }
+  25% { 
+    transform: translateY(-15px) rotate(90deg); 
+    box-shadow: 0 0 20px 5px gold;
+  }
+  50% { 
+    transform: translateY(0) rotate(180deg); 
+    box-shadow: 0 0 10px 3px gold;
+  }
+  75% { 
+    transform: translateY(-15px) rotate(270deg); 
+    box-shadow: 0 0 20px 5px gold;
+  }
+}
+
+.dice-roll {
+  animation: dice-roll 1s ease-in-out infinite;
+  box-shadow: 0 0 15px 5px gold !important;
+  z-index: 50 !important;
+  transform-origin: center center;
+}

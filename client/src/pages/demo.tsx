@@ -42,7 +42,7 @@ const DemoStone = ({
       className={cn(
         "relative flex items-center justify-center rounded-full cursor-pointer",
         sizeClasses,
-        isRolling && "basic-spin"
+        isRolling && "dice-roll"
       )}
       style={baseStyle}
     >
