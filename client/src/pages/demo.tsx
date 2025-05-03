@@ -36,17 +36,7 @@ const DemoStone: React.FC<DemoStoneProps> = ({
         "bg-gray-700 text-white border border-gray-600",
         isRolling && "stone-roll-animation"
       )}
-      style={isRolling ? { 
-        animation: 'rotate 0.8s infinite linear, pulse 1.5s infinite alternate',
-        boxShadow: '0 0 20px 8px rgba(255, 215, 0, 0.8)',
-        transform: 'scale(1.3)',
-        zIndex: 20,
-        position: 'relative',
-      } : { 
-        transition: 'all 0.3s ease-out',
-        transform: 'scale(1)',
-        boxShadow: 'none'
-      }}
+
     >
       <span 
         className={cn(

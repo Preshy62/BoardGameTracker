@@ -38,12 +38,6 @@ const GameStone = ({
           : "bg-primary border-secondary",
         className
       )}
-      style={isRolling ? { 
-        animation: 'rotate 0.8s infinite linear',
-        boxShadow: '0 0 15px 5px rgba(248, 181, 0, 0.7)',
-        transform: 'scale(1.2)',
-        zIndex: 10
-      } : {}}
     >
       <span 
         className={cn(
