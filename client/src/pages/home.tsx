@@ -73,6 +73,18 @@ export default function Home() {
   // Create new game
   const handleCreateGame = async (playerCount: number, stake: number, playWithBot?: boolean) => {
     try {
+      // Check authentication first
+      if (!user) {
+        console.error('Attempting to create game while not logged in');
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in to create a game',
+          variant: 'destructive',
+        });
+        setLocation('/auth');
+        return;
+      }
+
       // Create a new game with the specified settings
       const gameData: any = {
         maxPlayers: playerCount,
@@ -87,9 +99,11 @@ export default function Home() {
         console.log('Creating a standard multiplayer game:', gameData);
       }
       
+      console.log('Sending game creation request to /api/games with data:', gameData);
       const response = await apiRequest('POST', '/api/games', gameData);
       
       const data = await response.json();
+      console.log('Game created successfully:', data);
       setIsLobbyModalOpen(false);
       setLocation(`/game/${data.id}`);
     } catch (error) {
@@ -101,20 +115,47 @@ export default function Home() {
         description: errorMessage,
         variant: 'destructive',
       });
+      
+      // If unauthorized, redirect to auth page
+      if (errorMessage.includes('401')) {
+        setLocation('/auth');
+      }
     }
   };
 
   // Join existing game
   const handleJoinGame = async (gameId: number) => {
     try {
+      // Check authentication first
+      if (!user) {
+        console.error('Attempting to join game while not logged in');
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in to join a game',
+          variant: 'destructive',
+        });
+        setLocation('/auth');
+        return;
+      }
+
+      console.log('Sending game join request to /api/games/' + gameId + '/join');
       await apiRequest('POST', `/api/games/${gameId}/join`, {});
+      console.log('Joined game successfully, navigating to game page');
       setLocation(`/game/${gameId}`);
     } catch (error) {
+      console.error('Game join error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to join game';
+      
       toast({
         title: 'Error',
-        description: 'Failed to join game',
+        description: errorMessage,
         variant: 'destructive',
       });
+      
+      // If unauthorized, redirect to auth page
+      if (errorMessage.includes('401')) {
+        setLocation('/auth');
+      }
     }
   };
 

@@ -35,7 +35,7 @@ const sessionMiddleware = session({
     httpOnly: true,
     secure: false, // Set to false for development to work with http
     sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for longer session persistence
     path: '/'
   }
 });
@@ -61,7 +61,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Debug session middleware to track session initialization
   app.use((req, res, next) => {
-    console.log(`Debug - Session check - Session ID: ${req.session.id}, User ID: ${req.session.userId || 'not logged in'}`);
+    // Skip logging for static assets and HMR requests to reduce noise
+    if (!req.path.includes('.') && !req.path.includes('__vite')) {
+      console.log(`Debug - Session check - Path: ${req.method} ${req.path} | Session ID: ${req.session.id}, User ID: ${req.session.userId || 'not logged in'}`);
+    }
     next();
   });
   
@@ -70,8 +73,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    // At this point, userId is guaranteed to exist
     next();
   };
+  
+  // Type guard to ensure userId exists
+  function ensureUserIdExists(userId: number | undefined): asserts userId is number {
+    if (userId === undefined) {
+      throw new Error("User ID is undefined");
+    }
+  }
   
   // Authentication routes
   app.post("/api/register", async (req, res) => {
@@ -183,6 +194,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/user", authenticate, async (req, res) => {
     try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         req.session.destroy(() => {});
@@ -194,6 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(userWithoutPassword);
     } catch (error) {
+      console.error('Error fetching user:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -206,6 +221,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.body || !req.body.maxPlayers || !req.body.stake) {
         return res.status(400).json({ message: "Required fields: maxPlayers, stake" });
       }
+
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
 
       // Validate the request data
       const validatedData = insertGameSchema.parse({
@@ -314,6 +332,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/games/:id/join", authenticate, async (req, res) => {
     try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+
       const gameId = parseInt(req.params.id);
       
       // Validate game ID
@@ -347,6 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ message: "Joined game successfully" });
     } catch (error) {
+      console.error('Error joining game:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
