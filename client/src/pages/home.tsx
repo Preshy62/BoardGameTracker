@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Users, DollarSign, Clock } from "lucide-react";
+import { PlusCircle, Users, DollarSign, Clock, CreditCard } from "lucide-react";
 import Header from "@/components/layout/Header";
 import GameLobbyModal from "@/components/modals/GameLobbyModal";
 import { formatCurrency } from "@/lib/utils";
@@ -19,6 +19,29 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user, isLoading: isUserLoading } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Demo deposit mutation (for testing)
+  const demoDepositMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/transactions/demo-deposit', {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      toast({
+        title: "Demo Funds Added",
+        description: `₦10,000 has been added to your wallet for testing.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Demo Deposit Failed",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  });
 
   // Redirect if not logged in
   useEffect(() => {
@@ -108,13 +131,28 @@ export default function Home() {
             <p className="text-gray-600">Ready to play Big Boys Game?</p>
           </div>
           
-          <Button 
-            onClick={() => setIsLobbyModalOpen(true)}
-            className="bg-secondary hover:bg-secondary-dark text-primary font-bold mt-4 md:mt-0"
-          >
-            <PlusCircle className="mr-2 h-5 w-5" />
-            Create Game
-          </Button>
+          <div className="flex flex-col md:flex-row gap-3 mt-4 md:mt-0">
+            <Button 
+              onClick={() => demoDepositMutation.mutate()}
+              disabled={demoDepositMutation.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold"
+            >
+              {demoDepositMutation.isPending ? (
+                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2" />
+              ) : (
+                <CreditCard className="mr-2 h-5 w-5" />
+              )}
+              Add Demo Funds (₦10,000)
+            </Button>
+            
+            <Button 
+              onClick={() => setIsLobbyModalOpen(true)}
+              className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
+            >
+              <PlusCircle className="mr-2 h-5 w-5" />
+              Create Game
+            </Button>
+          </div>
         </div>
         
         <Tabs defaultValue="available" className="w-full">
