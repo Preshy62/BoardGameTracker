@@ -14,7 +14,7 @@ interface DemoStoneProps {
   onClick?: () => void;
 }
 
-// Demo Stone Component with interactive animation
+// Demo Stone Component with enhanced interactive animation
 const DemoStone: React.FC<DemoStoneProps> = ({ 
   number, 
   isSpecial = false,
@@ -27,7 +27,7 @@ const DemoStone: React.FC<DemoStoneProps> = ({
     <div 
       onClick={onClick}
       className={cn(
-        "rounded-full flex items-center justify-center relative transition-transform cursor-pointer",
+        "rounded-full flex items-center justify-center relative transition-all cursor-pointer",
         size === 'sm' ? "w-8 h-8 text-xs" : 
         size === 'md' ? "w-12 h-12 text-base" :
         "w-16 h-16 text-xl",
@@ -37,13 +37,37 @@ const DemoStone: React.FC<DemoStoneProps> = ({
         isRolling && "stone-roll-animation"
       )}
       style={isRolling ? { 
-        animation: 'rotate 0.8s infinite linear',
-        boxShadow: '0 0 15px 5px rgba(248, 181, 0, 0.7)',
-        transform: 'scale(1.2)',
-        zIndex: 10
-      } : { transition: 'all 0.3s' }}
+        animation: 'rotate 0.8s infinite linear, pulse 1.5s infinite alternate',
+        boxShadow: '0 0 20px 8px rgba(255, 215, 0, 0.8)',
+        transform: 'scale(1.3)',
+        zIndex: 20,
+        position: 'relative',
+      } : { 
+        transition: 'all 0.3s ease-out',
+        transform: 'scale(1)',
+        boxShadow: 'none'
+      }}
     >
-      <span className="font-bold">{number}</span>
+      <span 
+        className={cn(
+          "font-bold",
+          isRolling && "animate-bounce"
+        )}
+      >
+        {number}
+      </span>
+      
+      {/* Additional glow effect for rolling stones */}
+      {isRolling && (
+        <div className="absolute inset-0 rounded-full animate-ping opacity-50" 
+          style={{
+            backgroundColor: isSuper ? 'rgba(220, 38, 38, 0.3)' : 
+                          isSpecial ? 'rgba(250, 204, 21, 0.3)' : 
+                          'rgba(255, 255, 255, 0.3)',
+            animationDuration: '1s',
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -110,13 +134,32 @@ export default function DemoPage() {
     { number: 10, row: 6, index: 10 },
   ];
 
-  // Handle stone click to trigger rolling animation
+  // Handle stone click to trigger rolling animation with sound effect
   const handleStoneClick = (index: number, stoneNumber: number) => {
     if (rollingStoneIndex !== null) return; // Prevent clicking while rolling is in progress
     
+    // Play rolling sound
+    try {
+      const audio = new Audio();
+      audio.src = '/rolling-dice.mp3'; // Fallback to a silent operation if sound doesn't exist
+      audio.volume = 0.3;
+      audio.play().catch(() => console.log('Audio playback failed'));
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+    
     setRollingStoneIndex(index);
     
-    // Simulate rolling animation for 3 seconds
+    // Simulate rolling animation for 3 seconds, with a "shaking" board effect
+    const board = document.getElementById('demo-game-board');
+    if (board) {
+      board.classList.add('shaking-board');
+      
+      setTimeout(() => {
+        board.classList.remove('shaking-board');
+      }, 2500);
+    }
+    
     setTimeout(() => {
       setRollingStoneIndex(null);
       setSelectedStone(stoneNumber);
@@ -184,7 +227,7 @@ export default function DemoPage() {
           </div>
           
           <div className="p-6">
-            <div className="relative" style={{ backgroundColor: 'hsl(var(--primary-light))', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', border: '2px solid rgb(31, 41, 55)' }}>
+            <div id="demo-game-board" className="relative" style={{ backgroundColor: 'hsl(var(--primary-light))', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', border: '2px solid rgb(31, 41, 55)' }}>
               {/* Game Title */}
               <h3 className="text-center text-white text-2xl font-sans font-bold mb-4">BIG BOYS GAME</h3>
               
@@ -252,10 +295,61 @@ export default function DemoPage() {
             
             <div className="text-center mt-8">
               <p className="text-gray-600 text-sm mb-2">This is an interactive demo of the Big Boys Game board layout.</p>
-              <p className="text-gray-600 text-sm">Click any stone to see it roll!</p>
+              <p className="text-gray-600 text-sm mb-6">Click any stone to see it roll!</p>
+              
+              <div className="flex justify-center space-x-4">
+                <Button 
+                  onClick={() => setLocation('/auth')} 
+                  className="bg-primary hover:bg-primary-dark text-white font-bold"
+                >
+                  Sign In
+                </Button>
+                
+                <Button 
+                  onClick={() => setLocation('/auth')} 
+                  className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
+                >
+                  Create Demo Account
+                </Button>
+              </div>
+              
+              <div className="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 className="text-xl font-bold mb-3">Create a Demo Game</h3>
+                <p className="text-gray-600 text-sm mb-4">Experience the full game with these demo features:</p>
+                
+                <ul className="text-left text-sm text-gray-700 mb-4 space-y-2">
+                  <li className="flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    ₦200,000 demo balance
+                  </li>
+                  <li className="flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Play against AI opponent
+                  </li>
+                  <li className="flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Enhanced stone animations
+                  </li>
+                </ul>
+                
+                <Button 
+                  onClick={() => setLocation('/auth?demo=true')} 
+                  className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-secondary-dark text-white font-bold py-3"
+                >
+                  Start Demo Game
+                </Button>
+              </div>
+              
               <Button 
                 onClick={() => setLocation('/')} 
-                className="mt-4 bg-secondary hover:bg-secondary-dark text-primary font-bold"
+                className="mt-6 text-gray-500 hover:text-gray-700 bg-transparent hover:bg-gray-100"
+                variant="ghost"
               >
                 Back to Home
               </Button>
