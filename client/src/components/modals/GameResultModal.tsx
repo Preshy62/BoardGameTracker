@@ -35,54 +35,57 @@ const GameResultModal = ({
     return b.rolledNumber - a.rolledNumber;
   });
   
-  // Play winner sound when the modal opens - with retry mechanism
+  // Play winner sound when the modal opens with Web Audio API
   useEffect(() => {
     if (open) {
       // Log the winner for debugging
       console.log(`Game winner: ${winner.username} with ${winningNumber}`);
       
-      // Create a retry mechanism to ensure the sound plays
-      let attempts = 0;
-      const maxAttempts = 3;
-      
-      const playSound = () => {
+      // Initialize audio context on first user interaction
+      const initAndPlaySound = async () => {
         try {
-          const played = playWinnerSound();
-          console.log("Attempt #" + (attempts + 1) + " - Winner sound played:", played);
+          // First try playing with the new Web Audio API approach
+          console.log('Attempting to play winner sound...');
+          const played = await playWinnerSound();
+          console.log('Winner sound played:', played);
           
-          // If playback wasn't confirmed, try again after a delay
-          if (!played && attempts < maxAttempts) {
-            attempts++;
-            setTimeout(playSound, 500);
+          if (!played) {
+            console.warn('Failed to play winner sound, will retry on user interaction');
           }
         } catch (error) {
-          console.error("Error playing winner sound:", error);
-          // Try again on error
-          if (attempts < maxAttempts) {
-            attempts++;
-            setTimeout(playSound, 500);
-          }
+          console.error('Error playing winner sound:', error);
         }
       };
       
-      // Start the sound playing immediately
-      playSound();
+      // Try to play immediately
+      initAndPlaySound();
       
-      // Also try to play when the user interacts with the modal
-      // This works better in browsers with stricter autoplay policies
+      // Also set up a listener for user interaction with modal
+      // to handle browsers with strict autoplay policies
       const modalElement = document.querySelector('[role="dialog"]');
-      const handleModalInteraction = () => {
-        if (attempts < maxAttempts) {
-          playSound();
-        }
+      const documentElement = document.documentElement;
+      
+      const handleUserInteraction = () => {
+        console.log('User interaction detected, playing sound again...');
+        initAndPlaySound();
       };
       
+      // Listen for interaction events on both modal and document
       if (modalElement) {
-        modalElement.addEventListener('click', handleModalInteraction, { once: true });
-        return () => {
-          modalElement.removeEventListener('click', handleModalInteraction);
-        };
+        modalElement.addEventListener('click', handleUserInteraction, { once: true });
       }
+      
+      // Also listen for any document interaction as a fallback
+      documentElement.addEventListener('click', handleUserInteraction, { once: true });
+      documentElement.addEventListener('touchstart', handleUserInteraction, { once: true });
+      
+      return () => {
+        if (modalElement) {
+          modalElement.removeEventListener('click', handleUserInteraction);
+        }
+        documentElement.removeEventListener('click', handleUserInteraction);
+        documentElement.removeEventListener('touchstart', handleUserInteraction);
+      };
     }
   }, [open, winner, winningNumber]);
 

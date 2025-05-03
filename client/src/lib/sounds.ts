@@ -9,39 +9,102 @@ export const WINNER_SOUND_BASE64 = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAA
 // Dice roll sound (pre-generated MP3 of dice rolling sound)
 export const DICE_ROLL_SOUND_BASE64 = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAeAAAvnAAaGhoaJCQkJCQ0NDQ0NEREREREVFRUVFRkZGRkZHR0dHR0hISEhISUlJSUlKSkpKSkrKysrKy8vLy8vMzMzMzM3Nzc3Nzs7Ozs7P////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAZFAAAAAAAAL5ynV1JVAAAAAAAAAAAAAAAAAAAAAP/7kGQAD/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=";
 
-// Play a sound using the HTML5 Audio API
-export function playSound(base64AudioData: string) {
+// Global sound context for better browser compatibility
+let audioContext: AudioContext | null = null;
+
+// Store loaded sound buffers for reuse
+const soundBuffers: Record<string, AudioBuffer> = {};
+
+// Initialize the audio context with user interaction
+export function initAudioContext() {
+  if (audioContext === null) {
+    try {
+      audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log('Audio context initialized successfully');
+      return true;
+    } catch (error) {
+      console.error('Failed to initialize audio context:', error);
+      return false;
+    }
+  }
+  return true;
+}
+
+// Convert base64 to array buffer
+async function base64ToArrayBuffer(base64String: string): Promise<ArrayBuffer> {
+  // Remove the data URL prefix
+  const base64Data = base64String.split(',')[1];
+  const binaryString = window.atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  
+  return bytes.buffer;
+}
+
+// Load and decode an audio file from base64
+async function loadSound(base64AudioData: string): Promise<AudioBuffer | null> {
   try {
-    // Create a new audio element
-    const audio = new Audio(base64AudioData);
+    // Check if we've already loaded this sound
+    const soundKey = base64AudioData.substring(0, 50); // Use part of the string as a key
+    if (soundBuffers[soundKey]) {
+      return soundBuffers[soundKey];
+    }
     
-    // Configure audio
-    audio.volume = 0.8; // 80% volume
+    if (!initAudioContext() || !audioContext) {
+      console.error('No audio context available');
+      return null;
+    }
     
-    // Force audio preload
-    audio.preload = 'auto';
+    // Convert base64 to array buffer
+    const arrayBuffer = await base64ToArrayBuffer(base64AudioData);
     
-    // Add load event listener
-    audio.addEventListener('canplaythrough', () => {
-      console.log('Audio loaded and ready to play');
-      // Play the sound after it's fully loaded
-      const playPromise = audio.play();
-      
-      // Handle autoplay restrictions in modern browsers
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.warn('Audio playback prevented by browser:', error);
-          // Try again with user interaction (this is a fallback)
-          document.addEventListener('click', function playOnClick() {
-            audio.play();
-            document.removeEventListener('click', playOnClick);
-          }, { once: true });
-        });
-      }
-    });
+    // Decode the audio data
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     
-    // Also try to play immediately (some browsers will allow this)
-    audio.play().catch(err => console.log('Initial play attempt waiting for canplaythrough'));
+    // Store for reuse
+    soundBuffers[soundKey] = audioBuffer;
+    
+    return audioBuffer;
+  } catch (error) {
+    console.error('Error loading sound:', error);
+    return null;
+  }
+}
+
+// Play a sound using the Web Audio API for more reliable playback
+export async function playSound(base64AudioData: string): Promise<boolean> {
+  try {
+    // Initialize audio context if needed
+    if (!initAudioContext() || !audioContext) {
+      console.warn('Failed to initialize audio context');
+      return false;
+    }
+    
+    // Resume audio context if it's suspended (browser autoplay policy)
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+    
+    // Load the sound
+    const audioBuffer = await loadSound(base64AudioData);
+    if (!audioBuffer) {
+      console.warn('Failed to load audio buffer');
+      return false;
+    }
+    
+    // Create audio source
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    
+    // Connect to destination (speakers)
+    source.connect(audioContext.destination);
+    
+    // Play the sound
+    source.start(0);
+    console.log('Sound playback started successfully');
     
     return true;
   } catch (error) {
