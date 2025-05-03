@@ -45,6 +45,9 @@ export default function Game({ id }: GamePageProps) {
     gameId: id,
     userId: user?.id || 0
   });
+  
+  // Voice chat settings
+  const isHighStakesGame = game && game.stake >= 50000;
 
   // Handle if user is not logged in
   useEffect(() => {
@@ -148,7 +151,8 @@ export default function Game({ id }: GamePageProps) {
             if (isBotGame) {
               // For bot games, directly create a new single player game with the same stake
               console.log("Creating new bot game with stake:", game.stake);
-              createNewGame(1, game.stake, true);
+              const voiceChatSetting = isHighStakesGame ? voiceChatEnabled : false;
+              createNewGame(1, game.stake, true, voiceChatSetting);
             } else {
               // For multiplayer games, show the lobby modal
               setIsPlayAgainModalOpen(true);

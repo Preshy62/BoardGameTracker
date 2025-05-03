@@ -56,6 +56,7 @@ export const games = pgTable("games", {
   endedAt: timestamp("ended_at"),
   winnerId: integer("winner_id").references(() => users.id),
   winningNumber: integer("winning_number"),
+  voiceChatEnabled: boolean("voice_chat_enabled").default(false),
 });
 
 export const insertGameSchema = createInsertSchema(games).omit({
@@ -108,8 +109,9 @@ export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 
 export type InsertGame = z.infer<typeof insertGameSchema> & {
-  // This property is not in the database schema but passed from client to server
+  // These properties are not in the database schema but passed from client to server
   playWithBot?: boolean;
+  voiceChatEnabled?: boolean;
 };
 export type Game = typeof games.$inferSelect;
 

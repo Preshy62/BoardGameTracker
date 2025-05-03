@@ -12,7 +12,7 @@ import { Volume2, VolumeX } from "lucide-react";
 interface GameLobbyModalProps {
   open: boolean;
   onClose: () => void;
-  onCreateGame: (playerCount: number, stake: number, playWithBot?: boolean) => void;
+  onCreateGame: (playerCount: number, stake: number, playWithBot?: boolean, voiceChatEnabled?: boolean) => void;
   initialSinglePlayer?: boolean;
 }
 
@@ -134,15 +134,24 @@ const GameLobbyModal = ({ open, onClose, onCreateGame, initialSinglePlayer = fal
       return;
     }
     
+    // For high stakes games, check if voice chat is enabled
+    const isHighStakesGame = stake >= 50000;
+    const voiceChatSetting = isHighStakesGame ? voiceChatEnabled : false;
+    
     // Call the parent component's handler with proper data for the server
     // For single player mode, we pass 1 as player count and include playWithBot flag
     // This will trigger the server to properly handle the bot setup
     if (singlePlayer) {
       // For single player games, pass additional playWithBot flag
-      onCreateGame(1, stake, true);
+      onCreateGame(1, stake, true, voiceChatSetting);
     } else {
       // For normal multiplayer games
-      onCreateGame(playerCount, stake);
+      onCreateGame(playerCount, stake, false, voiceChatSetting);
+    }
+    
+    // Log creation info for debugging
+    if (isHighStakesGame) {
+      console.log(`Creating ${singlePlayer ? 'single player' : 'multiplayer'} game with voice chat ${voiceChatEnabled ? 'enabled' : 'disabled'}`);
     }
   };
 

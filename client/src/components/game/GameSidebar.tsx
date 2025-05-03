@@ -41,7 +41,7 @@ const GameSidebar = ({
   }, [messages]);
 
   return (
-    <div className="w-full md:w-80 lg:w-96 bg-white border-l border-gray-200 flex flex-col">
+    <div className="flex-grow flex flex-col">
       {/* Players Section */}
       <div className="p-4 border-b border-gray-200">
         <h3 className="font-sans font-semibold text-lg mb-3">Players</h3>
