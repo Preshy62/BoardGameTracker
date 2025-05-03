@@ -300,10 +300,13 @@ export class GameManager {
       // Log current state for debugging
       console.log(`Roll request - Current player: ${currentPlayer.userId}, Request from: ${userId}, Bot ID: ${this.BOT_USER_ID}`);
       
+      // Find the computer player if any (checking by username, not just ID)
+      const computerPlayer = players.find(p => p.user.username === 'Computer');
+      
       // Special handling for bot games
-      const isBotGame = players.some(p => p.userId === this.BOT_USER_ID);
-      const isHumanPlayer = players.some(p => p.userId === userId && p.userId !== this.BOT_USER_ID);
-      const isBotTurn = currentPlayer.userId === this.BOT_USER_ID;
+      const isBotGame = !!computerPlayer;
+      const isHumanPlayer = players.some(p => p.userId === userId && p.user.username !== 'Computer');
+      const isBotTurn = computerPlayer && currentPlayer.userId === computerPlayer.userId;
       
       // Check if it's this user's turn or special bot case
       if (currentPlayer.userId !== userId) {
@@ -312,7 +315,8 @@ export class GameManager {
           console.log("Bot game: allowing human player to roll for bot");
           // We allow this to continue - human player will roll for bot
           // Important: We're changing userId to the bot's userId to make the roll work
-          userId = this.BOT_USER_ID;
+          // Use the actual computer player ID, not the hardcoded one
+          userId = computerPlayer.userId;
           
           // Auto-roll for the bot after a slight delay to make it seem like the bot is thinking
           setTimeout(() => {

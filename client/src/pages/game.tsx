@@ -118,8 +118,8 @@ export default function Game({ id }: GamePageProps) {
         <GameResultModal
           open={isGameResultOpen}
           onClose={() => {
+            // Just close the modal when clicking X, don't leave the game
             setIsGameResultOpen(false);
-            leaveGame();
           }}
           onPlayAgain={() => {
             // First close the game result modal

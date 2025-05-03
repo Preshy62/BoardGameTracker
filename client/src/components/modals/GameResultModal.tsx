@@ -168,7 +168,11 @@ const GameResultModal = ({
             <Button
               type="button"
               className="bg-primary-light hover:bg-primary text-white"
-              onClick={onClose}
+              onClick={() => {
+                onClose();
+                // Navigate to home page
+                window.location.href = '/';
+              }}
             >
               Main Menu
             </Button>
