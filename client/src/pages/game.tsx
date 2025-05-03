@@ -122,8 +122,20 @@ export default function Game({ id }: GamePageProps) {
             leaveGame();
           }}
           onPlayAgain={() => {
+            // First close the game result modal
             setIsGameResultOpen(false);
-            setIsPlayAgainModalOpen(true);
+            
+            // Check if this was a bot game
+            const wasBotGame = players.some(p => p.userId === 9999);
+            console.log("Play Again clicked - Was bot game:", wasBotGame);
+            
+            if (wasBotGame) {
+              // For bot games, directly create a new single player game
+              createNewGame(1, game.stake, true);
+            } else {
+              // For multiplayer games, show the lobby modal
+              setIsPlayAgainModalOpen(true);
+            }
           }}
           winAmount={winAmount}
           winningNumber={game.winningNumber || 0}

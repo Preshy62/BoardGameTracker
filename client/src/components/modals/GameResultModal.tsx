@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
@@ -30,6 +31,63 @@ const GameResultModal = ({
     if (!b.rolledNumber) return -1;
     return b.rolledNumber - a.rolledNumber;
   });
+  
+  // Play winner announcement with male voice
+  useEffect(() => {
+    if (!open) return;
+
+    const playAnnouncement = () => {
+      // Using the SpeechSynthesis API to announce the winner
+      const announcement = new SpeechSynthesisUtterance(
+        `${winner.id === currentUserId ? 'You are' : winner.username + ' is'} the winner with ${winningNumber}!`
+      );
+      
+      // Set a male voice if available
+      const voices = window.speechSynthesis.getVoices();
+      console.log("Available voices:", voices.map(v => v.name));
+      
+      // Try to find an English male voice
+      let maleVoice = voices.find(voice => 
+        voice.name.includes('Male') && (voice.lang.startsWith('en') || voice.lang === '')
+      );
+      
+      // Fallback to any male voice
+      if (!maleVoice) {
+        maleVoice = voices.find(voice => 
+          voice.name.includes('Male') || voice.name.includes('male')
+        );
+      }
+      
+      // Set the voice if found
+      if (maleVoice) {
+        console.log("Using voice:", maleVoice.name);
+        announcement.voice = maleVoice;
+      } else {
+        console.log("No male voice found, using default");
+      }
+      
+      // Adjust properties
+      announcement.volume = 1.0; // 0 to 1
+      announcement.rate = 0.9; // 0.1 to 10
+      announcement.pitch = 1.0; // 0 to 2
+      
+      // Speak the announcement
+      window.speechSynthesis.speak(announcement);
+    };
+
+    // Check if voices are loaded or need to wait for the event
+    if (window.speechSynthesis.getVoices().length > 0) {
+      playAnnouncement();
+    } else {
+      // If voices aren't loaded yet, wait for them
+      window.speechSynthesis.onvoiceschanged = playAnnouncement;
+    }
+    
+    return () => {
+      window.speechSynthesis.cancel(); // Cancel any ongoing speech when the component unmounts
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, [open, winner, winningNumber, currentUserId]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
