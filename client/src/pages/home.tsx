@@ -28,7 +28,7 @@ export default function Home() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       toast({
         title: "Demo Funds Added",
         description: `₦10,000 has been added to your wallet for testing.`,
@@ -46,7 +46,7 @@ export default function Home() {
   // Redirect if not logged in
   useEffect(() => {
     if (!user && !isUserLoading) {
-      setLocation('/login');
+      setLocation('/auth');
     }
   }, [user, isUserLoading, setLocation]);
 
