@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/layout/Header";
 import { User, Transaction } from "@shared/schema";
@@ -37,6 +38,7 @@ export default function Wallet() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   // Fetch current user
   const { data: user, isLoading: isUserLoading } = useQuery<User>({
@@ -209,22 +211,43 @@ export default function Wallet() {
                       </div>
                     </div>
                     
-                    <Button 
-                      onClick={handleDeposit}
-                      disabled={depositMutation.isPending}
-                      className="w-full bg-secondary hover:bg-secondary-dark text-primary font-bold"
-                    >
-                      {depositMutation.isPending ? (
-                        <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full mr-2" />
-                      ) : (
-                        <ArrowUpCircle className="mr-2 h-5 w-5" />
-                      )}
-                      Deposit Funds
-                    </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Button 
+                        onClick={handleDeposit}
+                        disabled={depositMutation.isPending}
+                        className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
+                      >
+                        {depositMutation.isPending ? (
+                          <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full mr-2" />
+                        ) : (
+                          <ArrowUpCircle className="mr-2 h-5 w-5" />
+                        )}
+                        Quick Deposit
+                      </Button>
+                      
+                      <Button 
+                        onClick={() => {
+                          if (!depositAmount || isNaN(parseFloat(depositAmount)) || parseFloat(depositAmount) <= 0) {
+                            toast({
+                              title: "Invalid Amount",
+                              description: "Please enter a valid amount to deposit",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          navigate(`/checkout/${depositAmount}`);
+                        }}
+                        variant="default"
+                        className="bg-primary hover:bg-primary-dark text-white font-bold"
+                      >
+                        <CreditCard className="mr-2 h-5 w-5" />
+                        Pay with Stripe
+                      </Button>
+                    </div>
                     
                     <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800 flex items-start">
                       <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                      <p>For this demo, deposits are simulated and no actual payment processing occurs.</p>
+                      <p>Choose Quick Deposit for simulated payments or Pay with Stripe for real card processing.</p>
                     </div>
                   </div>
                 </TabsContent>
@@ -330,7 +353,8 @@ export default function Wallet() {
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
-                          {new Date(transaction.createdAt).toLocaleDateString()} {new Date(transaction.createdAt).toLocaleTimeString()}
+                          {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString() : '-'} 
+                          {transaction.createdAt ? new Date(transaction.createdAt).toLocaleTimeString() : ''}
                         </TableCell>
                       </TableRow>
                     ))}
