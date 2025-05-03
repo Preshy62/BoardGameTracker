@@ -254,16 +254,26 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
         console.log('Creating a new multiplayer game:', gameData);
       }
       
+      console.log('Sending game creation request to /api/games with data:', gameData);
       const response = await apiRequest('POST', '/api/games', gameData);
       
       const data = await response.json();
+      console.log('Game created successfully:', data);
       setLocation(`/game/${data.id}`);
     } catch (error) {
+      console.error('Game creation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create game';
+      
       toast({
         title: 'Error',
-        description: 'Failed to create new game',
+        description: errorMessage,
         variant: 'destructive',
       });
+      
+      // If unauthorized, redirect to auth page
+      if (errorMessage.includes('401')) {
+        setLocation('/auth');
+      }
     }
   }, [setLocation, toast]);
 
