@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { cn } from '@/lib/utils';
 
-// Simple Demo Stone Component
+// Stone Component with React-based animation
 interface DemoStoneProps {
   number: number;
   isSpecial?: boolean;
@@ -22,31 +22,103 @@ const DemoStone = ({
   isRolling = false,
   onClick,
 }: DemoStoneProps) => {
-  // Determine CSS classes based on size
-  const sizeClasses = {
-    'sm': 'w-10 h-10 text-sm',
-    'md': 'w-16 h-16 text-lg',
-    'lg': 'w-20 h-20 text-xl',
+  // Determine size values based on the size prop
+  const sizeMap = {
+    'sm': { width: '2.5rem', height: '2.5rem', fontSize: '0.875rem' },
+    'md': { width: '4rem', height: '4rem', fontSize: '1.125rem' },
+    'lg': { width: '5rem', height: '5rem', fontSize: '1.25rem' },
   }[size];
-
-  // Just use simple, fixed styles that match the screenshot
-  const baseStyle = {
-    border: '2px solid #FFC107',
+  
+  // State for animation control
+  const [rotation, setRotation] = useState(0);
+  const [scale, setScale] = useState(1);
+  const [glow, setGlow] = useState(0);
+  const animationRef = useRef<number | null>(null);
+  
+  // Animation function using requestAnimationFrame
+  useEffect(() => {
+    if (isRolling) {
+      let frameCount = 0;
+      const totalFrames = 50; // animation duration
+      
+      const animate = () => {
+        frameCount++;
+        
+        // Calculate animation values
+        const progress = frameCount / totalFrames;
+        const newRotation = progress * 720; // two full rotations
+        const newScale = 1 + Math.sin(progress * Math.PI * 2) * 0.2;
+        const newGlow = 5 + Math.sin(progress * Math.PI * 4) * 10;
+        
+        // Update state
+        setRotation(newRotation);
+        setScale(newScale);
+        setGlow(newGlow);
+        
+        // Continue animation or stop
+        if (frameCount < totalFrames) {
+          animationRef.current = requestAnimationFrame(animate);
+        } else {
+          // Reset when done
+          setRotation(0);
+          setScale(1);
+          setGlow(0);
+        }
+      };
+      
+      // Start animation
+      animationRef.current = requestAnimationFrame(animate);
+      
+      // Cleanup
+      return () => {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+      };
+    }
+  }, [isRolling]);
+  
+  // Dynamic styles for the stone
+  const stoneStyle = {
+    width: sizeMap.width,
+    height: sizeMap.height,
+    fontSize: sizeMap.fontSize,
     backgroundColor: isSuper ? '#EF4444' : isSpecial ? '#FFC107' : '#1E293B',
     color: isSuper || isSpecial ? '#000' : '#FFF',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    position: 'relative' as 'relative',
+    border: isSuper ? '2px solid gold' : '2px solid #FFC107',
+    boxShadow: glow > 0 ? `0 0 ${glow}px ${glow/2}px gold` : 'none',
+    transform: `rotate(${rotation}deg) scale(${scale})`,
+    transition: isRolling ? 'none' : 'transform 0.3s ease-out',
+    fontWeight: 'bold',
+    zIndex: isRolling ? 50 : 1,
   };
+  
+  // Play rolling sound
+  useEffect(() => {
+    if (isRolling) {
+      try {
+        const audio = new Audio();
+        audio.src = '/rolling-dice.mp3';
+        audio.volume = 0.3;
+        audio.play().catch(() => console.log('Audio playback failed'));
+      } catch (e) {
+        console.log('Audio not supported');
+      }
+    }
+  }, [isRolling]);
 
   return (
     <div 
       onClick={onClick}
-      className={cn(
-        "relative flex items-center justify-center rounded-full cursor-pointer",
-        sizeClasses,
-        isRolling && "dice-roll"
-      )}
-      style={baseStyle}
+      style={stoneStyle}
     >
-      <span className="font-bold" style={{ pointerEvents: 'none' }}>{number}</span>
+      <span style={{ pointerEvents: 'none' }}>{number}</span>
     </div>
   );
 };
@@ -64,11 +136,6 @@ export default function DemoPage() {
     const styleEl = document.createElement('style');
     // Define the keyframes
     styleEl.innerHTML = `
-      @keyframes spin {
-        from { transform: rotate(0deg) scale(1.2); }
-        to { transform: rotate(360deg) scale(1.2); }
-      }
-      
       @keyframes shakeBoard {
         0% { transform: translate(0, 0) rotate(0); }
         10% { transform: translate(-1px, -2px) rotate(-1deg); }
@@ -152,92 +219,39 @@ export default function DemoPage() {
     { number: 10, row: 6, index: 10 },
   ];
 
-  // Handle stone click to trigger rolling animation with direct DOM manipulation
+  // Handle stone click to trigger rolling animation with React state
   const handleStoneClick = (index: number, stoneNumber: number) => {
     if (rollingStoneIndex !== null) return; // Prevent clicking while rolling is in progress
     
-    // First set the stone as rolling in React state
+    console.log('Clicked stone:', index, 'with number:', stoneNumber);
+    
+    // Set the rolling state to trigger the animation
     setRollingStoneIndex(index);
     
-    // Now directly manipulate the DOM for the animation
-    // This ensures it works even if CSS animations are problematic
-    setTimeout(() => {
-      // Get the stone element by constructing an ID
-      let stoneId;
-      if (index >= 100) {
-        stoneId = `small-stone-${index-100}`;
-      } else {
-        stoneId = `stone-${index}`;
-      }
-      
-      const stoneElement = document.getElementById(stoneId);
-      if (stoneElement) {
-        console.log('Animating stone:', stoneId);
-        
-        // Add manual animation using style changes
-        let rotation = 0;
-        let scale = 1.0;
-        let glowSize = 5;
-        let direction = 1;
-        
-        // Create animation interval
-        const animationInterval = setInterval(() => {
-          rotation += 15;
-          scale = 1 + (Math.sin(rotation / 180 * Math.PI) * 0.2);
-          glowSize = 5 + (Math.sin(rotation / 90 * Math.PI) * 10);
-          
-          // Apply styles directly
-          stoneElement.style.transform = `rotate(${rotation}deg) scale(${scale})`;
-          stoneElement.style.boxShadow = `0 0 ${glowSize}px ${glowSize/2}px gold`;
-          stoneElement.style.zIndex = '50';
-          
-          // Stop after 3 seconds
-          if (rotation >= 720) {
-            clearInterval(animationInterval);
-            stoneElement.style.transform = '';
-            stoneElement.style.boxShadow = '';
-            stoneElement.style.zIndex = '';
-          }
-        }, 30); // 30ms for ~30fps animation
-        
-        // Attempt to play sound if available
-        try {
-          const audio = new Audio();
-          audio.src = '/rolling-dice.mp3';
-          audio.volume = 0.3;
-          audio.play().catch(() => console.log('Audio playback failed'));
-        } catch (e) {
-          console.log('Audio not supported');
-        }
-        
-        // Add shaking effect to the board
-        const board = document.getElementById('demo-game-board');
-        if (board) {
-          // Manual board shaking
-          let shakeTimes = 0;
-          const maxShakes = 10;
-          const shakeInterval = setInterval(() => {
-            const offsetX = Math.random() * 4 - 2;
-            const offsetY = Math.random() * 4 - 2;
-            const rotation = Math.random() * 1 - 0.5;
-            
-            board.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`;
-            
-            shakeTimes++;
-            if (shakeTimes >= maxShakes) {
-              clearInterval(shakeInterval);
-              board.style.transform = '';
-            }
-          }, 100);
-        }
-      }
-    }, 50); // Small delay to ensure the component has rendered with the updated state
+    // Add shaking effect to the board
+    const board = document.getElementById('demo-game-board');
+    if (board) {
+      board.classList.add('shaking-board');
+      setTimeout(() => {
+        board.classList.remove('shaking-board');
+      }, 1500);
+    }
     
-    // End the animation after 3 seconds
+    // Play sound
+    try {
+      const audio = new Audio();
+      audio.src = '/rolling-dice.mp3';
+      audio.volume = 0.3;
+      audio.play().catch(e => console.log('Audio failed:', e));
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+    
+    // Stop the animation and set the selected stone after 2.5 seconds
     setTimeout(() => {
       setRollingStoneIndex(null);
       setSelectedStone(stoneNumber);
-    }, 3000);
+    }, 2000);
   };
 
   // Loading state
