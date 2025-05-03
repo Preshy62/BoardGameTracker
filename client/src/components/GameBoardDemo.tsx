@@ -41,7 +41,7 @@ const GameBoardDemo: React.FC = () => {
       </div>
       
       <div className="p-6">
-        <div className="relative bg-primary-light border-2 border-gray-800 p-4 rounded mb-6">
+        <div className="relative" style={{ backgroundColor: 'hsl(var(--primary-light))', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', border: '2px solid rgb(31, 41, 55)' }}>
           {/* Game Title */}
           <h3 className="text-center text-white text-2xl font-sans font-bold mb-4">BIG BOYS GAME</h3>
           
@@ -135,9 +135,9 @@ const GameBoardDemo: React.FC = () => {
           </div>
         </div>
         
-        <div className="bg-primary-light p-3 rounded-lg text-center mb-6">
+        <div style={{ backgroundColor: 'hsl(var(--primary-light))', padding: '0.75rem', borderRadius: '0.5rem', textAlign: 'center', marginBottom: '1.5rem' }}>
           <h4 className="text-white text-sm uppercase tracking-wider mb-1">MONEY IN THE BANK</h4>
-          <p className="text-secondary font-mono font-bold text-3xl">₦95,000</p>
+          <p style={{ color: 'hsl(var(--secondary))', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.875rem' }}>₦95,000</p>
         </div>
         
         <div className="text-center mt-8">
