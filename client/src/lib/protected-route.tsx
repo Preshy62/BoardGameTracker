@@ -24,7 +24,7 @@ export function ProtectedRoute({
   if (!user) {
     return (
       <Route path={path}>
-        <Redirect to="/login" />
+        <Redirect to="/auth" />
       </Route>
     );
   }
@@ -54,7 +54,7 @@ export function AdminRoute({
   if (!user) {
     return (
       <Route path={path}>
-        <Redirect to="/login" />
+        <Redirect to="/auth" />
       </Route>
     );
   }

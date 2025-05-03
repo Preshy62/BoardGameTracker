@@ -6,6 +6,7 @@ import Home from "@/pages/home";
 import Game from "@/pages/game";
 import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
+import AuthPage from "@/pages/auth-page";
 import Wallet from "@/pages/wallet";
 import Checkout from "@/pages/checkout";
 import Dashboard from "@/pages/dashboard";
@@ -19,6 +20,7 @@ import { ProtectedRoute, AdminRoute } from "@/lib/protected-route";
 function Router() {
   return (
     <Switch>
+      <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <ProtectedRoute path="/game/:id" component={({ params }) => <Game id={params.id} />} />
