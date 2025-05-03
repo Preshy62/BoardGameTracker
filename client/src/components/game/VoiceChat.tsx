@@ -22,49 +22,66 @@ const VoiceChat = ({ game, isEnabled, currentUserId }: VoiceChatProps) => {
   
   // Check if game is high stakes (over ₦50,000)
   useEffect(() => {
+    // Wrap everything in try/catch to avoid crashing the app
     try {
-      const isHighStakes = game.stake >= 50000;
+      // Safely check if game exists and has stake property
+      const isHighStakes = game && typeof game.stake === 'number' && game.stake >= 50000;
       setIsHighStakesGame(isHighStakes);
       
-      // Check browser support for voice chat
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      // If not high stakes, don't proceed with initialization
+      if (!isHighStakes) {
+        return;
+      }
+      
+      // Check browser support for voice chat with safe null checks
+      if (typeof navigator === 'undefined' || 
+          !navigator.mediaDevices || 
+          typeof navigator.mediaDevices.getUserMedia !== 'function') {
         setIsVoiceChatSupported(false);
         console.warn("Voice chat is not supported in this browser.");
         return;
       }
       
-      // If speech synthesis is available
-      if (window.speechSynthesis) {
+      // Safely check speech synthesis with proper type guards
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         try {
-          const voices = window.speechSynthesis.getVoices();
-          if (voices && voices.length > 0) {
+          // Get available voices safely
+          const getVoices = () => {
+            try {
+              const voices = window.speechSynthesis?.getVoices();
+              return Array.isArray(voices) && voices.length > 0 ? voices : null;
+            } catch (voiceErr) {
+              console.error("Error getting voices:", voiceErr);
+              return null;
+            }
+          };
+          
+          const voices = getVoices();
+          if (voices) {
             setAvailableVoices(voices);
-            
-            // Select a default voice
             setSelectedVoice(voices[0]);
-            console.log("Using voice:", voices[0].name);
           }
           
-          // Handle onvoiceschanged event
-          window.speechSynthesis.onvoiceschanged = () => {
-            try {
-              const updatedVoices = window.speechSynthesis.getVoices();
-              if (updatedVoices && updatedVoices.length > 0) {
+          // Handle voices changed event safely
+          if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = () => {
+              const updatedVoices = getVoices();
+              if (updatedVoices) {
                 setAvailableVoices(updatedVoices);
                 setSelectedVoice(updatedVoices[0]);
               }
-            } catch (err) {
-              console.error("Error loading voices:", err);
-            }
-          };
-        } catch (err) {
-          console.error("Error initializing speech synthesis:", err);
+            };
+          }
+        } catch (speechErr) {
+          console.error("Speech synthesis error:", speechErr);
         }
       } else {
-        console.warn("Speech synthesis not supported");
+        console.warn("Speech synthesis not supported in this browser");
       }
     } catch (err) {
-      console.error("Error initializing voice chat:", err);
+      // Catch-all for any unexpected errors
+      console.error("Voice chat initialization error:", err);
+      setIsVoiceChatSupported(false);
     }
     
     return () => {
