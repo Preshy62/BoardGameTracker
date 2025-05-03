@@ -29,20 +29,12 @@ const DemoStone = ({
     'lg': 'w-20 h-20 text-xl',
   }[size];
 
-  // Animation style for rolling stones
+  // Just use simple, fixed styles that match the screenshot
   const baseStyle = {
     border: '2px solid #FFC107',
     backgroundColor: isSuper ? '#EF4444' : isSpecial ? '#FFC107' : '#1E293B',
     color: isSuper || isSpecial ? '#000' : '#FFF',
   };
-  
-  const animationStyle = isRolling ? {
-    ...baseStyle,
-    animation: 'spin 0.5s linear infinite',
-    boxShadow: '0 0 20px 5px rgba(255, 200, 50, 0.7)',
-    transform: 'scale(1.2)',
-    zIndex: 50,
-  } : baseStyle;
 
   return (
     <div 
@@ -50,23 +42,11 @@ const DemoStone = ({
       className={cn(
         "relative flex items-center justify-center rounded-full cursor-pointer",
         sizeClasses,
-        isRolling && "animate-spin"
+        isRolling && "basic-spin"
       )}
-      style={animationStyle}
+      style={baseStyle}
     >
       <span className="font-bold" style={{ pointerEvents: 'none' }}>{number}</span>
-      
-      {isRolling && (
-        <div 
-          className="absolute inset-0 rounded-full animate-ping opacity-50" 
-          style={{
-            backgroundColor: isSuper ? 'rgba(239, 68, 68, 0.5)' : 
-                          isSpecial ? 'rgba(255, 193, 7, 0.5)' : 
-                          'rgba(255, 255, 255, 0.3)',
-            pointerEvents: 'none'
-          }}
-        />
-      )}
     </div>
   );
 };
