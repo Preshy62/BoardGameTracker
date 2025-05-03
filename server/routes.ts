@@ -87,14 +87,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatarInitials: validatedData.avatarInitials || validatedData.username.substring(0, 2).toUpperCase()
       });
       
-      // Remove password from response
-      const { password, ...userWithoutPassword } = user;
+      // Set session (login automatically after registration)
+      req.session.userId = user.id;
       
-      res.status(201).json(userWithoutPassword);
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: "Failed to create session" });
+        }
+        
+        // Remove password from response
+        const { password, ...userWithoutPassword } = user;
+        console.log('User registered and logged in:', user.id);
+        res.status(201).json(userWithoutPassword);
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors[0].message });
       }
+      console.error('Registration error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -118,11 +130,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set session
       req.session.userId = user.id;
       
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
-      
-      res.json(userWithoutPassword);
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: "Failed to create session" });
+        }
+        
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = user;
+        console.log('User logged in:', user.id);
+        res.json(userWithoutPassword);
+      });
     } catch (error) {
+      console.error('Login error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
