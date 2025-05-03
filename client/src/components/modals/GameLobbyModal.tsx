@@ -16,10 +16,12 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
   const [playerCount, setPlayerCount] = useState(5);
   const [stake, setStake] = useState(1000);
   const [stakeInput, setStakeInput] = useState("1,000");
+  const [singlePlayer, setSinglePlayer] = useState(false);
   const { toast } = useToast();
 
   // Calculate derived values
-  const totalPool = playerCount * stake;
+  const effectivePlayerCount = singlePlayer ? 2 : playerCount; // For single player, we use 2 (player + bot)
+  const totalPool = effectivePlayerCount * stake;
   const commissionRate = calculateCommission(stake);
   const commissionAmount = totalPool * commissionRate;
   const winnerAmount = calculateWinnings(totalPool, commissionRate);
@@ -76,8 +78,8 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
       return;
     }
 
-    // Validate player count
-    if (playerCount < 2 || playerCount > 10) {
+    // Validate player count if not in single player mode
+    if (!singlePlayer && (playerCount < 2 || playerCount > 10)) {
       toast({
         title: "Invalid player count",
         description: "Number of players must be between 2 and 10",
@@ -87,7 +89,9 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
     }
     
     // Call the parent component's handler
-    onCreateGame(playerCount, stake);
+    // For single player mode, we pass 1 as the player count which will
+    // trigger the server to add a bot player automatically
+    onCreateGame(singlePlayer ? 1 : playerCount, stake);
   };
 
   return (
@@ -98,31 +102,49 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
         </DialogHeader>
         
         <div className="py-4">
-          <div className="mb-6">
-            <Label className="block text-gray-700 font-medium mb-2">Number of Players</Label>
-            <div className="flex items-center">
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={handleDecrementPlayers}
-                className="rounded-l-md px-4 py-2"
-              >
-                -
-              </Button>
-              <div className="w-16 text-center border-t border-b border-gray-300 py-2">
-                {playerCount}
-              </div>
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={handleIncrementPlayers}
-                className="rounded-r-md px-4 py-2"
-              >
-                +
-              </Button>
-              <span className="ml-3 text-sm text-gray-500">(2-10 players)</span>
+          <div className="mb-4">
+            <div className="flex items-center mb-2">
+              <input
+                type="checkbox"
+                id="singlePlayer"
+                checked={singlePlayer}
+                onChange={(e) => setSinglePlayer(e.target.checked)}
+                className="mr-2 h-4 w-4"
+              />
+              <Label htmlFor="singlePlayer" className="text-gray-700 font-medium">
+                Demo: Play Against Computer
+              </Label>
             </div>
+            <p className="text-xs text-gray-500 mb-4">Select this option to play a single-player game against the computer.</p>
           </div>
+
+          {!singlePlayer && (
+            <div className="mb-6">
+              <Label className="block text-gray-700 font-medium mb-2">Number of Players</Label>
+              <div className="flex items-center">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={handleDecrementPlayers}
+                  className="rounded-l-md px-4 py-2"
+                >
+                  -
+                </Button>
+                <div className="w-16 text-center border-t border-b border-gray-300 py-2">
+                  {playerCount}
+                </div>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={handleIncrementPlayers}
+                  className="rounded-r-md px-4 py-2"
+                >
+                  +
+                </Button>
+                <span className="ml-3 text-sm text-gray-500">(2-10 players)</span>
+              </div>
+            </div>
+          )}
           
           <div className="mb-6">
             <Label className="block text-gray-700 font-medium mb-2">Stake Amount</Label>
@@ -144,7 +166,7 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
             <div className="bg-gray-100 p-3 rounded-md">
               <div className="flex justify-between mb-2">
                 <span>Players:</span>
-                <span className="font-semibold">{playerCount}</span>
+                <span className="font-semibold">{singlePlayer ? "You vs Computer" : playerCount}</span>
               </div>
               <div className="flex justify-between mb-2">
                 <span>Stake per player:</span>
@@ -180,7 +202,7 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
               className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
               onClick={handleCreateGame}
             >
-              Find Players
+              {singlePlayer ? "Start Game" : "Find Players"}
             </Button>
           </div>
         </div>
