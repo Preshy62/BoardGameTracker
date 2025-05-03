@@ -92,8 +92,8 @@ export default function Game({ id }: GamePageProps) {
   const totalPool = game.stake * players.length;
   const winAmount = calculateWinnings(totalPool, game.commissionPercentage);
 
-  // Voice chat disabled for now to fix issues
-  const [voiceChatEnabled, setVoiceChatEnabled] = useState(false);
+  // Voice chat feature flag (always true for UI but internal functionality is disabled)
+  const voiceChatEnabled = true;
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -112,14 +112,16 @@ export default function Game({ id }: GamePageProps) {
         />
         
         <div className="w-full md:w-80 bg-gray-50 border-l border-gray-200 flex flex-col">
-          {/* Voice chat for high-stakes games */}
-          <div className="p-3">
-            <VoiceChat 
-              game={game} 
-              isEnabled={voiceChatEnabled}
-              currentUserId={user.id}
-            />
-          </div>
+          {/* Voice chat for high-stakes games only */}
+          {isHighStakesGame && (
+            <div className="p-3">
+              <VoiceChat 
+                game={game} 
+                isEnabled={voiceChatEnabled}
+                currentUserId={user.id}
+              />
+            </div>
+          )}
           
           <GameSidebar
             players={players}
