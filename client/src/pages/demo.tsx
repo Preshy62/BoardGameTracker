@@ -219,23 +219,29 @@ export default function DemoPage() {
     { number: 10, row: 6, index: 10 },
   ];
 
-  // Handle stone click to trigger rolling animation with React state
-  const handleStoneClick = (index: number, stoneNumber: number) => {
-    if (rollingStoneIndex !== null) return; // Prevent clicking while rolling is in progress
+  // State for the rolling dice animation
+  const [isRolling, setIsRolling] = useState(false);
+  const [dicePosition, setDicePosition] = useState<{ top: string | number; left: string | number }>({ top: 0, left: 0 });
+  const diceRef = useRef<HTMLDivElement>(null);
+  
+  // Function to handle rolling the dice across the board
+  const handleRollDice = () => {
+    if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
-    console.log('Clicked stone:', index, 'with number:', stoneNumber);
+    setIsRolling(true);
+    setSelectedStone(null);
     
-    // Set the rolling state to trigger the animation
-    setRollingStoneIndex(index);
+    // Create animation path across the board
+    const board = document.getElementById('demo-game-board');
+    if (!board) return;
+    
+    const boardRect = board.getBoundingClientRect();
     
     // Add shaking effect to the board
-    const board = document.getElementById('demo-game-board');
-    if (board) {
-      board.classList.add('shaking-board');
-      setTimeout(() => {
-        board.classList.remove('shaking-board');
-      }, 1500);
-    }
+    board.classList.add('shaking-board');
+    setTimeout(() => {
+      board.classList.remove('shaking-board');
+    }, 1500);
     
     // Play sound
     try {
@@ -247,7 +253,76 @@ export default function DemoPage() {
       console.log('Audio not supported');
     }
     
-    // Stop the animation and set the selected stone after 2.5 seconds
+    // Create a zigzag path for the dice
+    const animateDice = () => {
+      // Get combined array of all stones
+      const allStones = [...stones, ...smallStones];
+      
+      // Random zigzag positions covering the board
+      const zigzagPositions = [
+        { top: '20%', left: '20%' },
+        { top: '30%', left: '70%' },
+        { top: '60%', left: '40%' },
+        { top: '70%', left: '80%' },
+        { top: '50%', left: '10%' },
+        { top: '40%', left: '60%' },
+      ] as Array<{ top: string; left: string }>;
+      
+      // Animate through the path
+      let currentPosition = 0;
+      const moveInterval = setInterval(() => {
+        if (currentPosition < zigzagPositions.length) {
+          setDicePosition(zigzagPositions[currentPosition]);
+          currentPosition++;
+        } else {
+          clearInterval(moveInterval);
+          
+          // Select random stone to land on
+          const randomIndex = Math.floor(Math.random() * allStones.length);
+          const targetStone = allStones[randomIndex];
+          
+          // For proper index identification
+          const actualIndex = targetStone.row <= 4 
+            ? targetStone.index 
+            : 100 + targetStone.index;
+          
+          // Trigger landing animation
+          setRollingStoneIndex(actualIndex);
+          
+          // Show the final result after animation
+          setTimeout(() => {
+            setRollingStoneIndex(null);
+            setSelectedStone(targetStone.number);
+            setIsRolling(false);
+          }, 2000);
+        }
+      }, 250); // Speed of movement between positions
+    };
+    
+    // Start animation after a small delay
+    setTimeout(animateDice, 100);
+  };
+  
+  // Handle stone click for individual stone animation
+  const handleStoneClick = (index: number, stoneNumber: number) => {
+    if (rollingStoneIndex !== null || isRolling) return; // Prevent animation if already rolling
+    
+    console.log('Clicked stone:', index, 'with number:', stoneNumber);
+    
+    // Set the rolling state to trigger the animation
+    setRollingStoneIndex(index);
+    
+    // Play sound
+    try {
+      const audio = new Audio();
+      audio.src = '/rolling-dice.mp3';
+      audio.volume = 0.3;
+      audio.play().catch(e => console.log('Audio failed:', e));
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+    
+    // Stop the animation and set the selected stone after 2 seconds
     setTimeout(() => {
       setRollingStoneIndex(null);
       setSelectedStone(stoneNumber);
@@ -376,13 +451,69 @@ export default function DemoPage() {
               </div>
             </div>
             
-            {/* Money display */}
+            {/* Money display and game action */}
             <div 
-              className="p-3 rounded-lg mb-6 text-center" 
+              className="p-3 rounded-lg mb-6" 
               style={{ backgroundColor: '#0F172A', border: '2px solid #FFC107' }}
             >
-              <h4 className="text-white text-sm uppercase tracking-wider mb-1">MONEY IN THE BANK</h4>
-              <p className="font-mono font-bold text-3xl" style={{ color: '#FFC107' }}>₦95,000</p>
+              <div className="text-center mb-4">
+                <h4 className="text-white text-sm uppercase tracking-wider mb-1">MONEY IN THE BANK</h4>
+                <p className="font-mono font-bold text-3xl" style={{ color: '#FFC107' }}>₦95,000</p>
+              </div>
+              
+              {/* Game Action Button */}
+              <div className="text-center">
+                <button
+                  onClick={handleRollDice}
+                  disabled={isRolling || rollingStoneIndex !== null}
+                  className={`text-primary text-lg font-sans font-bold py-3 px-8 rounded-lg shadow-lg transform transition
+                    ${(isRolling || rollingStoneIndex !== null) 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-secondary hover:bg-secondary-dark hover:scale-105'}`}
+                >
+                  ROLL STONE
+                </button>
+                <div className="mt-2 text-xs text-white">
+                  {isRolling 
+                    ? 'Rolling the stones...' 
+                    : rollingStoneIndex !== null 
+                      ? 'Revealing your roll!' 
+                      : 'Click to roll a stone!'}
+                </div>
+              </div>
+            </div>
+            
+            {/* Game board container - need to make it relative for dice positioning */}
+            <div className="relative"> 
+              {/* The rolling dice element - positioned absolutely within the game board container */}
+              {isRolling && (
+                <div 
+                  ref={diceRef}
+                  className="absolute z-50 animate-pulse"
+                  style={{
+                    top: dicePosition.top,
+                    left: dicePosition.left,
+                    width: '50px',
+                    height: '50px',
+                    backgroundColor: '#FFC107',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '20px',
+                    color: '#000',
+                    boxShadow: '0 0 15px 5px rgba(255, 193, 7, 0.7)',
+                    transform: 'rotate(45deg)',
+                    transition: 'top 0.3s ease, left 0.3s ease',
+                    pointerEvents: 'none'
+                  }}
+                >
+                  <div className="dice-face">
+                    <span>?</span>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Call to action */}
