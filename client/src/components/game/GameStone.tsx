@@ -30,14 +30,20 @@ const GameStone = ({
       className={cn(
         "game-stone rounded-full border-2 flex items-center justify-center",
         sizeClasses,
-        isRolling && "stone-roll-animation rolling-dice",
+        isRolling && "stone-roll-animation",
         isSpecial 
           ? "border-4 border-secondary bg-secondary" 
           : isSuper
-          ? "border-4 border-red-500 bg-red-500"
+          ? "border-4 border-yellow-300 bg-red-500"
           : "bg-primary border-secondary",
         className
       )}
+      style={isRolling ? { 
+        animation: 'rotate 0.8s infinite linear',
+        boxShadow: '0 0 15px 5px rgba(248, 181, 0, 0.7)',
+        transform: 'scale(1.2)',
+        zIndex: 10
+      } : {}}
     >
       <span 
         className={cn(
