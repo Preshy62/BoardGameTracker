@@ -10,13 +10,22 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   walletBalance: doublePrecision("wallet_balance").notNull().default(0),
   avatarInitials: text("avatar_initials").notNull(),
+  isAdmin: boolean("is_admin").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  // Stripe fields for payment integration
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   walletBalance: true,
   createdAt: true,
+  isAdmin: true,
+  isActive: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
 });
 
 // Transaction model
@@ -38,6 +47,7 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
 // Game model
 export const games = pgTable("games", {
   id: serial("id").primaryKey(),
+  creatorId: integer("creator_id").notNull().references(() => users.id),
   maxPlayers: integer("max_players").notNull(),
   stake: doublePrecision("stake").notNull(),
   status: text("status").notNull(), // 'waiting', 'in_progress', 'completed'
