@@ -311,6 +311,8 @@ export class GameManager {
         if (isBotGame && isHumanPlayer && isBotTurn) {
           console.log("Bot game: allowing human player to roll for bot");
           // We allow this to continue - human player will roll for bot
+          // Important: We're changing userId to the bot's userId to make the roll work
+          userId = this.BOT_USER_ID;
           
           // Auto-roll for the bot after a slight delay to make it seem like the bot is thinking
           setTimeout(() => {
