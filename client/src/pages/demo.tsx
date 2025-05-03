@@ -24,18 +24,25 @@ const DemoStone = ({
 }: DemoStoneProps) => {
   // Determine CSS classes based on size
   const sizeClasses = {
-    'sm': 'w-8 h-8 text-xs',
-    'md': 'w-12 h-12 text-base',
-    'lg': 'w-16 h-16 text-xl',
+    'sm': 'w-10 h-10 text-sm',
+    'md': 'w-16 h-16 text-lg',
+    'lg': 'w-20 h-20 text-xl',
   }[size];
 
   // Animation style for rolling stones
+  const baseStyle = {
+    border: '2px solid #FFC107',
+    backgroundColor: isSuper ? '#EF4444' : isSpecial ? '#FFC107' : '#1E293B',
+    color: isSuper || isSpecial ? '#000' : '#FFF',
+  };
+  
   const animationStyle = isRolling ? {
-    animation: 'spin 0.8s linear infinite',
-    boxShadow: '0 0 15px 5px rgba(255, 200, 50, 0.7)',
+    ...baseStyle,
+    animation: 'spin 0.5s linear infinite',
+    boxShadow: '0 0 20px 5px rgba(255, 200, 50, 0.7)',
     transform: 'scale(1.2)',
     zIndex: 50,
-  } : {};
+  } : baseStyle;
 
   return (
     <div 
@@ -43,21 +50,20 @@ const DemoStone = ({
       className={cn(
         "relative flex items-center justify-center rounded-full cursor-pointer",
         sizeClasses,
-        isSuper ? "bg-red-500 text-white border-2 border-yellow-300" :
-        isSpecial ? "bg-yellow-400 text-black border border-yellow-600" :
-        "bg-gray-700 text-white border border-gray-600"
+        isRolling && "animate-spin"
       )}
       style={animationStyle}
     >
-      <span className="font-bold">{number}</span>
+      <span className="font-bold" style={{ pointerEvents: 'none' }}>{number}</span>
       
       {isRolling && (
         <div 
           className="absolute inset-0 rounded-full animate-ping opacity-50" 
           style={{
-            backgroundColor: isSuper ? 'rgba(220, 38, 38, 0.3)' : 
-                          isSpecial ? 'rgba(250, 204, 21, 0.3)' : 
+            backgroundColor: isSuper ? 'rgba(239, 68, 68, 0.5)' : 
+                          isSpecial ? 'rgba(255, 193, 7, 0.5)' : 
                           'rgba(255, 255, 255, 0.3)',
+            pointerEvents: 'none'
           }}
         />
       )}
@@ -259,7 +265,7 @@ export default function DemoPage() {
             <div 
               id="demo-game-board" 
               className="relative p-4 rounded-lg mb-6" 
-              style={{ backgroundColor: 'hsl(var(--primary-light))', border: '2px solid rgb(31, 41, 55)' }}
+              style={{ backgroundColor: '#0F172A', border: '2px solid #FFC107' }}
             >
               <h3 className="text-center text-white text-2xl font-bold mb-4">BIG BOYS GAME</h3>
               
@@ -315,7 +321,7 @@ export default function DemoPage() {
               ))}
               
               {/* Money in the Bank Label */}
-              <div className="border-t-2 border-gray-700 mt-4 pt-2 text-center">
+              <div className="border-t-2 border-yellow-600 mt-4 pt-2 text-center">
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
             </div>
@@ -323,10 +329,10 @@ export default function DemoPage() {
             {/* Money display */}
             <div 
               className="p-3 rounded-lg mb-6 text-center" 
-              style={{ backgroundColor: 'hsl(var(--primary-light))' }}
+              style={{ backgroundColor: '#0F172A', border: '2px solid #FFC107' }}
             >
               <h4 className="text-white text-sm uppercase tracking-wider mb-1">MONEY IN THE BANK</h4>
-              <p className="text-secondary font-mono font-bold text-3xl">₦95,000</p>
+              <p className="font-mono font-bold text-3xl" style={{ color: '#FFC107' }}>₦95,000</p>
             </div>
             
             {/* Call to action */}
