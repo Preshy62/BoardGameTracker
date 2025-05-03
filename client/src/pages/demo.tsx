@@ -27,15 +27,21 @@ const DemoStone: React.FC<DemoStoneProps> = ({
     <div 
       onClick={onClick}
       className={cn(
-        "rounded-full flex items-center justify-center relative transition-all cursor-pointer",
+        "game-stone rounded-full flex items-center justify-center relative transition-all cursor-pointer",
         size === 'sm' ? "w-8 h-8 text-xs" : 
         size === 'md' ? "w-12 h-12 text-base" :
         "w-16 h-16 text-xl",
         isSuper ? "bg-red-500 text-white border-2 border-yellow-300 ring-2 ring-yellow-500" :
         isSpecial ? "bg-yellow-400 text-black border border-yellow-600" :
         "bg-gray-700 text-white border border-gray-600",
-        isRolling && "stone-roll-animation"
+        isRolling ? "" : "" // Empty to prevent class interference
       )}
+      style={isRolling ? {
+        animation: "rotate 0.8s linear infinite",
+        boxShadow: "0 0 15px 5px rgba(248, 181, 0, 0.7)",
+        zIndex: 50,
+        transform: "scale(1.2)",
+      } : undefined}
     >
       <span 
         className={cn(
