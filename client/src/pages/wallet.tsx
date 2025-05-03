@@ -31,6 +31,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CustomBadge } from "@/components/ui/custom-badge";
 import { ArrowUpCircle, ArrowDownCircle, CreditCard, Info } from "lucide-react";
 
 export default function Wallet() {
@@ -345,12 +346,11 @@ export default function Wallet() {
                           {(transaction.type === 'withdrawal' || transaction.type === 'stake') ? '-' : '+'}{formatCurrency(transaction.amount)}
                         </TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
-                            ${transaction.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                            transaction.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                            'bg-red-100 text-red-800'}`}>
+                          <CustomBadge variant={transaction.status === 'completed' ? 'success' : 
+                                      transaction.status === 'pending' ? 'outline' : 
+                                      'destructive'}>
                             {transaction.status}
-                          </span>
+                          </CustomBadge>
                         </TableCell>
                         <TableCell className="text-right">
                           {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString() : '-'} 
