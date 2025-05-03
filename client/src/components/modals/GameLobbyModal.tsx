@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 interface GameLobbyModalProps {
   open: boolean;
   onClose: () => void;
-  onCreateGame: (playerCount: number, stake: number) => void;
+  onCreateGame: (playerCount: number, stake: number, playWithBot?: boolean) => void;
 }
 
 const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) => {
@@ -88,10 +88,16 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
       return;
     }
     
-    // Call the parent component's handler
-    // For single player mode, we pass 1 as the player count which will
-    // trigger the server to add a bot player automatically
-    onCreateGame(singlePlayer ? 1 : playerCount, stake);
+    // Call the parent component's handler with proper data for the server
+    // For single player mode, we pass 1 as player count and include playWithBot flag
+    // This will trigger the server to properly handle the bot setup
+    if (singlePlayer) {
+      // For single player games, pass additional playWithBot flag
+      onCreateGame(1, stake, true);
+    } else {
+      // For normal multiplayer games
+      onCreateGame(playerCount, stake);
+    }
   };
 
   return (

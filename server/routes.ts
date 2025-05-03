@@ -189,9 +189,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         commissionPercentage: req.body.stake >= 50000 ? 0.05 : 0.1
       });
       
-      // Validate max players
-      if (validatedData.maxPlayers < 2 || validatedData.maxPlayers > 10) {
-        return res.status(400).json({ message: "Max players must be between 2 and 10" });
+      // Special handling for single player (bot) games
+      const isSinglePlayerGame = req.body.playWithBot === true;
+      
+      // Validate max players (allow 1 for single player bot games)
+      if ((!isSinglePlayerGame && validatedData.maxPlayers < 2) || validatedData.maxPlayers > 10) {
+        return res.status(400).json({ message: "Max players must be between 2 and 10 for multiplayer games" });
+      }
+      
+      // Ensure we set maxPlayers to 2 for bot games (1 human + 1 bot)
+      if (isSinglePlayerGame && validatedData.maxPlayers === 1) {
+        validatedData.maxPlayers = 2;
       }
       
       // Validate stake amount

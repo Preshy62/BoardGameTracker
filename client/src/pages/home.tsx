@@ -71,13 +71,20 @@ export default function Home() {
   }, [refetchGames, refetchUserGames]);
 
   // Create new game
-  const handleCreateGame = async (playerCount: number, stake: number) => {
+  const handleCreateGame = async (playerCount: number, stake: number, playWithBot?: boolean) => {
     try {
-      // Create a new game with the specified player count and stake
-      const response = await apiRequest('POST', '/api/games', {
+      // Create a new game with the specified settings
+      const gameData: any = {
         maxPlayers: playerCount,
         stake
-      });
+      };
+      
+      // Add the playWithBot flag for single player games
+      if (playWithBot) {
+        gameData.playWithBot = true;
+      }
+      
+      const response = await apiRequest('POST', '/api/games', gameData);
       
       const data = await response.json();
       setIsLobbyModalOpen(false);
