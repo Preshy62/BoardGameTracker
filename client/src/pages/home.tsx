@@ -163,7 +163,7 @@ export default function Home() {
                           <div>
                             <p className="text-sm text-gray-500">Created</p>
                             <p className="font-medium">
-                              {game.createdAt ? new Date(game.createdAt as string).toLocaleTimeString() : 'Recently'}
+                              {game.createdAt ? (typeof game.createdAt === 'string' ? new Date(game.createdAt).toLocaleTimeString() : 'Recently') : 'Recently'}
                             </p>
                           </div>
                         </div>

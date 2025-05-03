@@ -19,7 +19,7 @@ type AuthContextType = {
 };
 
 type LoginData = Pick<SelectUser, "username" | "password">;
-type RegisterData = Pick<SelectUser, "username" | "email" | "password"> & { confirmPassword: string };
+type RegisterData = Pick<SelectUser, "username" | "email" | "password"> & { confirmPassword: string; avatarInitials?: string };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 

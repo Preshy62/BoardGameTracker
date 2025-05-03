@@ -10,28 +10,23 @@ import Wallet from "@/pages/wallet";
 import Checkout from "@/pages/checkout";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
-import { useState, useEffect } from "react";
-import { User } from "@shared/schema";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import AuthProvider from "@/hooks/use-auth";
+import { ProtectedRoute, AdminRoute } from "@/lib/protected-route";
 
 function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      <Route path="/game/:id">
-        {params => <Game id={params.id} />}
-      </Route>
-      <Route path="/wallet" component={Wallet} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/admin" component={Admin} />
-      <Route path="/checkout/:amount">
-        {params => <Checkout amount={params.amount} />}
-      </Route>
-      <Route path="/" component={Home} />
+      <ProtectedRoute path="/game/:id" component={({ params }) => <Game id={params.id} />} />
+      <ProtectedRoute path="/wallet" component={Wallet} />
+      <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <AdminRoute path="/admin" component={Admin} />
+      <ProtectedRoute path="/checkout/:amount" component={({ params }) => <Checkout amount={params.amount} />} />
+      <ProtectedRoute path="/" component={Home} />
       <Route component={NotFound} />
     </Switch>
   );
