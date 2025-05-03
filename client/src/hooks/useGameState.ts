@@ -238,7 +238,7 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
   }, [isConnected, gameId, setLocation, sendMessage]);
 
   // Create new game (play again)
-  const createNewGame = useCallback(async (playerCount: number, stake: number, playWithBot?: boolean) => {
+  const createNewGame = useCallback(async (playerCount: number, stake: number, playWithBot?: boolean, voiceChatEnabled?: boolean) => {
     try {
       // Create game options
       const gameData: any = {
@@ -252,6 +252,12 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
         console.log('Creating a new bot game:', gameData);
       } else {
         console.log('Creating a new multiplayer game:', gameData);
+      }
+      
+      // If voice chat is enabled, add the flag
+      if (voiceChatEnabled) {
+        gameData.voiceChatEnabled = true;
+        console.log('Voice chat enabled for this game');
       }
       
       console.log('Sending game creation request to /api/games with data:', gameData);

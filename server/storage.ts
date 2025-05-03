@@ -153,7 +153,8 @@ export class MemStorage implements IStorage {
       createdAt: now,
       endedAt: null,
       winnerId: null,
-      winningNumber: null
+      winningNumber: null,
+      voiceChatEnabled: insertGame.voiceChatEnabled || false
     };
     this.games.set(id, game);
     return game;

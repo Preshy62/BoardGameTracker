@@ -151,8 +151,8 @@ export default function Game({ id }: GamePageProps) {
             if (isBotGame) {
               // For bot games, directly create a new single player game with the same stake
               console.log("Creating new bot game with stake:", game.stake);
-              const voiceChatSetting = isHighStakesGame ? voiceChatEnabled : false;
-              createNewGame(1, game.stake, true, voiceChatSetting);
+              const isHighStakesGame = game.stake >= 50000;
+              createNewGame(1, game.stake, true, isHighStakesGame ? voiceChatEnabled : false);
             } else {
               // For multiplayer games, show the lobby modal
               setIsPlayAgainModalOpen(true);

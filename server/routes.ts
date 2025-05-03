@@ -253,6 +253,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Added playWithBot flag to validatedData');
       }
       
+      // Handle voice chat enabled flag if present
+      if (typeof req.body.voiceChatEnabled === 'boolean') {
+        (validatedData as any).voiceChatEnabled = req.body.voiceChatEnabled;
+        console.log(`Voice chat ${req.body.voiceChatEnabled ? 'enabled' : 'disabled'} for this game`);
+      }
+      
       // Validate stake amount
       if (validatedData.stake < 1000) {
         return res.status(400).json({ message: "Minimum stake is ₦1,000" });
