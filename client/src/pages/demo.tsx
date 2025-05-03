@@ -152,32 +152,86 @@ export default function DemoPage() {
     { number: 10, row: 6, index: 10 },
   ];
 
-  // Handle stone click to trigger rolling animation
+  // Handle stone click to trigger rolling animation with direct DOM manipulation
   const handleStoneClick = (index: number, stoneNumber: number) => {
     if (rollingStoneIndex !== null) return; // Prevent clicking while rolling is in progress
     
-    // Attempt to play sound if available
-    try {
-      const audio = new Audio();
-      audio.src = '/rolling-dice.mp3';
-      audio.volume = 0.3;
-      audio.play().catch(() => console.log('Audio playback failed'));
-    } catch (e) {
-      console.log('Audio not supported');
-    }
-    
-    // Set the stone as rolling
+    // First set the stone as rolling in React state
     setRollingStoneIndex(index);
     
-    // Add shaking effect to the board
-    const board = document.getElementById('demo-game-board');
-    if (board) {
-      board.classList.add('shaking-board');
+    // Now directly manipulate the DOM for the animation
+    // This ensures it works even if CSS animations are problematic
+    setTimeout(() => {
+      // Get the stone element by constructing an ID
+      let stoneId;
+      if (index >= 100) {
+        stoneId = `small-stone-${index-100}`;
+      } else {
+        stoneId = `stone-${index}`;
+      }
       
-      setTimeout(() => {
-        board.classList.remove('shaking-board');
-      }, 2500);
-    }
+      const stoneElement = document.getElementById(stoneId);
+      if (stoneElement) {
+        console.log('Animating stone:', stoneId);
+        
+        // Add manual animation using style changes
+        let rotation = 0;
+        let scale = 1.0;
+        let glowSize = 5;
+        let direction = 1;
+        
+        // Create animation interval
+        const animationInterval = setInterval(() => {
+          rotation += 15;
+          scale = 1 + (Math.sin(rotation / 180 * Math.PI) * 0.2);
+          glowSize = 5 + (Math.sin(rotation / 90 * Math.PI) * 10);
+          
+          // Apply styles directly
+          stoneElement.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+          stoneElement.style.boxShadow = `0 0 ${glowSize}px ${glowSize/2}px gold`;
+          stoneElement.style.zIndex = '50';
+          
+          // Stop after 3 seconds
+          if (rotation >= 720) {
+            clearInterval(animationInterval);
+            stoneElement.style.transform = '';
+            stoneElement.style.boxShadow = '';
+            stoneElement.style.zIndex = '';
+          }
+        }, 30); // 30ms for ~30fps animation
+        
+        // Attempt to play sound if available
+        try {
+          const audio = new Audio();
+          audio.src = '/rolling-dice.mp3';
+          audio.volume = 0.3;
+          audio.play().catch(() => console.log('Audio playback failed'));
+        } catch (e) {
+          console.log('Audio not supported');
+        }
+        
+        // Add shaking effect to the board
+        const board = document.getElementById('demo-game-board');
+        if (board) {
+          // Manual board shaking
+          let shakeTimes = 0;
+          const maxShakes = 10;
+          const shakeInterval = setInterval(() => {
+            const offsetX = Math.random() * 4 - 2;
+            const offsetY = Math.random() * 4 - 2;
+            const rotation = Math.random() * 1 - 0.5;
+            
+            board.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`;
+            
+            shakeTimes++;
+            if (shakeTimes >= maxShakes) {
+              clearInterval(shakeInterval);
+              board.style.transform = '';
+            }
+          }, 100);
+        }
+      }
+    }, 50); // Small delay to ensure the component has rendered with the updated state
     
     // End the animation after 3 seconds
     setTimeout(() => {
@@ -268,15 +322,16 @@ export default function DemoPage() {
                   {stones
                     .filter(stone => stone.row === row)
                     .map((stone) => (
-                      <DemoStone 
-                        key={`stone-${stone.row}-${stone.index}`}
-                        number={stone.number}
-                        isSpecial={!!stone.isSpecial}
-                        isSuper={!!stone.isSuper}
-                        size={stone.size as 'sm' | 'md' | 'lg'}
-                        isRolling={rollingStoneIndex === stone.index}
-                        onClick={() => handleStoneClick(stone.index, stone.number)}
-                      />
+                      <div id={`stone-${stone.index}`} key={`stone-${stone.row}-${stone.index}`}>
+                        <DemoStone 
+                          number={stone.number}
+                          isSpecial={!!stone.isSpecial}
+                          isSuper={!!stone.isSuper}
+                          size={stone.size as 'sm' | 'md' | 'lg'}
+                          isRolling={rollingStoneIndex === stone.index}
+                          onClick={() => handleStoneClick(stone.index, stone.number)}
+                        />
+                      </div>
                     ))
                   }
                 </div>
@@ -288,13 +343,14 @@ export default function DemoPage() {
                   {smallStones
                     .filter(stone => stone.row === row)
                     .map((stone) => (
-                      <DemoStone 
-                        key={`small-stone-${stone.row}-${stone.index}`}
-                        number={stone.number}
-                        size="sm"
-                        isRolling={rollingStoneIndex === 100 + stone.index}
-                        onClick={() => handleStoneClick(100 + stone.index, stone.number)}
-                      />
+                      <div id={`small-stone-${stone.index}`} key={`small-stone-${stone.row}-${stone.index}`}>
+                        <DemoStone 
+                          number={stone.number}
+                          size="sm"
+                          isRolling={rollingStoneIndex === 100 + stone.index}
+                          onClick={() => handleStoneClick(100 + stone.index, stone.number)}
+                        />
+                      </div>
                     ))
                   }
                 </div>
