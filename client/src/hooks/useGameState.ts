@@ -279,9 +279,10 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
     });
   }, [gameId, currentTurnPlayerId, userId, game, players]);
 
-  // In single player games, check if this is a bot game with the special bot user ID
-  const isBotGame = players.some(p => p.userId === 9999); // 9999 is BOT_USER_ID from gameManager
-  const isBotTurn = currentTurnPlayerId === 9999; // Check if it's the bot's turn
+  // In single player games, check if this is a bot game by looking for a Computer player
+  const computerPlayer = players.find(p => p.user.username === 'Computer');
+  const isBotGame = !!computerPlayer;
+  const isBotTurn = computerPlayer ? currentTurnPlayerId === computerPlayer.userId : false;
   
   // Determine if it's the current player's turn
   // In bot games, allow the player to roll even during bot's turn

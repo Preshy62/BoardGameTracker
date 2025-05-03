@@ -125,12 +125,15 @@ export default function Game({ id }: GamePageProps) {
             // First close the game result modal
             setIsGameResultOpen(false);
             
-            // Check if this was a bot game
-            const wasBotGame = players.some(p => p.userId === 9999);
-            console.log("Play Again clicked - Was bot game:", wasBotGame);
+            // Check if this was a bot game by looking for a Computer player
+            // The bot/computer player's username is consistently 'Computer'
+            const computerPlayer = players.find(p => p.user.username === 'Computer');
+            const isBotGame = !!computerPlayer;
+            console.log("Play Again clicked - Found computer player:", computerPlayer, "Is bot game:", isBotGame);
             
-            if (wasBotGame) {
-              // For bot games, directly create a new single player game
+            if (isBotGame) {
+              // For bot games, directly create a new single player game with the same stake
+              console.log("Creating new bot game with stake:", game.stake);
               createNewGame(1, game.stake, true);
             } else {
               // For multiplayer games, show the lobby modal
@@ -154,7 +157,7 @@ export default function Game({ id }: GamePageProps) {
         }}
         onCreateGame={createNewGame}
         // Set single player mode if this was a bot game
-        initialSinglePlayer={players.some(p => p.userId === 9999)}
+        initialSinglePlayer={players.some(p => p.user.username === 'Computer')}
       />
     </div>
   );

@@ -42,28 +42,53 @@ const GameResultModal = ({
         `${winner.id === currentUserId ? 'You are' : winner.username + ' is'} the winner with ${winningNumber}!`
       );
       
-      // Set a male voice if available
+      // Set a voice if available
       const voices = window.speechSynthesis.getVoices();
+      
+      // Log available voices for debugging
       console.log("Available voices:", voices.map(v => v.name));
       
-      // Try to find an English male voice
-      let maleVoice = voices.find(voice => 
-        voice.name.includes('Male') && (voice.lang.startsWith('en') || voice.lang === '')
-      );
+      // Try to find the best voice (prioritizing English male voices)
+      let selectedVoice;
       
-      // Fallback to any male voice
-      if (!maleVoice) {
-        maleVoice = voices.find(voice => 
+      // First try: Google UK English Male (common on many platforms)
+      selectedVoice = voices.find(voice => voice.name === 'Google UK English Male');
+      
+      // Second try: Any voice with 'Male' and English ('en') in it
+      if (!selectedVoice) {
+        selectedVoice = voices.find(voice => 
+          voice.name.includes('Male') && (voice.lang.startsWith('en') || voice.lang === '')
+        );
+      }
+      
+      // Third try: Any voice with 'Male' in it
+      if (!selectedVoice) {
+        selectedVoice = voices.find(voice => 
           voice.name.includes('Male') || voice.name.includes('male')
         );
       }
       
+      // Fourth try: Microsoft David (default on Windows)
+      if (!selectedVoice) {
+        selectedVoice = voices.find(voice => voice.name.includes('David'));
+      }
+      
+      // Fifth try: Any English voice
+      if (!selectedVoice && voices.length > 0) {
+        selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
+      }
+      
+      // Final fallback: Just use the first voice
+      if (!selectedVoice && voices.length > 0) {
+        selectedVoice = voices[0];
+      }
+      
       // Set the voice if found
-      if (maleVoice) {
-        console.log("Using voice:", maleVoice.name);
-        announcement.voice = maleVoice;
+      if (selectedVoice) {
+        console.log("Using voice:", selectedVoice.name);
+        announcement.voice = selectedVoice;
       } else {
-        console.log("No male voice found, using default");
+        console.log("No suitable voice found, using default");
       }
       
       // Adjust properties
