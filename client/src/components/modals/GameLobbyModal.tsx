@@ -66,6 +66,7 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
 
   // Handle game creation
   const handleCreateGame = () => {
+    // Validate stake amount
     if (stake < 1000) {
       toast({
         title: "Invalid stake amount",
@@ -74,7 +75,18 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
       });
       return;
     }
+
+    // Validate player count
+    if (playerCount < 2 || playerCount > 10) {
+      toast({
+        title: "Invalid player count",
+        description: "Number of players must be between 2 and 10",
+        variant: "destructive"
+      });
+      return;
+    }
     
+    // Call the parent component's handler
     onCreateGame(playerCount, stake);
   };
 
