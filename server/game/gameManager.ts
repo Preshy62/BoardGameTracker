@@ -117,10 +117,9 @@ export class GameManager {
         reference: `game-${game.id}-stake`,
       });
       
-      // If this is set to a single player game (maxPlayers = 1), automatically add a bot player
-      if (gameData.maxPlayers === 1) {
-        // Override to 2 players since we need the bot
-        await this.storage.updateGame(game.id, { maxPlayers: 2 });
+      // Check if this is a single player game with a bot (using playWithBot flag)
+      if (gameData.playWithBot === true) {
+        console.log('Creating bot game for game ID:', game.id);
         
         // Add the bot player
         await this.createBotPlayer(game.id);

@@ -107,7 +107,10 @@ export type User = typeof users.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 
-export type InsertGame = z.infer<typeof insertGameSchema>;
+export type InsertGame = z.infer<typeof insertGameSchema> & {
+  // This property is not in the database schema but passed from client to server
+  playWithBot?: boolean;
+};
 export type Game = typeof games.$inferSelect;
 
 export type InsertGamePlayer = z.infer<typeof insertGamePlayerSchema>;
