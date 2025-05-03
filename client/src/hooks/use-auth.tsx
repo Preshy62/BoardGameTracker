@@ -32,17 +32,17 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     error,
     isLoading,
   } = useQuery<SelectUser | null>({
-    queryKey: ["/api/auth/me"],
+    queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/auth/login", credentials);
+      const res = await apiRequest("POST", "/api/login", credentials);
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/auth/me"], user);
+      queryClient.setQueryData(["/api/user"], user);
       setLocation("/");
     },
     onError: (error: Error) => {
@@ -58,11 +58,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async (credentials: RegisterData) => {
       // Remove confirmPassword as it's not in the API schema
       const { confirmPassword, ...registerData } = credentials;
-      const res = await apiRequest("POST", "/api/auth/register", registerData);
+      const res = await apiRequest("POST", "/api/register", registerData);
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/auth/me"], user);
+      queryClient.setQueryData(["/api/user"], user);
       setLocation("/");
       toast({
         title: "Registration successful",
@@ -80,10 +80,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/auth/logout");
+      await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/auth/me"], null);
+      queryClient.setQueryData(["/api/user"], null);
       setLocation("/login");
       toast({
         title: "Logged out",
