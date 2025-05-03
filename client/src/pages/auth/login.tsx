@@ -31,16 +31,23 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function Login() {
+interface LoginProps {
+  isDemo?: boolean;
+}
+
+export default function Login({ isDemo = false }: LoginProps) {
   const { user, loginMutation } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Redirect if already logged in
+  const { toast } = useToast();
+  
+  // Redirect if already logged in, but not if we're in demo mode
+  // (demo mode automatic login is handled in the parent component)
   useEffect(() => {
-    if (user) {
+    if (user && !isDemo) {
       setLocation("/");
     }
-  }, [user, setLocation]);
+  }, [user, isDemo, setLocation]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -69,7 +76,16 @@ export default function Login() {
           <h1 className="text-3xl font-bold font-sans">
             <span className="text-secondary">BIG BOYS</span> GAME
           </h1>
-          <p className="text-gray-600 mt-2">Sign in to your account</p>
+          {isDemo ? (
+            <div>
+              <p className="text-gray-600 mt-2">Creating your demo account</p>
+              <div className="mt-2 inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                <span className="inline-block animate-pulse mr-1">⚡</span> Starting demo game...
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-600 mt-2">Sign in to your account</p>
+          )}
         </div>
         
         <Card>
