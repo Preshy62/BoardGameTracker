@@ -36,30 +36,22 @@ const Header = ({ user }: HeaderProps) => {
           </Link>
           
           <nav className="hidden md:flex ml-10 space-x-6">
-            <Link href="/">
-              <a className="flex items-center text-white hover:text-secondary transition-colors">
-                <Home className="h-4 w-4 mr-1" />
-                Games
-              </a>
+            <Link href="/" className="flex items-center text-white hover:text-secondary transition-colors">
+              <Home className="h-4 w-4 mr-1" />
+              Games
             </Link>
-            <Link href="/dashboard">
-              <a className="flex items-center text-white hover:text-secondary transition-colors">
-                <LayoutDashboard className="h-4 w-4 mr-1" />
-                Dashboard
-              </a>
+            <Link href="/dashboard" className="flex items-center text-white hover:text-secondary transition-colors">
+              <LayoutDashboard className="h-4 w-4 mr-1" />
+              Dashboard
             </Link>
-            <Link href="/wallet">
-              <a className="flex items-center text-white hover:text-secondary transition-colors">
-                <Wallet className="h-4 w-4 mr-1" />
-                Wallet
-              </a>
+            <Link href="/wallet" className="flex items-center text-white hover:text-secondary transition-colors">
+              <Wallet className="h-4 w-4 mr-1" />
+              Wallet
             </Link>
             {user.isAdmin && (
-              <Link href="/admin">
-                <a className="flex items-center text-white hover:text-secondary transition-colors">
-                  <Shield className="h-4 w-4 mr-1" />
-                  Admin
-                </a>
+              <Link href="/admin" className="flex items-center text-white hover:text-secondary transition-colors">
+                <Shield className="h-4 w-4 mr-1" />
+                Admin
               </Link>
             )}
           </nav>
@@ -81,26 +73,20 @@ const Header = ({ user }: HeaderProps) => {
                   <div className="text-xs text-gray-500">{user.email}</div>
                 </div>
                 
-                <Link href="/dashboard">
-                  <a className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </a>
+                <Link href="/dashboard" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Dashboard
                 </Link>
                 
-                <Link href="/wallet">
-                  <a className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    <Wallet className="h-4 w-4 mr-2" />
-                    Wallet
-                  </a>
+                <Link href="/wallet" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Wallet
                 </Link>
                 
                 {user.isAdmin && (
-                  <Link href="/admin">
-                    <a className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                      <Shield className="h-4 w-4 mr-2" />
-                      Admin Panel
-                    </a>
+                  <Link href="/admin" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <Shield className="h-4 w-4 mr-2" />
+                    Admin Panel
                   </Link>
                 )}
                 
