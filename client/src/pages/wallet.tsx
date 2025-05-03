@@ -75,6 +75,29 @@ export default function Wallet() {
     }
   });
 
+  // Demo deposit mutation (for testing)
+  const demoDepositMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/transactions/demo-deposit', {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      toast({
+        title: "Demo Funds Added",
+        description: `${formatCurrency(10000)} has been added to your wallet for testing.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Demo Deposit Failed",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Withdraw mutation
   const withdrawMutation = useMutation({
     mutationFn: async (amount: number) => {
@@ -246,9 +269,22 @@ export default function Wallet() {
                       </Button>
                     </div>
                     
+                    <Button 
+                      onClick={() => demoDepositMutation.mutate()}
+                      disabled={demoDepositMutation.isPending}
+                      className="w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold"
+                    >
+                      {demoDepositMutation.isPending ? (
+                        <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2" />
+                      ) : (
+                        <CreditCard className="mr-2 h-5 w-5" />
+                      )}
+                      Add Demo Funds (₦10,000)
+                    </Button>
+
                     <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800 flex items-start">
                       <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                      <p>Choose Quick Deposit for simulated payments or Pay with Stripe for real card processing.</p>
+                      <p>Choose Quick Deposit for simulated payments, Pay with Stripe for real card processing, or Add Demo Funds for testing.</p>
                     </div>
                   </div>
                 </TabsContent>

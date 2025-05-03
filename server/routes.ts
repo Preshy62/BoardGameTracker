@@ -436,6 +436,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+
+  // Demo deposit (for testing only)
+  app.post("/api/transactions/demo-deposit", authenticate, async (req, res) => {
+    try {
+      const amount = 10000; // ₦10,000 demo amount
+      
+      // Create transaction
+      const transaction = await storage.createTransaction({
+        userId: req.session.userId,
+        amount,
+        type: "deposit",
+        status: "completed",
+        reference: `demo-${Date.now()}`,
+      });
+      
+      // Update user balance
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const updatedUser = await storage.updateUserBalance(
+        req.session.userId,
+        user.walletBalance + amount
+      );
+      
+      res.json({
+        transaction,
+        newBalance: updatedUser.walletBalance,
+        message: "Demo funds added successfully"
+      });
+    } catch (error) {
+      console.error('Demo deposit error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
   
   app.post("/api/transactions/withdraw", authenticate, async (req, res) => {
     try {
