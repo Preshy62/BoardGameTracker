@@ -36,7 +36,6 @@ const DemoStone: React.FC<DemoStoneProps> = ({
         "bg-gray-700 text-white border border-gray-600",
         isRolling && "stone-roll-animation"
       )}
-
     >
       <span 
         className={cn(
