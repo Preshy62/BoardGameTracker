@@ -92,30 +92,8 @@ export default function Game({ id }: GamePageProps) {
   const totalPool = game.stake * players.length;
   const winAmount = calculateWinnings(totalPool, game.commissionPercentage);
 
-  // Initialize voice chat based on game properties
-  // Default to false until we can check if browser supports it
+  // Voice chat disabled for now to fix issues
   const [voiceChatEnabled, setVoiceChatEnabled] = useState(false);
-  
-  // Set up voice chat capability check
-  useEffect(() => {
-    try {
-      // Only enable voice chat if browser has the required APIs
-      const isVoiceChatSupported = !!(navigator.mediaDevices && 
-                                    typeof navigator.mediaDevices.getUserMedia === 'function' &&
-                                    (window.AudioContext || (window as any).webkitAudioContext));
-      
-      // Update state based on browser capability
-      setVoiceChatEnabled(isVoiceChatSupported);
-      
-      // Log support status
-      if (!isVoiceChatSupported) {
-        console.warn('Voice chat is not supported in this browser');
-      }
-    } catch (err) {
-      console.error('Error checking voice chat support:', err);
-      setVoiceChatEnabled(false);
-    }
-  }, []);
   
   return (
     <div className="min-h-screen flex flex-col">
