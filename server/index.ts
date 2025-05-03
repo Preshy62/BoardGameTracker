@@ -1,6 +1,39 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
+import bcrypt from "bcrypt";
+
+// Create a demo user function for testing
+async function createDemoUser() {
+  try {
+    // Check if demo user already exists
+    const existingUser = await storage.getUserByUsername("demo");
+    if (existingUser) {
+      console.log("Demo user already exists");
+      return;
+    }
+    
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash("demo123", saltRounds);
+    
+    // Create user
+    const user = await storage.createUser({
+      username: "demo",
+      email: "demo@bigboysgame.com",
+      password: hashedPassword,
+      avatarInitials: "DM"
+    });
+    
+    // Give them some initial funds
+    await storage.updateUserBalance(user.id, 50000); // ₦50,000
+    
+    console.log("Demo user created successfully");
+  } catch (error) {
+    console.error("Failed to create demo user:", error);
+  }
+}
 
 const app = express();
 app.use(express.json());
@@ -37,6 +70,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Create demo user for testing
+  await createDemoUser();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

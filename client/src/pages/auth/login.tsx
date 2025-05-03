@@ -111,6 +111,30 @@ export default function Login() {
                   ) : null}
                   Sign In
                 </Button>
+                
+                <div className="mt-4 relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-300"></span>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">Or</span>
+                  </div>
+                </div>
+                
+                <Button 
+                  type="button" 
+                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold"
+                  onClick={() => {
+                    // Create and log in with a demo account
+                    loginMutation.mutate({
+                      username: "demo",
+                      password: "demo123"
+                    });
+                  }}
+                  disabled={loginMutation.isPending}
+                >
+                  Quick Demo Login
+                </Button>
               </form>
             </Form>
           </CardContent>
