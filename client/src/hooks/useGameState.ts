@@ -78,14 +78,27 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
 
   // Connect to WebSocket when component mounts
   useEffect(() => {
+    console.log('GameId changed in useGameState hook, fetching new game data:', gameId);
+    // When gameId changes, we need to reset all state and fetch new data
+    setGame(null);
+    setPlayers([]);
+    setMessages([]);
+    setCurrentTurnPlayerId(null);
+    setTimeRemaining(null);
+    setRollingStoneNumber(null);
+    setIsGameResultOpen(false);
+    
+    // Then fetch new game data and reconnect
     fetchGameData().then(() => {
+      // Reconnect to WebSocket
+      disconnect();
       connect();
     });
 
     return () => {
       disconnect();
     };
-  }, [connect, disconnect, fetchGameData]);
+  }, [connect, disconnect, fetchGameData, gameId]); // Add gameId to dependency array
 
   // Join game room when connected to WebSocket
   useEffect(() => {
@@ -221,20 +234,34 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
   const rollStone = useCallback(() => {
     if (!isConnected || !game) return;
     
-    // Import here to avoid circular dependencies
-    import('@/lib/sounds').then(({ playDiceRollSound }) => {
-      try {
-        // Play dice rolling sound before sending message
-        playDiceRollSound();
-      } catch (error) {
-        console.error('Error playing dice roll sound:', error);
-      }
-    });
+    // Play sound first with a more robust approach
+    const playRollSound = () => {
+      // Import here to avoid circular dependencies
+      import('@/lib/sounds').then(({ playDiceRollSound }) => {
+        try {
+          // Play dice rolling sound before sending message
+          console.log('Playing dice roll sound');
+          playDiceRollSound();
+        } catch (error) {
+          console.error('Error playing dice roll sound:', error);
+        }
+      });
+    };
+    
+    // Try to play the sound immediately
+    playRollSound();
+    
+    // Also set up a backup in case the first attempt fails
+    // due to browser autoplay restrictions
+    const timer = setTimeout(playRollSound, 100);
     
     // Send the roll message to the server
     sendMessage('roll_stone', {
       gameId: parseInt(gameId),
     });
+    
+    // Clean up the timer
+    return () => clearTimeout(timer);
   }, [isConnected, game, gameId, sendMessage]);
 
   // Leave game and go to home

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
@@ -26,6 +27,7 @@ const GameResultModal = ({
   standings,
   currentUserId
 }: GameResultModalProps) => {
+  const [, setLocation] = useLocation();
   // Sort standings by rolled number (descending)
   const sortedStandings = [...standings].sort((a, b) => {
     if (!a.rolledNumber) return 1;
@@ -33,18 +35,53 @@ const GameResultModal = ({
     return b.rolledNumber - a.rolledNumber;
   });
   
-  // Play winner sound when the modal opens
+  // Play winner sound when the modal opens - with retry mechanism
   useEffect(() => {
     if (open) {
       // Log the winner for debugging
       console.log(`Game winner: ${winner.username} with ${winningNumber}`);
       
-      // Play winner sound
-      try {
-        const played = playWinnerSound();
-        console.log("Winner sound played:", played);
-      } catch (error) {
-        console.error("Error playing winner sound:", error);
+      // Create a retry mechanism to ensure the sound plays
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      const playSound = () => {
+        try {
+          const played = playWinnerSound();
+          console.log("Attempt #" + (attempts + 1) + " - Winner sound played:", played);
+          
+          // If playback wasn't confirmed, try again after a delay
+          if (!played && attempts < maxAttempts) {
+            attempts++;
+            setTimeout(playSound, 500);
+          }
+        } catch (error) {
+          console.error("Error playing winner sound:", error);
+          // Try again on error
+          if (attempts < maxAttempts) {
+            attempts++;
+            setTimeout(playSound, 500);
+          }
+        }
+      };
+      
+      // Start the sound playing immediately
+      playSound();
+      
+      // Also try to play when the user interacts with the modal
+      // This works better in browsers with stricter autoplay policies
+      const modalElement = document.querySelector('[role="dialog"]');
+      const handleModalInteraction = () => {
+        if (attempts < maxAttempts) {
+          playSound();
+        }
+      };
+      
+      if (modalElement) {
+        modalElement.addEventListener('click', handleModalInteraction, { once: true });
+        return () => {
+          modalElement.removeEventListener('click', handleModalInteraction);
+        };
       }
     }
   }, [open, winner, winningNumber]);
@@ -105,8 +142,8 @@ const GameResultModal = ({
               className="bg-primary-light hover:bg-primary text-white"
               onClick={() => {
                 onClose();
-                // Navigate to home page
-                window.location.href = '/';
+                // Navigate to home page using wouter's setLocation
+                setLocation('/');
               }}
             >
               Main Menu
