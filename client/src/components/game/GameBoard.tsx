@@ -139,16 +139,16 @@ const GameBoard = ({
               {/* Game Title */}
               <h3 className="text-center text-white text-2xl font-sans font-bold mb-4">BIG BOYS GAME</h3>
               
-              {/* Arrow at top */}
-              <div className="absolute top-12 right-8 text-white">
-                <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" fill="none">
-                  <path d="M20 12H4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
-                  <path d="M10 18l-6-6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+              {/* Curved Arrow at top-right (matching the physical board) */}
+              <div className="absolute top-8 right-16 text-white">
+                <svg viewBox="0 0 48 48" width="60" height="60" stroke="currentColor" strokeWidth="2" fill="none">
+                  <path d="M30 10 C 40 15, 45 25, 40 35" strokeWidth="3" strokeLinecap="round" />
+                  <path d="M35 32 L 40 35 L 45 32" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
               
-              {/* START label */}
-              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-secondary text-primary p-2 font-bold rounded rotate-90">
+              {/* START label - positioned on the right side like the physical board */}
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-transparent text-white p-1 font-bold text-lg rotate-90">
                 START
               </div>
 
