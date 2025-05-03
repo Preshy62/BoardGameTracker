@@ -32,6 +32,16 @@ export function ProtectedRoute({
   return <Route path={path} component={Component} />;
 }
 
+export function PublicDemoRoute({
+  path,
+  component: Component,
+}: {
+  path: string;
+  component: React.ComponentType<any>;
+}) {
+  return <Route path={path} component={Component} />;
+}
+
 export function AdminRoute({
   path,
   component: Component,

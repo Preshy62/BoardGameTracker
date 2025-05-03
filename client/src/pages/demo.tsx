@@ -36,7 +36,7 @@ const DemoStone: React.FC<DemoStoneProps> = ({
         "bg-gray-700 text-white border border-gray-600",
         isRolling && "stone-roll-animation"
       )}
-      style={isRolling ? { animation: 'rollStone 0.8s ease-in-out infinite' } : {}}
+      style={isRolling ? { animation: 'rollStoneDemo 0.8s ease-in-out infinite' } : {}}
     >
       <span className="font-bold">{number}</span>
     </div>
