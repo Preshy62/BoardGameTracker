@@ -141,6 +141,8 @@ export default function Game({ id }: GamePageProps) {
           leaveGame();
         }}
         onCreateGame={createNewGame}
+        // Set single player mode if this was a bot game
+        initialSinglePlayer={players.some(p => p.userId === 9999)}
       />
     </div>
   );

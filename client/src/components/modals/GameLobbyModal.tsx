@@ -10,13 +10,19 @@ interface GameLobbyModalProps {
   open: boolean;
   onClose: () => void;
   onCreateGame: (playerCount: number, stake: number, playWithBot?: boolean) => void;
+  initialSinglePlayer?: boolean;
 }
 
-const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) => {
+const GameLobbyModal = ({ open, onClose, onCreateGame, initialSinglePlayer = false }: GameLobbyModalProps) => {
   const [playerCount, setPlayerCount] = useState(5);
   const [stake, setStake] = useState(1000);
   const [stakeInput, setStakeInput] = useState("1,000");
-  const [singlePlayer, setSinglePlayer] = useState(false);
+  const [singlePlayer, setSinglePlayer] = useState(initialSinglePlayer);
+  
+  // Update singlePlayer state when initialSinglePlayer prop changes
+  useEffect(() => {
+    setSinglePlayer(initialSinglePlayer);
+  }, [initialSinglePlayer]);
   const { toast } = useToast();
 
   // Calculate derived values

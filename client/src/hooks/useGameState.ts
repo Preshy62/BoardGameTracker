@@ -238,12 +238,23 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
   }, [isConnected, gameId, setLocation, sendMessage]);
 
   // Create new game (play again)
-  const createNewGame = useCallback(async (playerCount: number, stake: number) => {
+  const createNewGame = useCallback(async (playerCount: number, stake: number, playWithBot?: boolean) => {
     try {
-      const response = await apiRequest('POST', '/api/games', {
+      // Create game options
+      const gameData: any = {
         maxPlayers: playerCount,
         stake
-      });
+      };
+      
+      // If this is a bot game, add the playWithBot flag
+      if (playWithBot) {
+        gameData.playWithBot = true;
+        console.log('Creating a new bot game:', gameData);
+      } else {
+        console.log('Creating a new multiplayer game:', gameData);
+      }
+      
+      const response = await apiRequest('POST', '/api/games', gameData);
       
       const data = await response.json();
       setLocation(`/game/${data.id}`);
