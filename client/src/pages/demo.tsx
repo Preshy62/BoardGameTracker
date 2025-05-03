@@ -36,8 +36,12 @@ const DemoStone: React.FC<DemoStoneProps> = ({
         "bg-gray-700 text-white border border-gray-600",
         isRolling && "stone-roll-animation"
       )}
-      // Use the CSS class instead of inline style for animation
-      // This ensures the animation is applied correctly
+      style={isRolling ? { 
+        animation: 'rotate 0.8s infinite linear',
+        boxShadow: '0 0 15px 5px rgba(248, 181, 0, 0.7)',
+        transform: 'scale(1.2)',
+        zIndex: 10
+      } : { transition: 'all 0.3s' }}
     >
       <span className="font-bold">{number}</span>
     </div>
