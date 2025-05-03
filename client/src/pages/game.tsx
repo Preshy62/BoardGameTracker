@@ -17,8 +17,29 @@ interface GamePageProps {
 }
 
 export default function Game({ id }: GamePageProps) {
+  const [gameId, setGameId] = useState(id);
   const [isPlayAgainModalOpen, setIsPlayAgainModalOpen] = useState(false);
   const [, setLocation] = useLocation();
+
+  // Listen for URL changes when we use window.history.replaceState
+  // This updates gameId without refreshing the whole page
+  useEffect(() => {
+    // Update gameId state when component mounts or ID prop changes
+    setGameId(id);
+    
+    // Listen for popstate event for when we use window.history.replaceState
+    const handlePopState = () => {
+      // Extract the game ID from the current URL
+      const gameIdFromUrl = window.location.pathname.split('/').pop();
+      console.log('URL changed, new game ID:', gameIdFromUrl);
+      if (gameIdFromUrl) {
+        setGameId(gameIdFromUrl);
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [id]);
 
   // Fetch current user
   const { data: user, isLoading: isUserLoading } = useQuery<User>({
@@ -42,7 +63,7 @@ export default function Game({ id }: GamePageProps) {
     setIsGameResultOpen,
     createNewGame
   } = useGameState({ 
-    gameId: id,
+    gameId, // Use the state variable that updates on URL changes instead of the prop
     userId: user?.id || 0
   });
   

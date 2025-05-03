@@ -16,17 +16,32 @@ export function playSound(base64AudioData: string) {
     const audio = new Audio(base64AudioData);
     
     // Configure audio
-    audio.volume = 0.5; // 50% volume
+    audio.volume = 0.8; // 80% volume
     
-    // Play the sound
-    const playPromise = audio.play();
+    // Force audio preload
+    audio.preload = 'auto';
     
-    // Handle autoplay restrictions in modern browsers
-    if (playPromise !== undefined) {
-      playPromise.catch(error => {
-        console.warn('Audio playback prevented by browser:', error);
-      });
-    }
+    // Add load event listener
+    audio.addEventListener('canplaythrough', () => {
+      console.log('Audio loaded and ready to play');
+      // Play the sound after it's fully loaded
+      const playPromise = audio.play();
+      
+      // Handle autoplay restrictions in modern browsers
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.warn('Audio playback prevented by browser:', error);
+          // Try again with user interaction (this is a fallback)
+          document.addEventListener('click', function playOnClick() {
+            audio.play();
+            document.removeEventListener('click', playOnClick);
+          }, { once: true });
+        });
+      }
+    });
+    
+    // Also try to play immediately (some browsers will allow this)
+    audio.play().catch(err => console.log('Initial play attempt waiting for canplaythrough'));
     
     return true;
   } catch (error) {

@@ -298,8 +298,16 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
       const data = await response.json();
       console.log('Game created successfully:', data);
       
-      // Redirect to new game
-      window.location.href = `/game/${data.id}`;
+      // Instead of redirecting, replace the current URL to update the game ID
+      // This keeps us on the same page but changes the game
+      window.history.replaceState({}, '', `/game/${data.id}`);
+      
+      // Reload the game component without refreshing the whole page
+      // by triggering window history navigation event
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      
+      // Return the new game data so it can be used if needed
+      return data;
     } catch (error) {
       console.error('Game creation error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create game';
