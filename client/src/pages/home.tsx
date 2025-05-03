@@ -23,6 +23,13 @@ export default function Home() {
     queryKey: ['/api/auth/me'],
   });
 
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!user && !isUserLoading) {
+      setLocation('/login');
+    }
+  }, [user, isUserLoading, setLocation]);
+
   // Fetch available games
   const { data: availableGames, isLoading: isGamesLoading, refetch: refetchGames } = useQuery<Game[]>({
     queryKey: ['/api/games/available'],
@@ -84,12 +91,6 @@ export default function Home() {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (!user && !isUserLoading) {
-      setLocation('/login');
-    }
-  }, [user, isUserLoading, setLocation]);
   
   if (!user) {
     return null;
@@ -165,7 +166,7 @@ export default function Home() {
                           <div>
                             <p className="text-sm text-gray-500">Created</p>
                             <p className="font-medium">
-                              {new Date(game.createdAt).toLocaleTimeString()}
+                              {game.createdAt ? new Date(game.createdAt as string).toLocaleTimeString() : 'Recently'}
                             </p>
                           </div>
                         </div>
