@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CustomBadge } from "@/components/ui/custom-badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import {
@@ -258,11 +259,11 @@ export default function Admin() {
                             </TableCell>
                             <TableCell>{user.email}</TableCell>
                             <TableCell>{formatCurrency(user.walletBalance)}</TableCell>
-                            <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                            <TableCell>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
                             <TableCell>
-                              <Badge variant={user.isActive ? "success" : "outline"}>
+                              <CustomBadge variant={user.isActive ? "success" : "outline"}>
                                 {user.isActive ? "Active" : "Inactive"}
-                              </Badge>
+                              </CustomBadge>
                             </TableCell>
                             <TableCell>
                               <div className="flex space-x-2">

@@ -8,6 +8,8 @@ import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
 import Wallet from "@/pages/wallet";
 import Checkout from "@/pages/checkout";
+import Dashboard from "@/pages/dashboard";
+import Admin from "@/pages/admin";
 import { useState, useEffect } from "react";
 import { User } from "@shared/schema";
 
@@ -56,6 +58,12 @@ function Router() {
       </Route>
       <Route path="/wallet">
         {user ? <Wallet /> : <Login />}
+      </Route>
+      <Route path="/dashboard">
+        {user ? <Dashboard /> : <Login />}
+      </Route>
+      <Route path="/admin">
+        {user?.isAdmin ? <Admin /> : (user ? <Dashboard /> : <Login />)}
       </Route>
       <Route path="/checkout/:amount">
         {params => (user ? <Checkout amount={params.amount} /> : <Login />)}
