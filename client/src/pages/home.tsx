@@ -85,8 +85,13 @@ export default function Home() {
     );
   }
 
+  useEffect(() => {
+    if (!user && !isUserLoading) {
+      setLocation('/login');
+    }
+  }, [user, isUserLoading, setLocation]);
+  
   if (!user) {
-    setLocation('/login');
     return null;
   }
 
