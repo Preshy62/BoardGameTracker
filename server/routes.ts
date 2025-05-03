@@ -532,10 +532,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Parse sessions from WebSocket upgrade requests
+  wss.on('headers', (headers, req) => {
+    headers.push('Set-Cookie: ' + req.headers.cookie);
+  });
+  
   // WebSocket connection handling
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
     let userId: number | null = null;
     let gameId: number | null = null;
+    
+    // Extract session and session data
+    const getSessionData = () => {
+      return new Promise<number | null>((resolve) => {
+        sessionMiddleware(req as any, {} as any, () => {
+          if ((req as any).session && (req as any).session.userId) {
+            resolve((req as any).session.userId);
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    };
+    
+    // Initial authentication
+    getSessionData().then(sessionUserId => {
+      if (sessionUserId) {
+        userId = sessionUserId;
+        console.log(`WebSocket authenticated for user ${userId}`);
+      }
+    });
     
     ws.on('message', async (message) => {
       try {
@@ -544,20 +570,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (data.type === 'join_game') {
           gameId = data.payload.gameId;
           
-          // Get user ID from active sessions
-          // This is a simplified way - in production you'd use proper WS authentication
-          const user = await storage.getUser(userId || 0);
-          if (!user) {
+          // If we don't have a userId yet, try to get from the session
+          if (!userId) {
+            userId = await getSessionData();
+          }
+          
+          // Check if we have a valid user
+          if (!userId) {
             ws.send(JSON.stringify({
               type: 'error',
               payload: {
-                message: 'Unauthorized'
+                message: 'Unauthorized - please login again'
               }
             }));
             return;
           }
-          
-          userId = user.id;
           
           // Add the connection to game manager
           gameManager.addWebSocketConnection(gameId, userId, ws);
@@ -572,6 +599,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (data.type === 'roll_stone') {
           if (gameId && userId) {
             await gameManager.rollStone(gameId, userId);
+            console.log(`User ${userId} rolled in game ${gameId}`);
+          } else {
+            console.log('Cannot roll: missing gameId or userId', { gameId, userId });
+            
+            // Try to re-authenticate
+            if (!userId) {
+              userId = await getSessionData();
+              
+              if (userId && gameId) {
+                await gameManager.rollStone(gameId, userId);
+                console.log(`Re-authenticated user ${userId} rolled in game ${gameId}`);
+              }
+            }
           }
         } else if (data.type === 'chat_message') {
           if (gameId && userId) {
