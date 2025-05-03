@@ -83,8 +83,12 @@ export default function Admin() {
     );
   }
 
-  // Check if user is admin
-  if (!user?.isAdmin) {
+  // Check if user exists and is admin
+  if (!user) {
+    return null;
+  }
+  
+  if (!user.isAdmin) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header user={user} />
@@ -253,7 +257,7 @@ export default function Admin() {
                                 </div>
                                 {user.username}
                                 {user.isAdmin && (
-                                  <Badge className="ml-2 bg-primary">Admin</Badge>
+                                  <CustomBadge variant="default" className="ml-2">Admin</CustomBadge>
                                 )}
                               </div>
                             </TableCell>
