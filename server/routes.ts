@@ -51,6 +51,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Session middleware
   app.use(sessionMiddleware);
   
+  // Debug session middleware to track session initialization
+  app.use((req, res, next) => {
+    console.log(`Debug - Session check - Session ID: ${req.session.id}, User ID: ${req.session.userId || 'not logged in'}`);
+    next();
+  });
+  
   // Authentication middleware
   const authenticate = (req: Request, res: Response, next: Function) => {
     if (!req.session.userId) {
