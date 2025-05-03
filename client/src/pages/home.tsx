@@ -211,7 +211,6 @@ export default function Home() {
           <TabsList className="mb-6">
             <TabsTrigger value="available">Available Games</TabsTrigger>
             <TabsTrigger value="my-games">My Games</TabsTrigger>
-            <TabsTrigger value="demo">Game Board Demo</TabsTrigger>
           </TabsList>
           
           <TabsContent value="available" className="space-y-6">
@@ -379,9 +378,7 @@ export default function Home() {
             )}
           </TabsContent>
           
-          <TabsContent value="demo">
-            <GameBoardDemo />
-          </TabsContent>
+
         </Tabs>
       </main>
       

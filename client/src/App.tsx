@@ -10,6 +10,7 @@ import Wallet from "@/pages/wallet";
 import Checkout from "@/pages/checkout";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
+import DemoPage from "@/pages/demo";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <AdminRoute path="/admin" component={Admin} />
       <ProtectedRoute path="/checkout/:amount" component={({ params }) => <Checkout amount={params.amount} />} />
+      <ProtectedRoute path="/demo" component={DemoPage} />
       <ProtectedRoute path="/" component={Home} />
       <Route component={NotFound} />
     </Switch>
