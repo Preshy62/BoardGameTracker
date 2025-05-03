@@ -156,7 +156,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Game routes
   app.post("/api/games", authenticate, async (req, res) => {
     try {
-      const validatedData = insertGameSchema.parse(req.body);
+      if (!req.body || !req.body.maxPlayers || !req.body.stake) {
+        return res.status(400).json({ message: "Required fields: maxPlayers, stake" });
+      }
+
+      // Validate the request data
+      const validatedData = insertGameSchema.parse({
+        ...req.body,
+        creatorId: req.session.userId,
+        // Calculate commission percentage (10% for stakes less than 50,000, 5% for 50,000 and above)
+        commissionPercentage: req.body.stake >= 50000 ? 0.05 : 0.1
+      });
       
       // Validate max players
       if (validatedData.maxPlayers < 2 || validatedData.maxPlayers > 10) {
@@ -178,21 +188,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Insufficient wallet balance" });
       }
       
-      // Calculate commission percentage (10% for stakes less than 50,000, 5% for 50,000 and above)
-      const commissionPercentage = validatedData.stake >= 50000 ? 0.05 : 0.1;
-      
-      // Create game
-      const game = await gameManager.createGame({
-        ...validatedData,
-        commissionPercentage
-      }, req.session.userId);
+      // Create game with the validated data
+      const game = await gameManager.createGame(validatedData, req.session.userId);
       
       res.status(201).json(game);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors[0].message });
       }
-      console.error(error);
+      console.error('Game creation error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

@@ -50,6 +50,7 @@ export default function Home() {
   // Create new game
   const handleCreateGame = async (playerCount: number, stake: number) => {
     try {
+      // Create a new game with the specified player count and stake
       const response = await apiRequest('POST', '/api/games', {
         maxPlayers: playerCount,
         stake
@@ -59,9 +60,12 @@ export default function Home() {
       setIsLobbyModalOpen(false);
       setLocation(`/game/${data.id}`);
     } catch (error) {
+      console.error('Game creation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create game. Please try again.';
+      
       toast({
-        title: 'Error',
-        description: 'Failed to create game',
+        title: 'Error Creating Game',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
