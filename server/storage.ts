@@ -94,9 +94,14 @@ export class MemStorage implements IStorage {
       ...insertUser, 
       id, 
       walletBalance: 0, 
-      createdAt: now 
+      createdAt: now,
+      isAdmin: false,
+      isActive: true,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null
     };
     this.users.set(id, user);
+    console.log('Created user in storage:', id, user.username);
     return user;
   }
 

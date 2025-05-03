@@ -23,11 +23,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 // Initialize session store
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "bbg-game-secret",
-  resave: false,
-  saveUninitialized: false,
+  resave: true,
+  saveUninitialized: true,
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false, // Set to false for development to work with http
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000, // 1 day
   }
 });
@@ -119,22 +120,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/auth/login", async (req, res) => {
     try {
+      console.log('Login attempt with:', req.body);
       const { username, password } = req.body;
       
       // Get user by username
       const user = await storage.getUserByUsername(username);
       if (!user) {
+        console.log(`User not found with username: ${username}`);
         return res.status(401).json({ message: "Invalid username or password" });
       }
+      
+      console.log(`User found: ${user.id} (${user.username})`);
       
       // Check password
       const passwordMatch = await bcrypt.compare(password, user.password);
       if (!passwordMatch) {
+        console.log('Password mismatch');
         return res.status(401).json({ message: "Invalid username or password" });
       }
       
+      console.log('Password match successful');
+      
       // Set session
       req.session.userId = user.id;
+      console.log(`Set session userId to ${user.id}, session ID: ${req.session.id}`);
       
       // Save session explicitly
       req.session.save((err) => {
@@ -142,6 +151,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Session save error:', err);
           return res.status(500).json({ message: "Failed to create session" });
         }
+        
+        console.log(`Session saved successfully for user ${user.id}`);
         
         // Remove password from response
         const { password: _, ...userWithoutPassword } = user;

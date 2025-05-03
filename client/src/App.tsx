@@ -33,6 +33,9 @@ function Router() {
 }
 
 function App() {
+  // Add error logging to help debug session issues
+  console.log('App rendering, checking if cookies are enabled:', navigator.cookieEnabled);
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

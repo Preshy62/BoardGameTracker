@@ -8,6 +8,7 @@ import bcrypt from "bcrypt";
 async function createDemoUser() {
   try {
     // Check if demo user already exists
+    console.log("Checking if demo user exists...");
     const existingUser = await storage.getUserByUsername("demo");
     if (existingUser) {
       console.log("Demo user already exists");
@@ -18,18 +19,23 @@ async function createDemoUser() {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash("demo123", saltRounds);
     
-    // Create user
+    console.log("Creating demo user...");
+    
+    // Create user based on the schema
     const user = await storage.createUser({
       username: "demo",
       email: "demo@bigboysgame.com",
       password: hashedPassword,
-      avatarInitials: "DM"
+      avatarInitials: "DM",
     });
     
+    console.log("Demo user created with ID:", user.id);
+    
     // Give them some initial funds
+    console.log("Adding initial funds to demo user...");
     await storage.updateUserBalance(user.id, 50000); // ₦50,000
     
-    console.log("Demo user created successfully");
+    console.log("Demo user created successfully with ID:", user.id);
   } catch (error) {
     console.error("Failed to create demo user:", error);
   }
