@@ -331,18 +331,18 @@ export default function Admin() {
                             <TableCell className="font-medium">#{game.id}</TableCell>
                             <TableCell>#{game.creatorId}</TableCell>
                             <TableCell>
-                              <Badge variant={game.status === 'waiting' ? 'outline' : 
+                              <CustomBadge variant={game.status === 'waiting' ? 'outline' : 
                                             game.status === 'in_progress' ? 'default' : 
                                             'success'}>
                                 {game.status === 'waiting' ? 'Waiting' : 
                                  game.status === 'in_progress' ? 'In Progress' : 
                                  'Completed'}
-                              </Badge>
+                              </CustomBadge>
                             </TableCell>
                             <TableCell>{/*currentPlayers*/}0 / {game.maxPlayers}</TableCell>
                             <TableCell>{formatCurrency(game.stake)}</TableCell>
                             <TableCell>{formatCurrency(game.stake * game.maxPlayers)}</TableCell>
-                            <TableCell>{new Date(game.createdAt).toLocaleDateString()}</TableCell>
+                            <TableCell>{game.createdAt ? new Date(game.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
                             <TableCell>
                               <div className="flex space-x-2">
                                 <Button size="sm" variant="outline">
@@ -410,11 +410,11 @@ export default function Admin() {
                             <TableCell className="font-medium">#{transaction.id}</TableCell>
                             <TableCell>#{transaction.userId}</TableCell>
                             <TableCell>
-                              <Badge variant={(transaction.type === 'deposit' || transaction.type === 'winnings') ? 'success' : 
+                              <CustomBadge variant={(transaction.type === 'deposit' || transaction.type === 'winnings') ? 'success' : 
                                             transaction.type === 'withdrawal' ? 'destructive' : 
                                             'outline'}>
                                 {transaction.type}
-                              </Badge>
+                              </CustomBadge>
                             </TableCell>
                             <TableCell className={(transaction.type === 'deposit' || transaction.type === 'winnings') ? 'text-success' : 
                                               transaction.type === 'withdrawal' ? 'text-destructive' : 
@@ -422,11 +422,11 @@ export default function Admin() {
                               {formatCurrency(transaction.amount)}
                             </TableCell>
                             <TableCell>
-                              <Badge variant={transaction.status === 'completed' ? 'success' : 
+                              <CustomBadge variant={transaction.status === 'completed' ? 'success' : 
                                             transaction.status === 'pending' ? 'outline' : 
                                             'destructive'}>
                                 {transaction.status}
-                              </Badge>
+                              </CustomBadge>
                             </TableCell>
                             <TableCell>
                               <span className="font-mono text-xs">{transaction.reference.substring(0, 8)}...</span>
