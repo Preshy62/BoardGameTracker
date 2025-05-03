@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import GameBoard from "@/components/game/GameBoard";
 import GameSidebar from "@/components/game/GameSidebar";
+import VoiceChat from "@/components/game/VoiceChat";
 import GameResultModal from "@/components/modals/GameResultModal";
 import GameLobbyModal from "@/components/modals/GameLobbyModal";
 import { User } from "@shared/schema";
@@ -88,6 +89,8 @@ export default function Game({ id }: GamePageProps) {
   const totalPool = game.stake * players.length;
   const winAmount = calculateWinnings(totalPool, game.commissionPercentage);
 
+  const [voiceChatEnabled, setVoiceChatEnabled] = useState(true);
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header user={user} />
@@ -104,13 +107,24 @@ export default function Game({ id }: GamePageProps) {
           isCurrentPlayerTurn={isCurrentPlayerTurn}
         />
         
-        <GameSidebar
-          players={players}
-          messages={messages}
-          currentUserId={user.id}
-          currentPlayerTurnId={currentTurnPlayerId || 0}
-          onSendMessage={sendChatMessage}
-        />
+        <div className="w-full md:w-80 bg-gray-50 border-l border-gray-200 flex flex-col">
+          {/* Voice chat for high-stakes games */}
+          <div className="p-3">
+            <VoiceChat 
+              game={game} 
+              isEnabled={voiceChatEnabled}
+              currentUserId={user.id}
+            />
+          </div>
+          
+          <GameSidebar
+            players={players}
+            messages={messages}
+            currentUserId={user.id}
+            currentPlayerTurnId={currentTurnPlayerId || 0}
+            onSendMessage={sendChatMessage}
+          />
+        </div>
       </main>
 
       {/* Game Result Modal */}

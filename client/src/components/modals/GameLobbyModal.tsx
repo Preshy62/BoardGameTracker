@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, calculateCommission, calculateWinnings } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Volume2, VolumeX } from "lucide-react";
 
 interface GameLobbyModalProps {
   open: boolean;
@@ -13,11 +16,23 @@ interface GameLobbyModalProps {
   initialSinglePlayer?: boolean;
 }
 
+// Predefined stake options for quick selection
+const stakeOptions = [
+  { label: 'Standard: ₦1,000', value: 1000 },
+  { label: 'Medium: ₦10,000', value: 10000 },
+  { label: 'High: ₦50,000', value: 50000 },
+  { label: 'Premium: ₦100,000', value: 100000 },
+  { label: 'VIP: ₦250,000', value: 250000 },
+  { label: 'Custom Value', value: 'custom' }
+];
+
 const GameLobbyModal = ({ open, onClose, onCreateGame, initialSinglePlayer = false }: GameLobbyModalProps) => {
   const [playerCount, setPlayerCount] = useState(5);
   const [stake, setStake] = useState(1000);
   const [stakeInput, setStakeInput] = useState("1,000");
   const [singlePlayer, setSinglePlayer] = useState(initialSinglePlayer);
+  const [stakeOption, setStakeOption] = useState<string | number>(1000);
+  const [voiceChatEnabled, setVoiceChatEnabled] = useState(true);
   
   // Update singlePlayer state when initialSinglePlayer prop changes
   useEffect(() => {
@@ -45,7 +60,19 @@ const GameLobbyModal = ({ open, onClose, onCreateGame, initialSinglePlayer = fal
     }
   };
 
-  // Handle stake input changes
+  // Handle stake option selection
+  const handleStakeOptionChange = (value: string) => {
+    setStakeOption(value);
+    
+    // If a predefined value is selected, update the stake
+    if (value !== 'custom') {
+      const numValue = parseInt(value, 10);
+      setStake(numValue);
+      setStakeInput(numValue.toLocaleString());
+    }
+  };
+
+  // Handle stake input changes for custom amounts
   const handleStakeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^\d]/g, '');
     
@@ -53,6 +80,13 @@ const GameLobbyModal = ({ open, onClose, onCreateGame, initialSinglePlayer = fal
       const numValue = parseInt(value, 10);
       setStake(numValue);
       setStakeInput(numValue.toLocaleString());
+      
+      // If the value doesn't match any predefined options, switch to custom
+      if (!stakeOptions.some(option => option.value === numValue)) {
+        setStakeOption('custom');
+      } else {
+        setStakeOption(numValue);
+      }
     } else {
       setStakeInput('');
       setStake(0);
@@ -64,12 +98,18 @@ const GameLobbyModal = ({ open, onClose, onCreateGame, initialSinglePlayer = fal
     if (stake < 1000) {
       setStake(1000);
       setStakeInput("1,000");
+      setStakeOption(1000);
       toast({
         title: "Invalid stake amount",
         description: "Minimum stake is ₦1,000",
         variant: "destructive"
       });
     }
+  };
+  
+  // Toggle voice chat
+  const handleVoiceChatToggle = () => {
+    setVoiceChatEnabled(!voiceChatEnabled);
   };
 
   // Handle game creation
@@ -160,7 +200,26 @@ const GameLobbyModal = ({ open, onClose, onCreateGame, initialSinglePlayer = fal
           
           <div className="mb-6">
             <Label className="block text-gray-700 font-medium mb-2">Stake Amount</Label>
-            <div className="relative">
+            
+            {/* Stake options selector */}
+            <Select
+              value={stakeOption.toString()}
+              onValueChange={handleStakeOptionChange}
+            >
+              <SelectTrigger className="w-full mb-2">
+                <SelectValue placeholder="Select stake amount" />
+              </SelectTrigger>
+              <SelectContent>
+                {stakeOptions.map((option) => (
+                  <SelectItem key={option.value.toString()} value={option.value.toString()}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Custom stake input */}
+            <div className="relative mt-2">
               <span className="absolute left-3 top-2.5">₦</span>
               <Input 
                 type="text" 
@@ -171,6 +230,30 @@ const GameLobbyModal = ({ open, onClose, onCreateGame, initialSinglePlayer = fal
               />
             </div>
             <p className="text-sm text-gray-500 mt-1">Minimum: ₦1,000</p>
+            
+            {/* Voice chat option for high stakes games */}
+            {stake >= 50000 && (
+              <div className="mt-4 p-3 border border-secondary rounded-md bg-secondary/10">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    {voiceChatEnabled ? <Volume2 className="mr-2 h-4 w-4" /> : <VolumeX className="mr-2 h-4 w-4" />}
+                    <Label htmlFor="voice-chat" className="text-gray-700 font-bold">
+                      Voice Chat
+                    </Label>
+                  </div>
+                  <Switch
+                    id="voice-chat"
+                    checked={voiceChatEnabled}
+                    onCheckedChange={handleVoiceChatToggle}
+                  />
+                </div>
+                <p className="text-sm text-gray-700 mt-2">
+                  {voiceChatEnabled
+                    ? "Voice chat is enabled for this high-stakes game."
+                    : "Enable voice chat to communicate with other players."}
+                </p>
+              </div>
+            )}
           </div>
           
           <div className="mb-6">
