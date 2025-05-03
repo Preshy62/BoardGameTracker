@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { PlusCircle, Users, DollarSign, Clock, CreditCard } from "lucide-react";
 import Header from "@/components/layout/Header";
 import GameLobbyModal from "@/components/modals/GameLobbyModal";
+import GameBoardDemo from "@/components/GameBoardDemo";
 import { formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { Game } from "@shared/schema";
@@ -210,6 +211,7 @@ export default function Home() {
           <TabsList className="mb-6">
             <TabsTrigger value="available">Available Games</TabsTrigger>
             <TabsTrigger value="my-games">My Games</TabsTrigger>
+            <TabsTrigger value="demo">Game Board Demo</TabsTrigger>
           </TabsList>
           
           <TabsContent value="available" className="space-y-6">
@@ -375,6 +377,10 @@ export default function Home() {
                 </Button>
               </div>
             )}
+          </TabsContent>
+          
+          <TabsContent value="demo">
+            <GameBoardDemo />
           </TabsContent>
         </Tabs>
       </main>
