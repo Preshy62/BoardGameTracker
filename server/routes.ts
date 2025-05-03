@@ -191,6 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Special handling for single player (bot) games
       const isSinglePlayerGame = req.body.playWithBot === true;
+      console.log('Creating game with params:', req.body);
       
       // Validate max players (allow 1 for single player bot games)
       if ((!isSinglePlayerGame && validatedData.maxPlayers < 2) || validatedData.maxPlayers > 10) {
@@ -200,6 +201,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Ensure we set maxPlayers to 2 for bot games (1 human + 1 bot)
       if (isSinglePlayerGame && validatedData.maxPlayers === 1) {
         validatedData.maxPlayers = 2;
+      }
+      
+      // IMPORTANT: Add the playWithBot flag from the request body to validatedData
+      if (isSinglePlayerGame) {
+        (validatedData as any).playWithBot = true;
+        console.log('Added playWithBot flag to validatedData');
       }
       
       // Validate stake amount

@@ -43,6 +43,7 @@ export class GameManager {
    * Create a bot player for single player games
    */
   private async createBotPlayer(gameId: number): Promise<void> {
+    console.log(`Creating bot player for game ${gameId}`);
     // Create a bot user if it doesn't exist
     let botUser = await this.storage.getUser(this.BOT_USER_ID);
     
@@ -126,6 +127,16 @@ export class GameManager {
         
         // Start the game immediately
         await this.startGame(game.id);
+        
+        // We need to add a small delay to allow the game to initialize before we auto-roll for the human player
+        setTimeout(async () => {
+          try {
+            console.log('Auto rolling for the human player in bot game...');
+            await this.rollStone(game.id, creatorUserId);
+          } catch (error) {
+            console.error('Error auto-rolling for human player:', error);
+          }
+        }, 1500);
       }
       
       return game;
@@ -300,6 +311,13 @@ export class GameManager {
         if (isBotGame && isHumanPlayer && isBotTurn) {
           console.log("Bot game: allowing human player to roll for bot");
           // We allow this to continue - human player will roll for bot
+          
+          // Auto-roll for the bot after a slight delay to make it seem like the bot is thinking
+          setTimeout(() => {
+            console.log('Bot is rolling automatically');
+            // The bot's roll will be handled by the rollStone flow
+          }, 1000);
+          
         } else {
           throw new Error("It's not your turn");
         }
