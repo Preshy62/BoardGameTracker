@@ -256,6 +256,39 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
     }
   }, [setLocation, toast]);
 
+  // Log the current game state for debugging
+  useEffect(() => {
+    console.log('Game state updated:', {
+      gameId,
+      currentTurnPlayerId,
+      userId,
+      isCurrentPlayerTurn: currentTurnPlayerId === userId,
+      gameStatus: game?.status,
+      players: players.map(p => ({ id: p.id, userId: p.userId, name: p.user.username, hasRolled: p.hasRolled }))
+    });
+  }, [gameId, currentTurnPlayerId, userId, game, players]);
+
+  // In single player games, check if this is a bot game with the special bot user ID
+  const isBotGame = players.some(p => p.userId === 9999); // 9999 is BOT_USER_ID from gameManager
+  
+  // Determine if it's the current player's turn
+  const isCurrentPlayerTurn = isBotGame 
+    ? currentTurnPlayerId === userId // Normal check for player's turn
+    : currentTurnPlayerId === userId; // Same, but easier to modify for special bot logic if needed
+
+  // Log the current game state for debugging
+  useEffect(() => {
+    console.log('Game state updated:', {
+      gameId,
+      currentTurnPlayerId,
+      userId,
+      isCurrentPlayerTurn,
+      isBotGame,
+      gameStatus: game?.status,
+      players: players.map(p => ({ id: p.id, userId: p.userId, name: p.user.username, hasRolled: p.hasRolled }))
+    });
+  }, [gameId, currentTurnPlayerId, userId, game, players, isCurrentPlayerTurn, isBotGame]);
+
   return {
     game,
     players,
@@ -265,7 +298,7 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
     timeRemaining,
     rollingStoneNumber,
     isGameResultOpen,
-    isCurrentPlayerTurn: currentTurnPlayerId === userId,
+    isCurrentPlayerTurn,
     sendChatMessage,
     rollStone,
     leaveGame,

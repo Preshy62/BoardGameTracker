@@ -113,8 +113,15 @@ const GameBoard = ({
                     : "bg-gray-400 cursor-not-allowed"
                 )}
               >
-                ROLL STONE
+                {isCurrentPlayerTurn ? "ROLL STONE" : "WAITING FOR YOUR TURN"}
               </button>
+              <div className="mt-2 text-xs text-white">
+                {game.status === "in_progress" 
+                  ? (isCurrentPlayerTurn 
+                     ? "It's your turn! Click to roll!" 
+                     : "Waiting for another player to roll...") 
+                  : "Game is not in progress"}               
+              </div>
             </div>
           </div>
         </div>
