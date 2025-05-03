@@ -86,7 +86,7 @@ export default function Wallet() {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       toast({
         title: "Demo Funds Added",
-        description: `${formatCurrency(10000)} has been added to your wallet for testing.`,
+        description: `${formatCurrency(100000)} has been added to your wallet for testing.`,
       });
     },
     onError: (error) => {
@@ -279,7 +279,7 @@ export default function Wallet() {
                       ) : (
                         <CreditCard className="mr-2 h-5 w-5" />
                       )}
-                      Add Demo Funds (₦10,000)
+                      Add Demo Funds (₦100,000)
                     </Button>
 
                     <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800 flex items-start">

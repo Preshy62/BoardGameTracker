@@ -509,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Demo deposit (for testing only)
   app.post("/api/transactions/demo-deposit", authenticate, async (req, res) => {
     try {
-      const amount = 10000; // ₦10,000 demo amount
+      const amount = 100000; // ₦100,000 demo amount
       
       // Create transaction
       const transaction = await storage.createTransaction({

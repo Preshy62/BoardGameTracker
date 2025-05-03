@@ -33,7 +33,7 @@ async function createDemoUser() {
     
     // Give them some initial funds
     console.log("Adding initial funds to demo user...");
-    await storage.updateUserBalance(user.id, 50000); // ₦50,000
+    await storage.updateUserBalance(user.id, 200000); // ₦200,000
     
     console.log("Demo user created successfully with ID:", user.id);
   } catch (error) {
