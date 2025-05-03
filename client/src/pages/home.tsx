@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Users, DollarSign, Clock, CreditCard } from "lucide-react";
+import { PlusCircle, Users, DollarSign, Clock, CreditCard, Gamepad2 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import GameLobbyModal from "@/components/modals/GameLobbyModal";
 import GameBoardDemo from "@/components/GameBoardDemo";
@@ -195,6 +195,15 @@ export default function Home() {
                 <CreditCard className="mr-2 h-5 w-5" />
               )}
               Add Demo Funds (₦10,000)
+            </Button>
+            
+            <Button 
+              onClick={() => setLocation('/demo')}
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary-light hover:text-white"
+            >
+              <Gamepad2 className="mr-2 h-5 w-5" />
+              Try Demo
             </Button>
             
             <Button 
