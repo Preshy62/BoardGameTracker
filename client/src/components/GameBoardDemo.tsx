@@ -1,15 +1,15 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-interface GameStoneDemoProps {
+interface DemoStoneProps {
   number: number;
   isSpecial?: boolean;
   isSuper?: boolean;
   size?: 'sm' | 'md' | 'lg';
 }
 
-// Demo version of GameStone component just for display
-const GameStoneDemo: React.FC<GameStoneDemoProps> = ({ 
+// Demo Stone Component for the Game Board Demo
+const DemoStone: React.FC<DemoStoneProps> = ({ 
   number, 
   isSpecial = false,
   isSuper = false,
@@ -32,7 +32,7 @@ const GameStoneDemo: React.FC<GameStoneDemoProps> = ({
   );
 };
 
-// Demo version of the GameBoard component for display on the home page
+// Game Board Demo component for the home page
 const GameBoardDemo: React.FC = () => {
   return (
     <div className="w-full max-w-3xl mx-auto my-8 bg-white rounded-xl shadow-lg overflow-hidden">
@@ -60,73 +60,73 @@ const GameBoardDemo: React.FC = () => {
 
           {/* Top row stones */}
           <div className="flex justify-between mb-4">
-            <GameStoneDemo number={29} />
-            <GameStoneDemo number={40} />
-            <GameStoneDemo number={32} />
-            <GameStoneDemo number={81} />
-            <GameStoneDemo number={7} />
+            <DemoStone number={29} />
+            <DemoStone number={40} />
+            <DemoStone number={32} />
+            <DemoStone number={81} />
+            <DemoStone number={7} />
           </div>
           
           {/* Second row with 1000 as special */}
           <div className="flex justify-between mb-4">
-            <GameStoneDemo number={13} />
-            <GameStoneDemo number={64} />
-            <GameStoneDemo number={1000} isSpecial={true} size="lg" />
-            <GameStoneDemo number={101} />
-            <GameStoneDemo number={4} />
+            <DemoStone number={13} />
+            <DemoStone number={64} />
+            <DemoStone number={1000} isSpecial={true} size="lg" />
+            <DemoStone number={101} />
+            <DemoStone number={4} />
           </div>
           
           {/* Third row with 3355 and 6624 */}
           <div className="flex justify-between mb-4">
-            <GameStoneDemo number={3355} isSuper={true} />
-            <GameStoneDemo number={65} />
-            <GameStoneDemo number={12} />
-            <GameStoneDemo number={22} />
-            <GameStoneDemo number={9} />
-            <GameStoneDemo number={6624} isSuper={true} />
-            <GameStoneDemo number={44} />
+            <DemoStone number={3355} isSuper={true} />
+            <DemoStone number={65} />
+            <DemoStone number={12} />
+            <DemoStone number={22} />
+            <DemoStone number={9} />
+            <DemoStone number={6624} isSuper={true} />
+            <DemoStone number={44} />
           </div>
           
           {/* Fourth row with 500 as special */}
           <div className="flex justify-between mb-4">
-            <GameStoneDemo number={28} />
-            <GameStoneDemo number={21} />
-            <GameStoneDemo number={105} />
-            <GameStoneDemo number={500} isSpecial={true} size="lg" />
-            <GameStoneDemo number={99} />
-            <GameStoneDemo number={20} />
-            <GameStoneDemo number={82} />
-            <GameStoneDemo number={3} />
+            <DemoStone number={28} />
+            <DemoStone number={21} />
+            <DemoStone number={105} />
+            <DemoStone number={500} isSpecial={true} size="lg" />
+            <DemoStone number={99} />
+            <DemoStone number={20} />
+            <DemoStone number={82} />
+            <DemoStone number={3} />
           </div>
           
           {/* Fifth row */}
           <div className="flex justify-between mb-4">
-            <GameStoneDemo number={11} size="sm" />
-            <GameStoneDemo number={37} size="sm" />
-            <GameStoneDemo number={72} size="sm" />
-            <GameStoneDemo number={17} size="sm" />
-            <GameStoneDemo number={42} size="sm" />
-            <GameStoneDemo number={8} size="sm" />
-            <GameStoneDemo number={30} size="sm" />
-            <GameStoneDemo number={91} size="sm" />
-            <GameStoneDemo number={27} size="sm" />
-            <GameStoneDemo number={5} size="sm" />
-            <GameStoneDemo number={40} size="sm" />
+            <DemoStone number={11} size="sm" />
+            <DemoStone number={37} size="sm" />
+            <DemoStone number={72} size="sm" />
+            <DemoStone number={17} size="sm" />
+            <DemoStone number={42} size="sm" />
+            <DemoStone number={8} size="sm" />
+            <DemoStone number={30} size="sm" />
+            <DemoStone number={91} size="sm" />
+            <DemoStone number={27} size="sm" />
+            <DemoStone number={5} size="sm" />
+            <DemoStone number={40} size="sm" />
           </div>
           
           {/* Bottom row */}
           <div className="flex justify-between">
-            <GameStoneDemo number={6} size="sm" />
-            <GameStoneDemo number={80} size="sm" />
-            <GameStoneDemo number={3} size="sm" />
-            <GameStoneDemo number={26} size="sm" />
-            <GameStoneDemo number={100} size="sm" />
-            <GameStoneDemo number={19} size="sm" />
-            <GameStoneDemo number={14} size="sm" />
-            <GameStoneDemo number={43} size="sm" />
-            <GameStoneDemo number={16} size="sm" />
-            <GameStoneDemo number={71} size="sm" />
-            <GameStoneDemo number={10} size="sm" />
+            <DemoStone number={6} size="sm" />
+            <DemoStone number={80} size="sm" />
+            <DemoStone number={3} size="sm" />
+            <DemoStone number={26} size="sm" />
+            <DemoStone number={100} size="sm" />
+            <DemoStone number={19} size="sm" />
+            <DemoStone number={14} size="sm" />
+            <DemoStone number={43} size="sm" />
+            <DemoStone number={16} size="sm" />
+            <DemoStone number={71} size="sm" />
+            <DemoStone number={10} size="sm" />
           </div>
           
           {/* Money in the Bank Label */}
