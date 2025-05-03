@@ -22,6 +22,7 @@ export interface IStorage {
   getGamesByStatus(status: GameStatus): Promise<Game[]>;
   getUserGames(userId: number): Promise<Game[]>;
   createGame(game: InsertGame): Promise<Game>;
+  updateGame(gameId: number, updates: Partial<InsertGame>): Promise<Game>;
   updateGameStatus(gameId: number, status: GameStatus): Promise<Game>;
   updateGameWinner(gameId: number, winnerId: number, winningNumber: number): Promise<Game>;
   endGame(gameId: number): Promise<Game>;
@@ -151,6 +152,17 @@ export class MemStorage implements IStorage {
     };
     this.games.set(id, game);
     return game;
+  }
+  
+  async updateGame(gameId: number, updates: Partial<InsertGame>): Promise<Game> {
+    const game = await this.getGame(gameId);
+    if (!game) {
+      throw new Error(`Game with ID ${gameId} not found`);
+    }
+    
+    const updatedGame = { ...game, ...updates };
+    this.games.set(gameId, updatedGame);
+    return updatedGame;
   }
 
   async updateGameStatus(gameId: number, status: GameStatus): Promise<Game> {

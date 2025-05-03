@@ -36,6 +36,55 @@ export class GameManager {
   /**
    * Create a new game and add the creator as the first player
    */
+  // Bot user ID constant (non-existent user for computer players)
+  private readonly BOT_USER_ID = 9999;
+  
+  /**
+   * Create a bot player for single player games
+   */
+  private async createBotPlayer(gameId: number): Promise<void> {
+    // Create a bot user if it doesn't exist
+    let botUser = await this.storage.getUser(this.BOT_USER_ID);
+    
+    if (!botUser) {
+      // Create the bot user
+      botUser = await this.storage.createUser({
+        username: "Computer",
+        email: "bot@bigboysgame.com",
+        password: "not-a-real-password",
+        avatarInitials: "CP"
+      });
+      
+      // Give the bot unlimited funds
+      await this.storage.updateUserBalance(
+        botUser.id,
+        1000000
+      );
+    }
+    
+    // Get game to check stake
+    const game = await this.storage.getGame(gameId);
+    if (!game) {
+      throw new Error("Game not found");
+    }
+    
+    // Add bot player to the game
+    const turnOrder = 2; // Bot is always the second player
+    await this.storage.createGamePlayer({
+      gameId,
+      userId: botUser.id,
+      turnOrder,
+    });
+    
+    // Create a system message
+    await this.storage.createMessage({
+      gameId,
+      userId: botUser.id,
+      content: `Computer player joined the game`,
+      type: "system",
+    });
+  }
+
   async createGame(gameData: InsertGame, creatorUserId: number): Promise<Game> {
     try {
       // Create the game record
@@ -67,6 +116,18 @@ export class GameManager {
         status: "completed",
         reference: `game-${game.id}-stake`,
       });
+      
+      // If this is set to a single player game (maxPlayers = 1), automatically add a bot player
+      if (gameData.maxPlayers === 1) {
+        // Override to 2 players since we need the bot
+        await this.storage.updateGame(game.id, { maxPlayers: 2 });
+        
+        // Add the bot player
+        await this.createBotPlayer(game.id);
+        
+        // Start the game immediately
+        await this.startGame(game.id);
+      }
       
       return game;
     } catch (error) {
