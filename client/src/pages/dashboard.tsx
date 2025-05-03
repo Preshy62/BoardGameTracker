@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CustomBadge } from "@/components/ui/custom-badge";
 import { Progress } from "@/components/ui/progress";
 import {
   User as UserIcon,
@@ -121,7 +122,7 @@ export default function Dashboard() {
                   <CalendarDays className="h-5 w-5 text-gray-500 mr-2" />
                   <span className="text-gray-700">Member since:</span>
                   <span className="text-gray-900 ml-2">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                   </span>
                 </div>
                 <div className="flex items-center">
@@ -283,17 +284,17 @@ export default function Dashboard() {
                         <TableRow key={game.id}>
                           <TableCell className="font-medium">#{game.id}</TableCell>
                           <TableCell>
-                            <Badge variant={game.status === 'waiting' ? 'outline' : 
+                            <CustomBadge variant={game.status === 'waiting' ? 'outline' : 
                                           game.status === 'in_progress' ? 'default' : 
                                           'success'}>
                               {game.status === 'waiting' ? 'Waiting' : 
                                game.status === 'in_progress' ? 'In Progress' : 
                                'Completed'}
-                            </Badge>
+                            </CustomBadge>
                           </TableCell>
                           <TableCell>{formatCurrency(game.stake)}</TableCell>
                           <TableCell>{game.maxPlayers}</TableCell>
-                          <TableCell>{new Date(game.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{game.createdAt ? new Date(game.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
                           <TableCell>
                             <Button 
                               variant="outline"
@@ -368,11 +369,11 @@ export default function Dashboard() {
                             {(transaction.type === 'withdrawal' || transaction.type === 'stake') ? '-' : '+'}{formatCurrency(transaction.amount)}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={transaction.status === 'completed' ? 'success' : 
+                            <CustomBadge variant={transaction.status === 'completed' ? 'success' : 
                                           transaction.status === 'pending' ? 'outline' : 
                                           'destructive'}>
                               {transaction.status}
-                            </Badge>
+                            </CustomBadge>
                           </TableCell>
                           <TableCell className="font-mono text-xs">
                             {transaction.reference.substring(0, 12)}...

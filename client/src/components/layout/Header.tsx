@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import WalletButton from "../WalletButton";
 import ProfileButton from "../ProfileButton";
 import { User } from "@shared/schema";
+import { Home, LayoutDashboard, LogOut, Wallet, User as UserIcon, Shield } from "lucide-react";
 
 interface HeaderProps {
   user: User;
@@ -33,6 +34,35 @@ const Header = ({ user }: HeaderProps) => {
               <span className="text-secondary">BIG BOYS</span> GAME
             </h1>
           </Link>
+          
+          <nav className="hidden md:flex ml-10 space-x-6">
+            <Link href="/">
+              <a className="flex items-center text-white hover:text-secondary transition-colors">
+                <Home className="h-4 w-4 mr-1" />
+                Games
+              </a>
+            </Link>
+            <Link href="/dashboard">
+              <a className="flex items-center text-white hover:text-secondary transition-colors">
+                <LayoutDashboard className="h-4 w-4 mr-1" />
+                Dashboard
+              </a>
+            </Link>
+            <Link href="/wallet">
+              <a className="flex items-center text-white hover:text-secondary transition-colors">
+                <Wallet className="h-4 w-4 mr-1" />
+                Wallet
+              </a>
+            </Link>
+            {user.isAdmin && (
+              <Link href="/admin">
+                <a className="flex items-center text-white hover:text-secondary transition-colors">
+                  <Shield className="h-4 w-4 mr-1" />
+                  Admin
+                </a>
+              </Link>
+            )}
+          </nav>
         </div>
         
         <div className="flex items-center space-x-4">
@@ -45,19 +75,42 @@ const Header = ({ user }: HeaderProps) => {
             />
             
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-10">
                 <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-200">
-                  {user.username}
+                  <div className="font-medium">{user.username}</div>
+                  <div className="text-xs text-gray-500">{user.email}</div>
                 </div>
+                
+                <Link href="/dashboard">
+                  <a className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </a>
+                </Link>
+                
                 <Link href="/wallet">
-                  <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <a className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <Wallet className="h-4 w-4 mr-2" />
                     Wallet
                   </a>
                 </Link>
+                
+                {user.isAdmin && (
+                  <Link href="/admin">
+                    <a className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Admin Panel
+                    </a>
+                  </Link>
+                )}
+                
+                <div className="border-t border-gray-200 mt-1"></div>
+                
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                 >
+                  <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </button>
               </div>
