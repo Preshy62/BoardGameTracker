@@ -103,7 +103,7 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
         
         <div className="py-4">
           <div className="mb-4">
-            <div className="flex items-center mb-2">
+            <div className="flex items-center mb-2 p-3 border border-secondary rounded-md bg-secondary/10">
               <input
                 type="checkbox"
                 id="singlePlayer"
@@ -111,11 +111,11 @@ const GameLobbyModal = ({ open, onClose, onCreateGame }: GameLobbyModalProps) =>
                 onChange={(e) => setSinglePlayer(e.target.checked)}
                 className="mr-2 h-4 w-4"
               />
-              <Label htmlFor="singlePlayer" className="text-gray-700 font-medium">
-                Demo: Play Against Computer
+              <Label htmlFor="singlePlayer" className="text-gray-700 font-bold">
+                DEMO: Play Against Computer
               </Label>
             </div>
-            <p className="text-xs text-gray-500 mb-4">Select this option to play a single-player game against the computer.</p>
+            <p className="text-sm text-gray-700 mb-4 font-medium">⚠️ Select this option to play immediately against a computer bot without waiting for other players.</p>
           </div>
 
           {!singlePlayer && (
