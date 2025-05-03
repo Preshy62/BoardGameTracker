@@ -221,6 +221,17 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
   const rollStone = useCallback(() => {
     if (!isConnected || !game) return;
     
+    // Import here to avoid circular dependencies
+    import('@/lib/sounds').then(({ playDiceRollSound }) => {
+      try {
+        // Play dice rolling sound before sending message
+        playDiceRollSound();
+      } catch (error) {
+        console.error('Error playing dice roll sound:', error);
+      }
+    });
+    
+    // Send the roll message to the server
     sendMessage('roll_stone', {
       gameId: parseInt(gameId),
     });

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { playWinnerSound } from "@/lib/sounds";
 import { User, GamePlayer } from "@shared/schema";
 
 interface GameResultModalProps {
@@ -32,13 +33,20 @@ const GameResultModal = ({
     return b.rolledNumber - a.rolledNumber;
   });
   
-  // Disabled speech synthesis to prevent browser compatibility issues
+  // Play winner sound when the modal opens
   useEffect(() => {
-    // Console log the winner for debugging purposes only
     if (open) {
+      // Log the winner for debugging
       console.log(`Game winner: ${winner.username} with ${winningNumber}`);
+      
+      // Play winner sound
+      try {
+        const played = playWinnerSound();
+        console.log("Winner sound played:", played);
+      } catch (error) {
+        console.error("Error playing winner sound:", error);
+      }
     }
-    // We're intentionally not using speech synthesis anymore as it was causing issues
   }, [open, winner, winningNumber]);
 
   return (
