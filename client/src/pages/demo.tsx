@@ -36,7 +36,8 @@ const DemoStone: React.FC<DemoStoneProps> = ({
         "bg-gray-700 text-white border border-gray-600",
         isRolling && "stone-roll-animation"
       )}
-      style={isRolling ? { animation: 'rollStoneDemo 0.8s ease-in-out infinite' } : {}}
+      // Use the CSS class instead of inline style for animation
+      // This ensures the animation is applied correctly
     >
       <span className="font-bold">{number}</span>
     </div>
@@ -126,13 +127,7 @@ export default function DemoPage() {
     };
   }, []);
 
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!user && !isLoading) {
-      setLocation('/auth');
-    }
-  }, [user, isLoading, setLocation]);
-
+  // No longer redirecting - this is a public demo page
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -140,14 +135,24 @@ export default function DemoPage() {
       </div>
     );
   }
-  
-  if (!user) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header user={user} />
+      {/* Use a simplified header for demo mode */}
+      <header className="bg-primary text-white py-4 shadow-md">
+        <div className="container mx-auto px-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold font-sans">Big Boys Game</h1>
+            <span className="ml-2 px-2 py-1 bg-secondary text-primary text-xs font-bold rounded-full">DEMO</span>
+          </div>
+          <Button 
+            onClick={() => setLocation('/auth')} 
+            className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
+          >
+            Sign In
+          </Button>
+        </div>
+      </header>
       
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="mb-6 flex justify-between items-center">
