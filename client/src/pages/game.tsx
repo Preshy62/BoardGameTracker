@@ -47,7 +47,7 @@ export default function Game({ id }: GamePageProps) {
   });
   
   // Voice chat settings
-  const isHighStakesGame = game && game.stake >= 50000;
+  const isHighStakesGame = game ? game.stake >= 50000 : false;
 
   // Handle if user is not logged in
   useEffect(() => {

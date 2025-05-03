@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Volume2, VolumeX, Mic, MicOff } from "lucide-react";
 import { Game } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 interface VoiceChatProps {
   game: Game;
@@ -12,113 +13,193 @@ interface VoiceChatProps {
 const VoiceChat = ({ game, isEnabled, currentUserId }: VoiceChatProps) => {
   const [isMuted, setIsMuted] = useState(true);
   const [isHighStakesGame, setIsHighStakesGame] = useState(false);
+  const [isVoiceChatSupported, setIsVoiceChatSupported] = useState(true);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const { toast } = useToast();
   
   // Check if game is high stakes (over ₦50,000)
   useEffect(() => {
-    const isHighStakes = game.stake >= 50000;
-    setIsHighStakesGame(isHighStakes);
-    
-    // If speech synthesis is available
-    if (window.speechSynthesis) {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        setAvailableVoices(voices);
-        
-        // Select a default voice (preferably a UK male voice)
-        const ukMaleVoice = voices.find(voice => voice.name.includes('UK') && voice.name.includes('Male'));
-        if (ukMaleVoice) {
-          setSelectedVoice(ukMaleVoice);
-          console.log("Using voice:", ukMaleVoice.name);
-        } else {
-          setSelectedVoice(voices[0]);
-          console.log("Using voice:", voices[0].name);
-        }
+    try {
+      const isHighStakes = game.stake >= 50000;
+      setIsHighStakesGame(isHighStakes);
+      
+      // Check browser support for voice chat
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setIsVoiceChatSupported(false);
+        console.warn("Voice chat is not supported in this browser.");
+        return;
       }
       
-      // Log available voices
-      console.log("Available voices:", voices.map(v => v.name));
-      
-      // Handle onvoiceschanged event
-      window.speechSynthesis.onvoiceschanged = () => {
-        const updatedVoices = window.speechSynthesis.getVoices();
-        setAvailableVoices(updatedVoices);
-      };
+      // If speech synthesis is available
+      if (window.speechSynthesis) {
+        try {
+          const voices = window.speechSynthesis.getVoices();
+          if (voices && voices.length > 0) {
+            setAvailableVoices(voices);
+            
+            // Select a default voice
+            setSelectedVoice(voices[0]);
+            console.log("Using voice:", voices[0].name);
+          }
+          
+          // Handle onvoiceschanged event
+          window.speechSynthesis.onvoiceschanged = () => {
+            try {
+              const updatedVoices = window.speechSynthesis.getVoices();
+              if (updatedVoices && updatedVoices.length > 0) {
+                setAvailableVoices(updatedVoices);
+                setSelectedVoice(updatedVoices[0]);
+              }
+            } catch (err) {
+              console.error("Error loading voices:", err);
+            }
+          };
+        } catch (err) {
+          console.error("Error initializing speech synthesis:", err);
+        }
+      } else {
+        console.warn("Speech synthesis not supported");
+      }
+    } catch (err) {
+      console.error("Error initializing voice chat:", err);
     }
     
     return () => {
-      // Cleanup voice synthesis
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      
-      // Cleanup audio streams
-      if (streamRef.current) {
-        const tracks = streamRef.current.getTracks();
-        tracks.forEach(track => track.stop());
-      }
-      
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-      }
-    };
-  }, [game.stake]);
-  
-  // Function to toggle mute
-  const toggleMute = async () => {
-    if (!isHighStakesGame || !isEnabled) return;
-    
-    try {
-      if (isMuted) {
-        // Initialize audio context if needed
-        if (!audioContextRef.current) {
-          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      try {
+        // Cleanup voice synthesis
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
         }
         
-        // Get microphone access
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef.current = stream;
-        
-        // Announce unmuting with voice synthesis
-        const announcement = `${currentUserId} has joined voice chat.`;
-        speakAnnouncement(announcement);
-      } else {
-        // Stop all tracks
+        // Cleanup audio streams
         if (streamRef.current) {
           const tracks = streamRef.current.getTracks();
           tracks.forEach(track => track.stop());
         }
         
-        // Announce muting with voice synthesis
-        const announcement = `${currentUserId} has left voice chat.`;
-        speakAnnouncement(announcement);
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+          audioContextRef.current.close();
+        }
+      } catch (err) {
+        console.error("Error cleaning up voice chat:", err);
       }
-      
-      setIsMuted(!isMuted);
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
+    };
+  }, [game?.stake]);
+  
+  // Function to toggle mute
+  const toggleMute = async () => {
+    if (!isHighStakesGame || !isEnabled || !isVoiceChatSupported) {
+      return;
+    }
+    
+    try {
+      if (isMuted) {
+        // Initialize audio context if needed
+        if (!audioContextRef.current) {
+          try {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContext) {
+              audioContextRef.current = new AudioContext();
+            } else {
+              throw new Error("AudioContext not supported");
+            }
+          } catch (err) {
+            console.error("Error creating AudioContext:", err);
+            toast({
+              title: "Voice Chat Error",
+              description: "Could not initialize audio. Voice chat unavailable.",
+              variant: "destructive"
+            });
+            return;
+          }
+        }
+        
+        try {
+          // Get microphone access
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          streamRef.current = stream;
+          
+          // Try to announce unmuting with voice synthesis
+          const announcement = `Player ${currentUserId} has joined voice chat.`;
+          speakAnnouncement(announcement);
+          
+          setIsMuted(false);
+        } catch (err) {
+          console.error('Error accessing microphone:', err);
+          toast({
+            title: "Microphone Access Denied",
+            description: "Please allow microphone access to use voice chat.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        // Stop all tracks
+        if (streamRef.current) {
+          try {
+            const tracks = streamRef.current.getTracks();
+            tracks.forEach(track => track.stop());
+            
+            // Try to announce muting with voice synthesis
+            const announcement = `Player ${currentUserId} has left voice chat.`;
+            speakAnnouncement(announcement);
+            
+            setIsMuted(true);
+          } catch (err) {
+            console.error('Error stopping audio tracks:', err);
+            setIsMuted(true); // Still set to muted even if there's an error
+          }
+        } else {
+          setIsMuted(true);
+        }
+      }
+    } catch (err) {
+      // Catch-all for any unexpected errors
+      console.error('Unexpected error in toggleMute:', err);
+      toast({
+        title: "Voice Chat Error",
+        description: "An error occurred with voice chat. Please try again.",
+        variant: "destructive"
+      });
     }
   };
   
   // Function to speak announcements
   const speakAnnouncement = (text: string) => {
-    if (!window.speechSynthesis || !selectedVoice) return;
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = selectedVoice;
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    
-    window.speechSynthesis.speak(utterance);
+    try {
+      if (!window.speechSynthesis || !selectedVoice) return;
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = selectedVoice;
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.error("Error with speech synthesis:", err);
+    }
   };
   
   // If voice chat is not available, don't render anything
   if (!isHighStakesGame || !isEnabled) {
     return null;
+  }
+  
+  if (!isVoiceChatSupported) {
+    return (
+      <div className="voice-chat-controls p-3 rounded-lg bg-primary/5 border border-primary/20 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <VolumeX className="h-4 w-4 mr-2" />
+            <span className="text-sm font-medium">Voice Chat</span>
+          </div>
+          <span className="text-xs text-gray-500">Not supported in this browser</span>
+        </div>
+      </div>
+    );
   }
   
   return (
