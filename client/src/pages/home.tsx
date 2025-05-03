@@ -197,14 +197,7 @@ export default function Home() {
               Add Demo Funds (₦10,000)
             </Button>
             
-            <Button 
-              onClick={() => setLocation('/demo')}
-              variant="outline"
-              className="border-primary text-primary hover:bg-primary-light hover:text-white"
-            >
-              <Gamepad2 className="mr-2 h-5 w-5" />
-              Try Demo
-            </Button>
+            {/* Removed 'Try Demo' button to avoid confusion */}
             
             <Button 
               onClick={() => setIsLobbyModalOpen(true)}
