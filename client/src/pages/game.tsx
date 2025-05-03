@@ -1,0 +1,147 @@
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import Header from "@/components/layout/Header";
+import GameBoard from "@/components/game/GameBoard";
+import GameSidebar from "@/components/game/GameSidebar";
+import GameResultModal from "@/components/modals/GameResultModal";
+import GameLobbyModal from "@/components/modals/GameLobbyModal";
+import { User } from "@shared/schema";
+import { useGameState } from "@/hooks/useGameState";
+import { calculateWinnings } from "@/lib/utils";
+import { useState } from "react";
+
+interface GamePageProps {
+  id: string;
+}
+
+export default function Game({ id }: GamePageProps) {
+  const [isPlayAgainModalOpen, setIsPlayAgainModalOpen] = useState(false);
+  const [, setLocation] = useLocation();
+
+  // Fetch current user
+  const { data: user, isLoading: isUserLoading } = useQuery<User>({
+    queryKey: ['/api/auth/me'],
+  });
+
+  // Use game state hook
+  const {
+    game,
+    players,
+    messages,
+    isLoading,
+    currentTurnPlayerId,
+    timeRemaining,
+    rollingStoneNumber,
+    isGameResultOpen,
+    isCurrentPlayerTurn,
+    sendChatMessage,
+    rollStone,
+    leaveGame,
+    setIsGameResultOpen,
+    createNewGame
+  } = useGameState({ 
+    gameId: id,
+    userId: user?.id || 0
+  });
+
+  // Handle if user is not logged in
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      setLocation('/login');
+    }
+  }, [user, isUserLoading, setLocation]);
+
+  if (isUserLoading || isLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading" />
+      </div>
+    );
+  }
+
+  if (!game) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center p-8">
+          <h1 className="text-2xl font-bold mb-4">Game Not Found</h1>
+          <button 
+            onClick={() => setLocation('/')}
+            className="bg-primary text-white px-4 py-2 rounded-md"
+          >
+            Return Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate winner and winnings
+  const winnerPlayer = game.winnerId 
+    ? players.find(p => p.userId === game.winnerId) 
+    : null;
+  
+  const winner = winnerPlayer 
+    ? players.find(p => p.userId === winnerPlayer.userId)?.user 
+    : null;
+  
+  const totalPool = game.stake * players.length;
+  const winAmount = calculateWinnings(totalPool, game.commissionPercentage);
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header user={user} />
+      
+      <main className="flex-grow flex flex-col md:flex-row">
+        <GameBoard
+          game={game}
+          currentPlayerId={currentTurnPlayerId || 0}
+          players={players}
+          onRollStone={rollStone}
+          rollingStoneNumber={rollingStoneNumber}
+          userId={user.id}
+          timeRemaining={timeRemaining || undefined}
+          isCurrentPlayerTurn={isCurrentPlayerTurn}
+        />
+        
+        <GameSidebar
+          players={players}
+          messages={messages}
+          currentUserId={user.id}
+          currentPlayerTurnId={currentTurnPlayerId || 0}
+          onSendMessage={sendChatMessage}
+        />
+      </main>
+
+      {/* Game Result Modal */}
+      {winner && (
+        <GameResultModal
+          open={isGameResultOpen}
+          onClose={() => {
+            setIsGameResultOpen(false);
+            leaveGame();
+          }}
+          onPlayAgain={() => {
+            setIsGameResultOpen(false);
+            setIsPlayAgainModalOpen(true);
+          }}
+          winAmount={winAmount}
+          winningNumber={game.winningNumber || 0}
+          winner={winner}
+          standings={players}
+          currentUserId={user.id}
+        />
+      )}
+
+      {/* Play Again Modal */}
+      <GameLobbyModal
+        open={isPlayAgainModalOpen}
+        onClose={() => {
+          setIsPlayAgainModalOpen(false);
+          leaveGame();
+        }}
+        onCreateGame={createNewGame}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --primary: 224 47% 14%;
+  --primary-foreground: 210 40% 98%;
+  --primary-light: 225 18% 23%;
+  --secondary: 45 100% 48%;
+  --secondary-foreground: 222.2 84% 4.9%;
+  --secondary-dark: 44 100% 45%;
+  --accent: 356.5 91.6% 56.5%;
+  --accent-foreground: 210 40% 98%;
+  --accent-light: 0 91% 71%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --ring: 215 20.2% 65.1%;
+  --radius: 0.5rem;
+  --success: 142 70% 45%;
+  --error: 0 84% 60%;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --primary: 224 47% 14%;
+  --primary-foreground: 210 40% 98%;
+  --primary-light: 225 18% 23%;
+  --secondary: 45 100% 48%;
+  --secondary-foreground: 222.2 84% 4.9%;
+  --secondary-dark: 44 100% 45%;
+  --accent: 356.5 91.6% 56.5%;
+  --accent-foreground: 210 40% 98%;
+  --accent-light: 0 91% 71%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 217.2 32.6% 17.5%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply font-sans antialiased bg-gray-100 text-foreground;
+  }
+}
+
+/* Game-specific styles */
+.game-stone {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.game-stone:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}
+.stone-roll-animation {
+  animation: rollStone 1.5s ease-in-out;
+}
+@keyframes rollStone {
+  0% { transform: rotateY(0deg) scale(1); }
+  50% { transform: rotateY(180deg) scale(1.2); }
+  100% { transform: rotateY(360deg) scale(1); }
+}
+.active-player {
+  animation: pulsePlayer 2s infinite;
+}
+@keyframes pulsePlayer {
+  0% { box-shadow: 0 0 0 0 rgba(248, 181, 0, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(248, 181, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(248, 181, 0, 0); }
+}
