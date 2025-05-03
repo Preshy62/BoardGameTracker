@@ -261,11 +261,34 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
       }
       
       console.log('Sending game creation request to /api/games with data:', gameData);
-      const response = await apiRequest('POST', '/api/games', gameData);
+      
+      // First leave the current game
+      if (isConnected) {
+        try {
+          sendMessage('leave_game', {
+            gameId: parseInt(gameId),
+          });
+        } catch (error) {
+          console.error('Error leaving current game:', error);
+        }
+      }
+      
+      // Use fetch directly with more detailed error handling
+      const response = await fetch('/api/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gameData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
       
       const data = await response.json();
       console.log('Game created successfully:', data);
-      setLocation(`/game/${data.id}`);
+      
+      // Redirect to new game
+      window.location.href = `/game/${data.id}`;
     } catch (error) {
       console.error('Game creation error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create game';
@@ -279,9 +302,12 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
       // If unauthorized, redirect to auth page
       if (errorMessage.includes('401')) {
         setLocation('/auth');
+      } else {
+        // If other error, go back to home
+        setLocation('/');
       }
     }
-  }, [setLocation, toast]);
+  }, [gameId, isConnected, sendMessage, setLocation, toast]);
 
   // Log the current game state for debugging
   useEffect(() => {

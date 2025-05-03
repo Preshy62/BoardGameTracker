@@ -32,87 +32,14 @@ const GameResultModal = ({
     return b.rolledNumber - a.rolledNumber;
   });
   
-  // Play winner announcement with male voice
+  // Disabled speech synthesis to prevent browser compatibility issues
   useEffect(() => {
-    if (!open) return;
-
-    const playAnnouncement = () => {
-      // Using the SpeechSynthesis API to announce the winner
-      const announcement = new SpeechSynthesisUtterance(
-        `${winner.id === currentUserId ? 'You are' : winner.username + ' is'} the winner with ${winningNumber}!`
-      );
-      
-      // Set a voice if available
-      const voices = window.speechSynthesis.getVoices();
-      
-      // Log available voices for debugging
-      console.log("Available voices:", voices.map(v => v.name));
-      
-      // Try to find the best voice (prioritizing English male voices)
-      let selectedVoice;
-      
-      // First try: Google UK English Male (common on many platforms)
-      selectedVoice = voices.find(voice => voice.name === 'Google UK English Male');
-      
-      // Second try: Any voice with 'Male' and English ('en') in it
-      if (!selectedVoice) {
-        selectedVoice = voices.find(voice => 
-          voice.name.includes('Male') && (voice.lang.startsWith('en') || voice.lang === '')
-        );
-      }
-      
-      // Third try: Any voice with 'Male' in it
-      if (!selectedVoice) {
-        selectedVoice = voices.find(voice => 
-          voice.name.includes('Male') || voice.name.includes('male')
-        );
-      }
-      
-      // Fourth try: Microsoft David (default on Windows)
-      if (!selectedVoice) {
-        selectedVoice = voices.find(voice => voice.name.includes('David'));
-      }
-      
-      // Fifth try: Any English voice
-      if (!selectedVoice && voices.length > 0) {
-        selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
-      }
-      
-      // Final fallback: Just use the first voice
-      if (!selectedVoice && voices.length > 0) {
-        selectedVoice = voices[0];
-      }
-      
-      // Set the voice if found
-      if (selectedVoice) {
-        console.log("Using voice:", selectedVoice.name);
-        announcement.voice = selectedVoice;
-      } else {
-        console.log("No suitable voice found, using default");
-      }
-      
-      // Adjust properties
-      announcement.volume = 1.0; // 0 to 1
-      announcement.rate = 0.9; // 0.1 to 10
-      announcement.pitch = 1.0; // 0 to 2
-      
-      // Speak the announcement
-      window.speechSynthesis.speak(announcement);
-    };
-
-    // Check if voices are loaded or need to wait for the event
-    if (window.speechSynthesis.getVoices().length > 0) {
-      playAnnouncement();
-    } else {
-      // If voices aren't loaded yet, wait for them
-      window.speechSynthesis.onvoiceschanged = playAnnouncement;
+    // Console log the winner for debugging purposes only
+    if (open) {
+      console.log(`Game winner: ${winner.username} with ${winningNumber}`);
     }
-    
-    return () => {
-      window.speechSynthesis.cancel(); // Cancel any ongoing speech when the component unmounts
-      window.speechSynthesis.onvoiceschanged = null;
-    };
-  }, [open, winner, winningNumber, currentUserId]);
+    // We're intentionally not using speech synthesis anymore as it was causing issues
+  }, [open, winner, winningNumber]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
