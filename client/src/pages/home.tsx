@@ -82,6 +82,9 @@ export default function Home() {
       // Add the playWithBot flag for single player games
       if (playWithBot) {
         gameData.playWithBot = true;
+        console.log('Creating a game with bot player:', gameData);
+      } else {
+        console.log('Creating a standard multiplayer game:', gameData);
       }
       
       const response = await apiRequest('POST', '/api/games', gameData);

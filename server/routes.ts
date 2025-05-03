@@ -177,6 +177,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Game routes
   app.post("/api/games", authenticate, async (req, res) => {
     try {
+      console.log('Got create game request with body:', req.body);
+      
       if (!req.body || !req.body.maxPlayers || !req.body.stake) {
         return res.status(400).json({ message: "Required fields: maxPlayers, stake" });
       }
