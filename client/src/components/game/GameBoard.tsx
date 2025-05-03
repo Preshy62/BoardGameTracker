@@ -25,19 +25,17 @@ const GameBoard = ({
   timeRemaining,
   isCurrentPlayerTurn
 }: GameBoardProps) => {
-  // Define the game stones
-  const gameStones = [
-    // Top row
-    29, 40, 32, 81, 7,
-    // Second row
-    13, 64, 1000, 101, 4,
-    // Middle row
-    65, 12, 500, 20, 44,
-    // Fourth row
-    28, 105, 99, 82, 3,
-    // Bottom row
-    11, 37, 27, 5, 40
-  ];
+  // Define the game stones based on the physical board layout
+  // For better organization, we'll structure the board by regions
+  const topRow = [29, 40, 32, 81, 7];
+  const secondRow = [13, 64, 1000, 101, 4];
+  const thirdRow = [3355, 65, 12, 22, 9, 6624, 44];
+  const fourthRow = [28, 21, 105, 500, 99, 20, 82, 3];
+  const fifthRow = [11, 37, 72, 17, 42, 8, 30, 91, 27, 5, 40];
+  const bottomRow = [6, 80, 3, 26, 100, 19, 14, 43, 16, 71, 10];
+  
+  // All game stones in order
+  const gameStones = [...topRow, ...secondRow, ...thirdRow, ...fourthRow, ...fifthRow, ...bottomRow];
 
   // Calculate total pool
   const totalPool = game.stake * players.length;
