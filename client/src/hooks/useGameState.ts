@@ -234,26 +234,101 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
   const rollStone = useCallback(() => {
     if (!isConnected || !game) return;
     
-    // Play sound first with a more robust approach
-    const playRollSound = () => {
-      // Import here to avoid circular dependencies
-      import('@/lib/sounds').then(({ playDiceRollSound }) => {
-        try {
-          // Play dice rolling sound before sending message
-          console.log('Playing dice roll sound');
-          playDiceRollSound();
-        } catch (error) {
-          console.error('Error playing dice roll sound:', error);
+    // Multiple approaches to ensure dice sound plays
+    let soundPlayed = false;
+    
+    // Immediately try to use speech synthesis which has higher success rate
+    const playSpeechFeedback = () => {
+      // Ensure we don't play multiple sounds
+      if (soundPlayed) return;
+      
+      try {
+        // Use browser's built-in text-to-speech which bypasses autoplay restrictions
+        if ('speechSynthesis' in window) {
+          // For bot games, add the computer voice
+          const isBotGame = players.some(p => p.user.username === 'Computer');
+          const speechText = isBotGame && currentTurnPlayerId !== userId 
+            ? "Computer is rolling the dice" 
+            : "Rolling the dice";
+          
+          const utterance = new SpeechSynthesisUtterance(speechText);
+          utterance.volume = 0.8;
+          utterance.rate = 1.2;
+          utterance.pitch = 1.0;
+          
+          // Try to select a good voice if available
+          // Voice loading is asynchronous in some browsers
+          const loadVoices = () => {
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+              // Prefer English voices
+              const englishVoice = voices.find(voice => voice.lang.includes('en-'));
+              if (englishVoice) {
+                utterance.voice = englishVoice;
+                console.log('Set dice roll voice to:', englishVoice.name);
+              }
+            }
+          };
+          
+          // First try loading voices directly
+          loadVoices();
+          
+          // If that didn't work, subscribe to the voiceschanged event
+          window.speechSynthesis.onvoiceschanged = loadVoices;
+          
+          window.speechSynthesis.speak(utterance);
+          console.log('Using speech synthesis for dice roll: ' + speechText);
+          soundPlayed = true;
         }
-      });
+      } catch (error) {
+        console.error('Speech synthesis failed:', error);
+      }
     };
     
-    // Try to play the sound immediately
-    playRollSound();
+    // Also try using the Web Audio API approach as a secondary method
+    const playRollSound = async () => {
+      try {
+        if (soundPlayed) return; // Don't play if speech already worked
+        
+        // Import here to avoid circular dependencies
+        const { playDiceRollSound, initAudioContext } = await import('@/lib/sounds');
+        
+        // Initialize audio context first (important for mobile browsers)
+        initAudioContext();
+        
+        // Play dice rolling sound
+        console.log('Playing dice roll sound with Web Audio API');
+        const played = await playDiceRollSound();
+        console.log('Dice roll sound played:', played);
+        
+        if (played) {
+          soundPlayed = true;
+        } else {
+          // If Web Audio fails, try speech synthesis
+          if (!soundPlayed) {
+            playSpeechFeedback();
+          }
+        }
+      } catch (error) {
+        // If anything fails, fall back to speech
+        console.error('Error playing dice roll sound:', error);
+        if (!soundPlayed) {
+          playSpeechFeedback();
+        }
+      }
+    };
     
-    // Also set up a backup in case the first attempt fails
-    // due to browser autoplay restrictions
-    const timer = setTimeout(playRollSound, 100);
+    // Try multiple approaches in sequence
+    playSpeechFeedback(); // Try speech first - most reliable
+    playRollSound();      // Also try regular sound
+    
+    // Also set up a backup in case the first attempts fail (for browsers with stricter policies)
+    const timer = setTimeout(() => {
+      if (!soundPlayed) {
+        console.log('Retrying sound after delay');
+        playRollSound();
+      }
+    }, 300);
     
     // Send the roll message to the server
     sendMessage('roll_stone', {

@@ -35,21 +35,93 @@ const GameResultModal = ({
     return b.rolledNumber - a.rolledNumber;
   });
   
+  // Preload sounds as early as possible in the component lifecycle
+  useEffect(() => {
+    // Import here to avoid circular dependencies
+    import('@/lib/sounds').then(({ initAudioContext }) => {
+      // Initialize audio context early
+      initAudioContext();
+      console.log('Audio context initialized early in GameResultModal');
+    });
+  }, []);
+
   // Play winner sound when the modal opens with Web Audio API
   useEffect(() => {
     if (open) {
       // Log the winner for debugging
       console.log(`Game winner: ${winner.username} with ${winningNumber}`);
       
+      let soundPlayed = false;
+      
       // Initialize audio context on first user interaction
       const initAndPlaySound = async () => {
+        if (soundPlayed) return; // Don't play multiple times
+        
         try {
-          // First try playing with the new Web Audio API approach
+          // Import dynamically to avoid circular dependencies
+          const { initAudioContext } = await import('@/lib/sounds');
+          
+          // First ensure audio context is initialized
+          initAudioContext();
+          
+          // Custom speech message for announcing winner
+          const customMessage = winner.id === currentUserId 
+            ? `Congratulations! You won with ${winningNumber}!` 
+            : `${winner.username} won with ${winningNumber}!`;
+          
+          // Both traditional sound effect and speech synthesis
+          console.log('Announcing winner with custom message:', customMessage);
+          
+          // Use speech synthesis directly which often has better browser support
+          if ('speechSynthesis' in window) {
+            try {
+              // Create speech synthesis utterance with winning message
+              const utterance = new SpeechSynthesisUtterance(customMessage);
+              
+              // Configure voice properties
+              utterance.volume = 1.0; // 0 to 1
+              utterance.rate = 1.0;   // 0.1 to 10
+              utterance.pitch = 1.2;  // 0 to 2
+              
+              // Try to select a good voice if available
+              // Voice loading is asynchronous in some browsers, so we need to handle it properly
+              const loadVoices = () => {
+                const voices = window.speechSynthesis.getVoices();
+                if (voices.length > 0) {
+                  // Prefer English voices
+                  const englishVoice = voices.find(voice => voice.lang.includes('en-'));
+                  if (englishVoice) {
+                    utterance.voice = englishVoice;
+                    console.log('Set voice to:', englishVoice.name);
+                  }
+                }
+              };
+              
+              // First try loading voices directly
+              loadVoices();
+              
+              // If that didn't work, subscribe to the voiceschanged event
+              window.speechSynthesis.onvoiceschanged = loadVoices;
+              
+              // Speak the text
+              window.speechSynthesis.speak(utterance);
+              console.log('Using speech synthesis to announce winner');
+              soundPlayed = true;
+              return;
+            } catch (error) {
+              console.error('Speech synthesis failed:', error);
+            }
+          }
+          
+          // Fall back to standard sound if speech synthesis fails
+          const { playWinnerSound } = await import('@/lib/sounds');
           console.log('Attempting to play winner sound...');
           const played = await playWinnerSound();
           console.log('Winner sound played:', played);
           
-          if (!played) {
+          if (played) {
+            soundPlayed = true;
+          } else {
             console.warn('Failed to play winner sound, will retry on user interaction');
           }
         } catch (error) {
@@ -60,26 +132,37 @@ const GameResultModal = ({
       // Try to play immediately
       initAndPlaySound();
       
-      // Also set up a listener for user interaction with modal
+      // Also try after a small delay - sometimes this works better
+      const delayTimer = setTimeout(() => {
+        if (!soundPlayed) {
+          console.log('Retrying winner sound with delay...');
+          initAndPlaySound();
+        }
+      }, 300);
+      
+      // Set up a listener for user interaction with modal and document
       // to handle browsers with strict autoplay policies
       const modalElement = document.querySelector('[role="dialog"]');
       const documentElement = document.documentElement;
       
       const handleUserInteraction = () => {
-        console.log('User interaction detected, playing sound again...');
-        initAndPlaySound();
+        if (!soundPlayed) {
+          console.log('User interaction detected, playing sound again...');
+          initAndPlaySound();
+        }
       };
       
       // Listen for interaction events on both modal and document
       if (modalElement) {
-        modalElement.addEventListener('click', handleUserInteraction, { once: true });
+        modalElement.addEventListener('click', handleUserInteraction);
       }
       
       // Also listen for any document interaction as a fallback
-      documentElement.addEventListener('click', handleUserInteraction, { once: true });
-      documentElement.addEventListener('touchstart', handleUserInteraction, { once: true });
+      documentElement.addEventListener('click', handleUserInteraction);
+      documentElement.addEventListener('touchstart', handleUserInteraction);
       
       return () => {
+        clearTimeout(delayTimer);
         if (modalElement) {
           modalElement.removeEventListener('click', handleUserInteraction);
         }

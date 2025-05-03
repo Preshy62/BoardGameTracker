@@ -113,12 +113,76 @@ export async function playSound(base64AudioData: string): Promise<boolean> {
   }
 }
 
-// Play winner announcement
-export function playWinnerSound() {
-  return playSound(WINNER_SOUND_BASE64);
+// Play winner announcement with multiple approaches
+export async function playWinnerSound() {
+  // First try playing with Web Audio API
+  const webAudioPlayed = await playSound(WINNER_SOUND_BASE64);
+  console.log('Web Audio API attempt to play winner sound:', webAudioPlayed);
+  
+  // If Web Audio API fails, try with Speech Synthesis as fallback
+  if (!webAudioPlayed) {
+    try {
+      // Use browser's built-in text-to-speech which often faces fewer autoplay restrictions
+      if ('speechSynthesis' in window) {
+        // Create speech synthesis utterance
+        const utterance = new SpeechSynthesisUtterance('Winner!');
+        
+        // Configure voice properties
+        utterance.volume = 1.0; // 0 to 1
+        utterance.rate = 1.0;   // 0.1 to 10
+        utterance.pitch = 1.0;  // 0 to 2
+        
+        // Try to select a good voice if available
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          // Prefer English voices
+          const englishVoice = voices.find(voice => voice.lang.includes('en-'));
+          if (englishVoice) {
+            utterance.voice = englishVoice;
+          }
+        }
+        
+        // Speak the text
+        window.speechSynthesis.speak(utterance);
+        console.log('Using speech synthesis as fallback for winner announcement');
+        return true;
+      }
+    } catch (error) {
+      console.error('Speech synthesis failed:', error);
+    }
+  }
+  
+  return webAudioPlayed;
 }
 
-// Play dice roll sound
-export function playDiceRollSound() {
-  return playSound(DICE_ROLL_SOUND_BASE64);
+// Play dice roll sound with speech synthesis fallback
+export async function playDiceRollSound() {
+  // First try playing with Web Audio API
+  const webAudioPlayed = await playSound(DICE_ROLL_SOUND_BASE64);
+  console.log('Web Audio API attempt to play dice roll sound:', webAudioPlayed);
+  
+  // If Web Audio API fails, try with Speech Synthesis as fallback
+  if (!webAudioPlayed) {
+    try {
+      // Use browser's built-in text-to-speech which often faces fewer autoplay restrictions
+      if ('speechSynthesis' in window) {
+        // Create speech synthesis utterance
+        const utterance = new SpeechSynthesisUtterance('Rolling dice');
+        
+        // Configure voice properties
+        utterance.volume = 0.8; // 0 to 1
+        utterance.rate = 1.2;   // 0.1 to 10
+        utterance.pitch = 1.0;  // 0 to 2
+        
+        // Speak the text
+        window.speechSynthesis.speak(utterance);
+        console.log('Using speech synthesis as fallback for dice roll sound');
+        return true;
+      }
+    } catch (error) {
+      console.error('Speech synthesis for dice roll failed:', error);
+    }
+  }
+  
+  return webAudioPlayed;
 }
