@@ -1,11 +1,10 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Game from "@/pages/game";
-import Login from "@/pages/auth/login";
-import Register from "@/pages/auth/register";
+// Legacy auth components removed
 import AuthPage from "@/pages/auth-page";
 import Wallet from "@/pages/wallet";
 import Checkout from "@/pages/checkout";
@@ -21,8 +20,13 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
+      {/* Redirect legacy auth routes to new consolidated auth page */}
+      <Route path="/login">
+        {() => <Redirect to="/auth" />}
+      </Route>
+      <Route path="/register">
+        {() => <Redirect to="/auth" />}
+      </Route>
       <ProtectedRoute path="/game/:id" component={({ params }) => <Game id={params.id} />} />
       <ProtectedRoute path="/wallet" component={Wallet} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />

@@ -21,7 +21,7 @@ export default function Game({ id }: GamePageProps) {
 
   // Fetch current user
   const { data: user, isLoading: isUserLoading } = useQuery<User>({
-    queryKey: ['/api/auth/me'],
+    queryKey: ['/api/user'],
   });
 
   // Use game state hook
@@ -48,7 +48,7 @@ export default function Game({ id }: GamePageProps) {
   // Handle if user is not logged in
   useEffect(() => {
     if (!isUserLoading && !user) {
-      setLocation('/login');
+      setLocation('/auth');
     }
   }, [user, isUserLoading, setLocation]);
 
