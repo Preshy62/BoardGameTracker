@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import Header from "@/components/layout/Header";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { cn } from '@/lib/utils';
 
+// Simple Demo Stone Component
 interface DemoStoneProps {
   number: number;
   isSpecial?: boolean;
@@ -14,52 +14,50 @@ interface DemoStoneProps {
   onClick?: () => void;
 }
 
-// Demo Stone Component with enhanced interactive animation
-const DemoStone: React.FC<DemoStoneProps> = ({ 
+const DemoStone = ({ 
   number, 
   isSpecial = false,
   isSuper = false,
   size = 'md',
   isRolling = false,
   onClick,
-}) => {
+}: DemoStoneProps) => {
+  // Determine CSS classes based on size
+  const sizeClasses = {
+    'sm': 'w-8 h-8 text-xs',
+    'md': 'w-12 h-12 text-base',
+    'lg': 'w-16 h-16 text-xl',
+  }[size];
+
+  // Animation style for rolling stones
+  const animationStyle = isRolling ? {
+    animation: 'spin 0.8s linear infinite',
+    boxShadow: '0 0 15px 5px rgba(255, 200, 50, 0.7)',
+    transform: 'scale(1.2)',
+    zIndex: 50,
+  } : {};
+
   return (
     <div 
       onClick={onClick}
       className={cn(
-        "game-stone rounded-full flex items-center justify-center relative transition-all cursor-pointer",
-        size === 'sm' ? "w-8 h-8 text-xs" : 
-        size === 'md' ? "w-12 h-12 text-base" :
-        "w-16 h-16 text-xl",
-        isSuper ? "bg-red-500 text-white border-2 border-yellow-300 ring-2 ring-yellow-500" :
+        "relative flex items-center justify-center rounded-full cursor-pointer",
+        sizeClasses,
+        isSuper ? "bg-red-500 text-white border-2 border-yellow-300" :
         isSpecial ? "bg-yellow-400 text-black border border-yellow-600" :
-        "bg-gray-700 text-white border border-gray-600",
-        isRolling ? "" : "" // Empty to prevent class interference
+        "bg-gray-700 text-white border border-gray-600"
       )}
-      style={isRolling ? {
-        animation: "rotate 0.8s linear infinite",
-        boxShadow: "0 0 15px 5px rgba(248, 181, 0, 0.7)",
-        zIndex: 50,
-        transform: "scale(1.2)",
-      } : undefined}
+      style={animationStyle}
     >
-      <span 
-        className={cn(
-          "font-bold",
-          isRolling && "animate-bounce"
-        )}
-      >
-        {number}
-      </span>
+      <span className="font-bold">{number}</span>
       
-      {/* Additional glow effect for rolling stones */}
       {isRolling && (
-        <div className="absolute inset-0 rounded-full animate-ping opacity-50" 
+        <div 
+          className="absolute inset-0 rounded-full animate-ping opacity-50" 
           style={{
             backgroundColor: isSuper ? 'rgba(220, 38, 38, 0.3)' : 
                           isSpecial ? 'rgba(250, 204, 21, 0.3)' : 
                           'rgba(255, 255, 255, 0.3)',
-            animationDuration: '1s',
           }}
         />
       )}
@@ -67,14 +65,53 @@ const DemoStone: React.FC<DemoStoneProps> = ({
   );
 };
 
-// Game Board Demo page with interactive rollable stones
+// Demo Board Page
 export default function DemoPage() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [rollingStoneIndex, setRollingStoneIndex] = useState<number | null>(null);
   const [selectedStone, setSelectedStone] = useState<number | null>(null);
 
-  // Array of stones to display on the board
+  // Define CSS keyframes for spinning animation
+  useEffect(() => {
+    // Create a style element
+    const styleEl = document.createElement('style');
+    // Define the keyframes
+    styleEl.innerHTML = `
+      @keyframes spin {
+        from { transform: rotate(0deg) scale(1.2); }
+        to { transform: rotate(360deg) scale(1.2); }
+      }
+      
+      @keyframes shakeBoard {
+        0% { transform: translate(0, 0) rotate(0); }
+        10% { transform: translate(-1px, -2px) rotate(-1deg); }
+        20% { transform: translate(2px, 0) rotate(1deg); }
+        30% { transform: translate(-2px, 2px) rotate(0); }
+        40% { transform: translate(1px, -1px) rotate(1deg); }
+        50% { transform: translate(-1px, 2px) rotate(-1deg); }
+        60% { transform: translate(-2px, 1px) rotate(0); }
+        70% { transform: translate(2px, 1px) rotate(-1deg); }
+        80% { transform: translate(-1px, -1px) rotate(1deg); }
+        90% { transform: translate(1px, 2px) rotate(0); }
+        100% { transform: translate(0, 0) rotate(0); }
+      }
+      
+      .shaking-board {
+        animation: shakeBoard 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        animation-iteration-count: 3;
+      }
+    `;
+    // Add to head
+    document.head.appendChild(styleEl);
+    
+    // Cleanup
+    return () => {
+      document.head.removeChild(styleEl);
+    };
+  }, []);
+
+  // Array of stones for the game board
   const stones = [
     { number: 29, row: 1, index: 0 },
     { number: 40, row: 1, index: 1 },
@@ -129,23 +166,24 @@ export default function DemoPage() {
     { number: 10, row: 6, index: 10 },
   ];
 
-  // Handle stone click to trigger rolling animation with sound effect
+  // Handle stone click to trigger rolling animation
   const handleStoneClick = (index: number, stoneNumber: number) => {
     if (rollingStoneIndex !== null) return; // Prevent clicking while rolling is in progress
     
-    // Play rolling sound
+    // Attempt to play sound if available
     try {
       const audio = new Audio();
-      audio.src = '/rolling-dice.mp3'; // Fallback to a silent operation if sound doesn't exist
+      audio.src = '/rolling-dice.mp3';
       audio.volume = 0.3;
       audio.play().catch(() => console.log('Audio playback failed'));
     } catch (e) {
       console.log('Audio not supported');
     }
     
+    // Set the stone as rolling
     setRollingStoneIndex(index);
     
-    // Simulate rolling animation for 3 seconds, with a "shaking" board effect
+    // Add shaking effect to the board
     const board = document.getElementById('demo-game-board');
     if (board) {
       board.classList.add('shaking-board');
@@ -155,21 +193,14 @@ export default function DemoPage() {
       }, 2500);
     }
     
+    // End the animation after 3 seconds
     setTimeout(() => {
       setRollingStoneIndex(null);
       setSelectedStone(stoneNumber);
     }, 3000);
   };
 
-  // Reset animation state when navigating away
-  useEffect(() => {
-    return () => {
-      setRollingStoneIndex(null);
-      setSelectedStone(null);
-    };
-  }, []);
-
-  // No longer redirecting - this is a public demo page
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -179,12 +210,12 @@ export default function DemoPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Use a simplified header for demo mode */}
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Header */}
       <header className="bg-primary text-white py-4 shadow-md">
         <div className="container mx-auto px-4 flex justify-between items-center">
           <div className="flex items-center">
-            <h1 className="text-2xl font-bold font-sans">Big Boys Game</h1>
+            <h1 className="text-2xl font-bold">Big Boys Game</h1>
             <span className="ml-2 px-2 py-1 bg-secondary text-primary text-xs font-bold rounded-full">DEMO</span>
           </div>
           <Button 
@@ -196,6 +227,7 @@ export default function DemoPage() {
         </div>
       </header>
       
+      {/* Main content */}
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="mb-6 flex justify-between items-center">
           <div>
@@ -211,6 +243,7 @@ export default function DemoPage() {
           </Button>
         </div>
         
+        {/* Game board container */}
         <div className="w-full max-w-3xl mx-auto my-8 bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="bg-primary p-4 text-white">
             <h2 className="text-xl font-bold text-center">Big Boys Game Board Demo</h2>
@@ -222,11 +255,15 @@ export default function DemoPage() {
           </div>
           
           <div className="p-6">
-            <div id="demo-game-board" className="relative" style={{ backgroundColor: 'hsl(var(--primary-light))', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', border: '2px solid rgb(31, 41, 55)' }}>
-              {/* Game Title */}
-              <h3 className="text-center text-white text-2xl font-sans font-bold mb-4">BIG BOYS GAME</h3>
+            {/* Game board with stones */}
+            <div 
+              id="demo-game-board" 
+              className="relative p-4 rounded-lg mb-6" 
+              style={{ backgroundColor: 'hsl(var(--primary-light))', border: '2px solid rgb(31, 41, 55)' }}
+            >
+              <h3 className="text-center text-white text-2xl font-bold mb-4">BIG BOYS GAME</h3>
               
-              {/* Curved Arrow at top-right (matching the physical board) */}
+              {/* Arrow pointing to start */}
               <div className="absolute top-8 right-16 text-white">
                 <svg viewBox="0 0 48 48" width="60" height="60" stroke="currentColor" strokeWidth="2" fill="none">
                   <path d="M30 10 C 40 15, 45 25, 40 35" strokeWidth="3" strokeLinecap="round" />
@@ -234,8 +271,8 @@ export default function DemoPage() {
                 </svg>
               </div>
               
-              {/* START label - positioned on the right side like the physical board */}
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-transparent text-white p-1 font-bold text-lg rotate-90">
+              {/* START label */}
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-1 font-bold text-lg rotate-90">
                 START
               </div>
 
@@ -244,7 +281,7 @@ export default function DemoPage() {
                 <div key={`row-${row}`} className="flex justify-between mb-4">
                   {stones
                     .filter(stone => stone.row === row)
-                    .map((stone, idx) => (
+                    .map((stone) => (
                       <DemoStone 
                         key={`stone-${stone.row}-${stone.index}`}
                         number={stone.number}
@@ -264,12 +301,12 @@ export default function DemoPage() {
                 <div key={`row-${row}`} className="flex justify-between mb-4">
                   {smallStones
                     .filter(stone => stone.row === row)
-                    .map((stone, idx) => (
+                    .map((stone) => (
                       <DemoStone 
                         key={`small-stone-${stone.row}-${stone.index}`}
                         number={stone.number}
                         size="sm"
-                        isRolling={rollingStoneIndex === 100 + stone.index} // Offset to avoid collision with main stones
+                        isRolling={rollingStoneIndex === 100 + stone.index}
                         onClick={() => handleStoneClick(100 + stone.index, stone.number)}
                       />
                     ))
@@ -283,11 +320,16 @@ export default function DemoPage() {
               </div>
             </div>
             
-            <div style={{ backgroundColor: 'hsl(var(--primary-light))', padding: '0.75rem', borderRadius: '0.5rem', textAlign: 'center', marginBottom: '1.5rem' }}>
+            {/* Money display */}
+            <div 
+              className="p-3 rounded-lg mb-6 text-center" 
+              style={{ backgroundColor: 'hsl(var(--primary-light))' }}
+            >
               <h4 className="text-white text-sm uppercase tracking-wider mb-1">MONEY IN THE BANK</h4>
-              <p style={{ color: 'hsl(var(--secondary))', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.875rem' }}>₦95,000</p>
+              <p className="text-secondary font-mono font-bold text-3xl">₦95,000</p>
             </div>
             
+            {/* Call to action */}
             <div className="text-center mt-8">
               <p className="text-gray-600 text-sm mb-2">This is an interactive demo of the Big Boys Game board layout.</p>
               <p className="text-gray-600 text-sm mb-6">Click any stone to see it roll!</p>
@@ -304,10 +346,11 @@ export default function DemoPage() {
                   onClick={() => setLocation('/auth')} 
                   className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
                 >
-                  Create Demo Account
+                  Create Account
                 </Button>
               </div>
               
+              {/* Demo game promo */}
               <div className="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
                 <h3 className="text-xl font-bold mb-3">Create a Demo Game</h3>
                 <p className="text-gray-600 text-sm mb-4">Experience the full game with these demo features:</p>
