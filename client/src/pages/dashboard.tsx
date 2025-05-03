@@ -51,7 +51,7 @@ export default function Dashboard() {
 
   // Fetch current user
   const { data: user, isLoading: isUserLoading } = useQuery<User>({
-    queryKey: ["/api/auth/me"],
+    queryKey: ["/api/user"],
   });
 
   // Fetch user's active games

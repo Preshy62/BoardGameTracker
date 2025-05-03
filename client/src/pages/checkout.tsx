@@ -164,7 +164,7 @@ export default function Checkout({ amount }: CheckoutProps) {
   
   // Fetch current user
   const { data: user } = useQuery<User>({
-    queryKey: ['/api/auth/me'],
+    queryKey: ['/api/user'],
   });
   
   useEffect(() => {

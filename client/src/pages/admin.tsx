@@ -53,7 +53,7 @@ export default function Admin() {
 
   // Fetch current admin user
   const { data: user, isLoading: isUserLoading } = useQuery<User>({
-    queryKey: ["/api/auth/me"],
+    queryKey: ["/api/user"],
   });
 
   // Fetch all users (admin only endpoint)
