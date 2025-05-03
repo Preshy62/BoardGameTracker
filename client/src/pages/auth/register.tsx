@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { 
   Card, 
   CardContent, 
@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { apiRequest } from "@/lib/queryClient";
 import { getInitials } from "@/lib/utils";
 
 const registerSchema = z.object({
@@ -38,9 +37,15 @@ const registerSchema = z.object({
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function Register() {
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const { user, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -52,46 +57,15 @@ export default function Register() {
     },
   });
 
-  const onSubmit = async (data: RegisterFormValues) => {
-    setIsLoading(true);
+  const onSubmit = (data: RegisterFormValues) => {
+    // Calculate initials from username
+    const avatarInitials = getInitials(data.username);
     
-    try {
-      // Calculate initials from username
-      const avatarInitials = getInitials(data.username);
-      
-      // Register request
-      const registerData = {
-        username: data.username,
-        email: data.email,
-        password: data.password,
-        avatarInitials
-      };
-      
-      await apiRequest("POST", "/api/auth/register", registerData);
-      
-      toast({
-        title: "Registration Successful",
-        description: "Welcome to Big Boys Game!",
-      });
-      
-      // Auto login after registration
-      await apiRequest("POST", "/api/auth/login", {
-        username: data.username,
-        password: data.password,
-      });
-      
-      setLocation("/");
-    } catch (error) {
-      toast({
-        title: "Registration Failed",
-        description: error instanceof Error 
-          ? error.message 
-          : "An error occurred during registration",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    // Register request with all needed data
+    registerMutation.mutate({
+      ...data,
+      avatarInitials
+    });
   };
 
   return (
@@ -173,9 +147,9 @@ export default function Register() {
                 <Button 
                   type="submit" 
                   className="w-full bg-secondary hover:bg-secondary-dark text-primary font-bold"
-                  disabled={isLoading}
+                  disabled={registerMutation.isPending}
                 >
-                  {isLoading ? (
+                  {registerMutation.isPending ? (
                     <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full mr-2" />
                   ) : null}
                   Create Account

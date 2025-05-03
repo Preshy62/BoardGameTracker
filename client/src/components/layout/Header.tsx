@@ -1,28 +1,21 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import WalletButton from "../WalletButton";
 import ProfileButton from "../ProfileButton";
 import { User } from "@shared/schema";
 import { Home, LayoutDashboard, LogOut, Wallet, User as UserIcon, Shield } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 interface HeaderProps {
   user: User;
 }
 
 const Header = ({ user }: HeaderProps) => {
-  const [, setLocation] = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { logoutMutation } = useAuth();
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      });
-      setLocation('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+  const handleLogout = () => {
+    logoutMutation.mutate();
   };
 
   return (

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,17 +12,13 @@ import Header from "@/components/layout/Header";
 import GameLobbyModal from "@/components/modals/GameLobbyModal";
 import { formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
-import { Game, User } from "@shared/schema";
+import { Game } from "@shared/schema";
 
 export default function Home() {
   const [isLobbyModalOpen, setIsLobbyModalOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-
-  // Fetch current user
-  const { data: user, isLoading: isUserLoading } = useQuery<User>({
-    queryKey: ['/api/auth/me'],
-  });
+  const { user, isLoading: isUserLoading } = useAuth();
 
   // Redirect if not logged in
   useEffect(() => {
