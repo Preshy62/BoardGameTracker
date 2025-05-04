@@ -227,31 +227,13 @@ export default function DemoPage() {
   const [targetStoneId, setTargetStoneId] = useState<string | null>(null);
   const diceRef = useRef<HTMLDivElement>(null);
   
-  // Simple function to handle rolling dice across the board
+  // Very simple function to handle rolling dice across the board
   const handleRollDice = () => {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
+    console.log('Rolling dice...');
     setIsRolling(true);
     setSelectedStone(null);
-    
-    // Add shaking effect to the board
-    const board = document.getElementById('demo-game-board');
-    if (board) {
-      board.classList.add('shaking-board');
-      setTimeout(() => {
-        board.classList.remove('shaking-board');
-      }, 1000);
-    }
-    
-    // Play sound
-    try {
-      const audio = new Audio();
-      audio.src = '/rolling-dice.mp3';
-      audio.volume = 0.3;
-      audio.play().catch(e => console.log('Audio failed:', e));
-    } catch (e) {
-      console.log('Audio not supported');
-    }
     
     // Get combined array of all stones
     const allStones = [...stones, ...smallStones];
@@ -259,46 +241,54 @@ export default function DemoPage() {
     // Select random stone to land on
     const randomIndex = Math.floor(Math.random() * allStones.length);
     const targetStone = allStones[randomIndex];
+    console.log('Selected stone:', targetStone);
     
     // For proper index identification
     const actualIndex = targetStone.row <= 4 
       ? targetStone.index 
       : 100 + targetStone.index;
     
-    // Set up dice initial position (top right corner)
-    setDicePosition({ top: 40, left: "calc(100% - 60px)" });
-    
-    // Define waypoints for the dice to follow (zigzag across board)
-    const waypoints = [
-      { top: "20%", left: "30%" },
-      { top: "50%", left: "70%" },
-      { top: "70%", left: "40%" },
-      { top: "40%", left: "80%" },
-      { top: "60%", left: "20%" },
-      { top: "30%", left: "50%" }
+    // Simple fixed positions for easy debugging
+    const fixedPositions = [
+      { top: 50, left: 50 },
+      { top: 100, left: 200 },
+      { top: 200, left: 100 },
+      { top: 100, left: 300 }
     ];
     
-    // Animate through waypoints
-    let currentPoint = 0;
+    // Start the dice at the first position
+    setDicePosition(fixedPositions[0]);
+    console.log('Starting dice at position:', fixedPositions[0]);
     
-    const moveInterval = setInterval(() => {
-      if (currentPoint < waypoints.length) {
-        setDicePosition(waypoints[currentPoint]);
-        currentPoint++;
-      } else {
-        clearInterval(moveInterval);
+    // Move through the positions with a simple delay
+    setTimeout(() => {
+      setDicePosition(fixedPositions[1]);
+      console.log('Moving dice to position 2:', fixedPositions[1]);
+      
+      setTimeout(() => {
+        setDicePosition(fixedPositions[2]);
+        console.log('Moving dice to position 3:', fixedPositions[2]);
         
-        // When we reach the end, trigger stone animation
-        setRollingStoneIndex(actualIndex);
-        
-        // Wait and show result
         setTimeout(() => {
-          setRollingStoneIndex(null);
-          setSelectedStone(targetStone.number);
-          setIsRolling(false);
-        }, 2000);
-      }
-    }, 300);
+          setDicePosition(fixedPositions[3]);
+          console.log('Moving dice to position 4:', fixedPositions[3]);
+          
+          // After the last position, trigger the stone animation
+          setTimeout(() => {
+            console.log('Triggering stone animation for index:', actualIndex);
+            setRollingStoneIndex(actualIndex);
+            
+            // Finally, show the result
+            setTimeout(() => {
+              setRollingStoneIndex(null);
+              setSelectedStone(targetStone.number);
+              setIsRolling(false);
+              console.log('Animation complete, selected stone:', targetStone.number);
+            }, 2000);
+          }, 500);
+        }, 500);
+      }, 500);
+    }, 500);
   };
   
   // Handle stone click for individual stone animation
@@ -452,52 +442,29 @@ export default function DemoPage() {
               {isRolling && (
                 <div 
                   ref={diceRef}
-                  className="rolling-dice dice-roll"
                   style={{
                     position: 'absolute',
                     top: dicePosition.top,
                     left: dicePosition.left,
-                    width: '60px',
-                    height: '60px',
-                    backgroundColor: 'white',
-                    borderRadius: '10px',
+                    width: '80px',  // Larger size
+                    height: '80px', // Larger size
+                    backgroundColor: '#FF0000', // Bright red
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: 'bold',
-                    fontSize: '24px',
-                    color: '#000',
-                    boxShadow: '0 0 25px 10px rgba(255, 193, 7, 0.9)',
-                    transition: 'top 0.3s ease, left 0.3s ease',
+                    fontSize: '36px', // Larger text
+                    color: 'white',
+                    boxShadow: '0 0 40px 20px rgba(255, 0, 0, 0.8)', // Stronger glow
+                    transition: 'top 0.5s ease, left 0.5s ease', // Slower for visibility
                     pointerEvents: 'none',
-                    zIndex: 999,
-                    border: '2px solid #FFC107',
-                    perspective: '800px'
+                    zIndex: 9999,
+                    border: '4px solid white',
+                    borderRadius: '50%',
+                    transform: 'rotate(0deg)' // No rotation initially
                   }}
                 >
-                  {/* Main dice face - side 6 */}
-                  <div className="dice-face" style={{
-                    width: '100%',
-                    height: '100%',
-                    position: 'relative',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gridTemplateRows: 'repeat(3, 1fr)',
-                    padding: '5px',
-                    boxSizing: 'border-box'
-                  }}>
-                    <span style={{ height: '10px', width: '10px', backgroundColor: 'red', borderRadius: '50%', margin: 'auto' }}></span>
-                    <span style={{ visibility: 'hidden' }}></span>
-                    <span style={{ height: '10px', width: '10px', backgroundColor: 'red', borderRadius: '50%', margin: 'auto' }}></span>
-                    
-                    <span style={{ visibility: 'hidden' }}></span>
-                    <span style={{ height: '10px', width: '10px', backgroundColor: 'red', borderRadius: '50%', margin: 'auto' }}></span>
-                    <span style={{ visibility: 'hidden' }}></span>
-                    
-                    <span style={{ height: '10px', width: '10px', backgroundColor: 'red', borderRadius: '50%', margin: 'auto' }}></span>
-                    <span style={{ visibility: 'hidden' }}></span>
-                    <span style={{ height: '10px', width: '10px', backgroundColor: 'red', borderRadius: '50%', margin: 'auto' }}></span>
-                  </div>
+                  DICE
                 </div>
               )}
             </div>
