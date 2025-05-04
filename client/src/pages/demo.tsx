@@ -127,11 +127,12 @@ const DemoStone = ({
 // Demo Board Page
 export default function DemoPage() {
   const { user, isLoading } = useAuth();
+  const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [rollingStoneIndex, setRollingStoneIndex] = useState<number | null>(null);
   const [selectedStone, setSelectedStone] = useState<number | null>(null);
 
-  // Define CSS keyframes for spinning animation
+  // Define CSS keyframes for animations
   useEffect(() => {
     // Create a style element
     const styleEl = document.createElement('style');
@@ -149,6 +150,21 @@ export default function DemoPage() {
         80% { transform: translate(-1px, -1px) rotate(1deg); }
         90% { transform: translate(1px, 2px) rotate(0); }
         100% { transform: translate(0, 0) rotate(0); }
+      }
+      
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.9; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      
+      .dice-animation-active .dice-element {
+        animation: pulse 0.5s infinite alternate, spin 2s linear infinite;
       }
       
       .shaking-board {
@@ -229,7 +245,6 @@ export default function DemoPage() {
   const diceRef = useRef<HTMLDivElement>(null);
   
   // Very simple function to handle rolling dice across the board
-  const { toast } = useToast();
   const handleRollDice = () => {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
@@ -250,43 +265,47 @@ export default function DemoPage() {
       ? targetStone.index 
       : 100 + targetStone.index;
     
-    // Using hardcoded screen center positions to ensure visibility
-    // First position the dice at the start position (top right of the board)
-    setDicePosition({ top: 80, left: window.innerWidth / 2 - 150 });
-    console.log('Starting dice at top right');
+    // Position the dice in the middle of the screen - guaranteed to be visible
+    const middleX = window.innerWidth / 2 - 60; // Half of dice width (120px)
+    const middleY = window.innerHeight / 2 - 60; // Half of dice height (120px)
+    setDicePosition({ top: middleY, left: middleX });
+    console.log('Positioning dice in middle of screen');
     
     // Flash a message to show dice is visible
     toast({
       title: "DICE IS ROLLING",
-      description: "Watch the bright red dice move!",
+      description: "Look at the bright red dice in the middle of your screen!",
     });
     
-    // Simple animation through center of screen with fixed positions
+    // Keep the dice centered but shake/spin it to attract attention
+    document.body.classList.add('dice-animation-active');
+    
+    // After the animation period, trigger the stone highlight
     setTimeout(() => {
-      // Move to center of screen
-      setDicePosition({ top: window.innerHeight / 2 - 40, left: window.innerWidth / 2 - 40 });
-      console.log('Moving dice to center of screen');
+      console.log('Triggering stone animation for index:', actualIndex);
+      setRollingStoneIndex(actualIndex);
       
+      // Finally, show the result
       setTimeout(() => {
-        // Finally move to the bottom
-        setDicePosition({ top: window.innerHeight / 2 + 100, left: window.innerWidth / 2 });
-        console.log('Moving dice to bottom');
+        setRollingStoneIndex(null);
+        setSelectedStone(targetStone.number);
+        setIsRolling(false);
+        document.body.classList.remove('dice-animation-active');
+        console.log('Animation complete, selected stone:', targetStone.number);
         
-        // After the last position, trigger the stone animation
-        setTimeout(() => {
-          console.log('Triggering stone animation for index:', actualIndex);
-          setRollingStoneIndex(actualIndex);
-          
-          // Finally, show the result
-          setTimeout(() => {
-            setRollingStoneIndex(null);
-            setSelectedStone(targetStone.number);
-            setIsRolling(false);
-            console.log('Animation complete, selected stone:', targetStone.number);
-          }, 2000);
-        }, 500);
-      }, 1000);
-    }, 1000);
+        // Check if the stone has special properties
+        const isSpecial = 'isSpecial' in targetStone && targetStone.isSpecial;
+        const isSuper = 'isSuper' in targetStone && targetStone.isSuper;
+        
+        // Show toast with result
+        toast({
+          title: "You Rolled: " + targetStone.number,
+          description: isSpecial ? "You hit a special stone!" : 
+                       isSuper ? "You hit a super stone!" : 
+                       "Good roll!",
+        });
+      }, 2000);
+    }, 3000);
   };
   
   // Handle stone click for individual stone animation
@@ -436,30 +455,30 @@ export default function DemoPage() {
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
               
-              {/* The rolling ball is positioned absolutely within the game board */}
+              {/* The rolling ball is positioned fixed relative to the viewport for maximum visibility */}
               {isRolling && (
                 <div 
                   ref={diceRef}
+                  className="dice-element"
                   style={{
-                    position: 'absolute',
+                    position: 'fixed', // Fixed to viewport instead of absolute
                     top: dicePosition.top,
                     left: dicePosition.left,
-                    width: '80px',  // Larger size
-                    height: '80px', // Larger size
+                    width: '120px',  // Much larger size
+                    height: '120px', // Much larger size
                     backgroundColor: '#FF0000', // Bright red
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: 'bold',
-                    fontSize: '36px', // Larger text
+                    fontSize: '48px', // Even larger text
                     color: 'white',
-                    boxShadow: '0 0 40px 20px rgba(255, 0, 0, 0.8)', // Stronger glow
-                    transition: 'top 0.5s ease, left 0.5s ease', // Slower for visibility
+                    boxShadow: '0 0 60px 30px rgba(255, 0, 0, 0.8)', // Stronger glow
+                    transition: 'top 0.8s ease, left 0.8s ease', // Slower for visibility
                     pointerEvents: 'none',
                     zIndex: 9999,
-                    border: '4px solid white',
+                    border: '6px solid white',
                     borderRadius: '50%',
-                    transform: 'rotate(0deg)' // No rotation initially
                   }}
                 >
                   DICE
