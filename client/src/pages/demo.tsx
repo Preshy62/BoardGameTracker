@@ -227,40 +227,21 @@ export default function DemoPage() {
   const [targetStoneId, setTargetStoneId] = useState<string | null>(null);
   const diceRef = useRef<HTMLDivElement>(null);
   
-  // Helper to get stone position on the board
-  const getStonePosition = (stoneId: string): { top: number, left: number } | null => {
-    const stoneElement = document.getElementById(stoneId);
-    if (!stoneElement) return null;
-    
-    const board = document.getElementById('demo-game-board');
-    if (!board) return null;
-    
-    const boardRect = board.getBoundingClientRect();
-    const stoneRect = stoneElement.getBoundingClientRect();
-    
-    return {
-      top: stoneRect.top - boardRect.top + (stoneRect.height / 2) - 25, // Center of the stone minus half the ball size
-      left: stoneRect.left - boardRect.left + (stoneRect.width / 2) - 25 // Center of the stone minus half the ball size
-    };
-  };
-  
-  // Function to handle rolling the ball across the board
+  // Simple function to handle rolling dice across the board
   const handleRollDice = () => {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
     setIsRolling(true);
     setSelectedStone(null);
-    setCurrentPathIndex(0);
-    
-    // Create animation path across the board
-    const board = document.getElementById('demo-game-board');
-    if (!board) return;
     
     // Add shaking effect to the board
-    board.classList.add('shaking-board');
-    setTimeout(() => {
-      board.classList.remove('shaking-board');
-    }, 1500);
+    const board = document.getElementById('demo-game-board');
+    if (board) {
+      board.classList.add('shaking-board');
+      setTimeout(() => {
+        board.classList.remove('shaking-board');
+      }, 1000);
+    }
     
     // Play sound
     try {
@@ -272,110 +253,52 @@ export default function DemoPage() {
       console.log('Audio not supported');
     }
     
-    // Generate a random path for the ball to follow
-    const generatePath = () => {
-      // Get combined array of all stones
-      const allStones = [...stones, ...smallStones];
-      
-      // Select random stone to land on
-      const randomIndex = Math.floor(Math.random() * allStones.length);
-      const targetStone = allStones[randomIndex];
-      
-      // For proper index identification
-      const actualIndex = targetStone.row <= 4 
-        ? targetStone.index 
-        : 100 + targetStone.index;
-        
-      // Get the stone ID
-      const targetStoneId = targetStone.row <= 4 
-        ? `stone-${targetStone.index}` 
-        : `small-stone-${targetStone.index}`;
-      
-      setTargetStoneId(targetStoneId);
-      
-      // Create 10-15 random positions for the ball to travel through
-      const boardWidth = board.offsetWidth;
-      const boardHeight = board.offsetHeight;
-      const pathLength = 10 + Math.floor(Math.random() * 5); // 10-15 points
-      
-      const path: Array<{top: number, left: number}> = [];
-      
-      // Starting position near top right (where the arrow is pointing to START)
-      path.push({ top: 50, left: boardWidth - 100 });
-      
-      // Generate random points across the board
-      for (let i = 0; i < pathLength - 2; i++) {
-        path.push({
-          top: 50 + Math.random() * (boardHeight - 100),
-          left: 50 + Math.random() * (boardWidth - 100)
-        });
-      }
-      
-      // Get the final target position (the selected stone)
-      const finalPosition = getStonePosition(targetStoneId);
-      if (finalPosition) {
-        // Add the final position
-        path.push(finalPosition);
+    // Get combined array of all stones
+    const allStones = [...stones, ...smallStones];
+    
+    // Select random stone to land on
+    const randomIndex = Math.floor(Math.random() * allStones.length);
+    const targetStone = allStones[randomIndex];
+    
+    // For proper index identification
+    const actualIndex = targetStone.row <= 4 
+      ? targetStone.index 
+      : 100 + targetStone.index;
+    
+    // Set up dice initial position (top right corner)
+    setDicePosition({ top: 40, left: "calc(100% - 60px)" });
+    
+    // Define waypoints for the dice to follow (zigzag across board)
+    const waypoints = [
+      { top: "20%", left: "30%" },
+      { top: "50%", left: "70%" },
+      { top: "70%", left: "40%" },
+      { top: "40%", left: "80%" },
+      { top: "60%", left: "20%" },
+      { top: "30%", left: "50%" }
+    ];
+    
+    // Animate through waypoints
+    let currentPoint = 0;
+    
+    const moveInterval = setInterval(() => {
+      if (currentPoint < waypoints.length) {
+        setDicePosition(waypoints[currentPoint]);
+        currentPoint++;
       } else {
-        // Fallback if stone position can't be determined
-        path.push({
-          top: 100 + Math.random() * (boardHeight - 200),
-          left: 100 + Math.random() * (boardWidth - 200)
-        });
+        clearInterval(moveInterval);
+        
+        // When we reach the end, trigger stone animation
+        setRollingStoneIndex(actualIndex);
+        
+        // Wait and show result
+        setTimeout(() => {
+          setRollingStoneIndex(null);
+          setSelectedStone(targetStone.number);
+          setIsRolling(false);
+        }, 2000);
       }
-      
-      setDicePath(path);
-      
-      // Initial position
-      if (path.length > 0) {
-        setDicePosition(path[0]);
-      }
-      
-      // For the stone landing animation
-      const landingIndex = actualIndex;
-      
-      // Start the animation
-      animateAlongPath(path, landingIndex);
-    };
-    
-    // Animate the ball along the path
-    const animateAlongPath = (path: Array<{top: number, left: number}>, landingStoneIndex: number) => {
-      let pathIndex = 0;
-      
-      const moveInterval = setInterval(() => {
-        if (pathIndex < path.length - 1) {
-          setDicePosition(path[pathIndex]);
-          setCurrentPathIndex(pathIndex);
-          pathIndex++;
-        } else {
-          clearInterval(moveInterval);
-          
-          // When we reach the final point, animate the target stone
-          setRollingStoneIndex(landingStoneIndex);
-          
-          // Set final ball position
-          if (path.length > 0) {
-            setDicePosition(path[path.length - 1]);
-          }
-          
-          // Get the target stone number
-          const targetStoneNumber = landingStoneIndex >= 100 
-            ? smallStones.find(s => s.index === landingStoneIndex - 100)?.number
-            : stones.find(s => s.index === landingStoneIndex)?.number;
-          
-          // Show the final result after animation
-          setTimeout(() => {
-            setRollingStoneIndex(null);
-            setSelectedStone(targetStoneNumber || null);
-            setIsRolling(false);
-            setTargetStoneId(null);
-          }, 2000);
-        }
-      }, 200); // Speed of movement between positions
-    };
-    
-    // Start animation after a small delay
-    setTimeout(generatePath, 100);
+    }, 300);
   };
   
   // Handle stone click for individual stone animation
@@ -529,27 +452,30 @@ export default function DemoPage() {
               {isRolling && (
                 <div 
                   ref={diceRef}
-                  className="rolling-ball ball-rotate"
+                  className="rolling-ball"
                   style={{
                     position: 'absolute',
                     top: dicePosition.top,
                     left: dicePosition.left,
-                    width: '30px',
-                    height: '30px',
+                    width: '50px',
+                    height: '50px',
                     backgroundColor: '#FFC107',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: 'bold',
-                    fontSize: '16px',
+                    fontSize: '22px',
                     color: '#000',
-                    boxShadow: '0 0 15px 5px rgba(255, 193, 7, 0.7)',
-                    transition: 'top 0.2s ease, left 0.2s ease',
+                    boxShadow: '0 0 25px 10px rgba(255, 193, 7, 0.9)',
+                    transition: 'top 0.3s ease, left 0.3s ease',
                     pointerEvents: 'none',
-                    zIndex: 999
+                    zIndex: 999,
+                    border: '3px solid #fff'
                   }}
-                />
+                >
+                  <span style={{ transform: 'rotate(45deg)' }}>⦿</span>
+                </div>
               )}
             </div>
             

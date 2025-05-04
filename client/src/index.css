@@ -90,12 +90,17 @@
 
 /* Ball rolling animation */
 .rolling-ball {
-  animation: ballRolling 0.5s infinite linear;
+  animation: ballRolling 0.3s infinite linear, ballPulse 1s infinite alternate;
 }
 
 @keyframes ballRolling {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes ballPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); }
 }
 
 /* Add ball rolling effect */
