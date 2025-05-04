@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { cn } from '@/lib/utils';
+import { useToast } from "@/hooks/use-toast";
 
 // Stone Component with React-based animation
 interface DemoStoneProps {
@@ -228,6 +229,7 @@ export default function DemoPage() {
   const diceRef = useRef<HTMLDivElement>(null);
   
   // Very simple function to handle rolling dice across the board
+  const { toast } = useToast();
   const handleRollDice = () => {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
@@ -248,47 +250,43 @@ export default function DemoPage() {
       ? targetStone.index 
       : 100 + targetStone.index;
     
-    // Simple fixed positions for easy debugging
-    const fixedPositions = [
-      { top: 50, left: 50 },
-      { top: 100, left: 200 },
-      { top: 200, left: 100 },
-      { top: 100, left: 300 }
-    ];
+    // Using hardcoded screen center positions to ensure visibility
+    // First position the dice at the start position (top right of the board)
+    setDicePosition({ top: 80, left: window.innerWidth / 2 - 150 });
+    console.log('Starting dice at top right');
     
-    // Start the dice at the first position
-    setDicePosition(fixedPositions[0]);
-    console.log('Starting dice at position:', fixedPositions[0]);
+    // Flash a message to show dice is visible
+    toast({
+      title: "DICE IS ROLLING",
+      description: "Watch the bright red dice move!",
+    });
     
-    // Move through the positions with a simple delay
+    // Simple animation through center of screen with fixed positions
     setTimeout(() => {
-      setDicePosition(fixedPositions[1]);
-      console.log('Moving dice to position 2:', fixedPositions[1]);
+      // Move to center of screen
+      setDicePosition({ top: window.innerHeight / 2 - 40, left: window.innerWidth / 2 - 40 });
+      console.log('Moving dice to center of screen');
       
       setTimeout(() => {
-        setDicePosition(fixedPositions[2]);
-        console.log('Moving dice to position 3:', fixedPositions[2]);
+        // Finally move to the bottom
+        setDicePosition({ top: window.innerHeight / 2 + 100, left: window.innerWidth / 2 });
+        console.log('Moving dice to bottom');
         
+        // After the last position, trigger the stone animation
         setTimeout(() => {
-          setDicePosition(fixedPositions[3]);
-          console.log('Moving dice to position 4:', fixedPositions[3]);
+          console.log('Triggering stone animation for index:', actualIndex);
+          setRollingStoneIndex(actualIndex);
           
-          // After the last position, trigger the stone animation
+          // Finally, show the result
           setTimeout(() => {
-            console.log('Triggering stone animation for index:', actualIndex);
-            setRollingStoneIndex(actualIndex);
-            
-            // Finally, show the result
-            setTimeout(() => {
-              setRollingStoneIndex(null);
-              setSelectedStone(targetStone.number);
-              setIsRolling(false);
-              console.log('Animation complete, selected stone:', targetStone.number);
-            }, 2000);
-          }, 500);
+            setRollingStoneIndex(null);
+            setSelectedStone(targetStone.number);
+            setIsRolling(false);
+            console.log('Animation complete, selected stone:', targetStone.number);
+          }, 2000);
         }, 500);
-      }, 500);
-    }, 500);
+      }, 1000);
+    }, 1000);
   };
   
   // Handle stone click for individual stone animation
