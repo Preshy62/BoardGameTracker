@@ -219,23 +219,42 @@ export default function DemoPage() {
     { number: 10, row: 6, index: 10 },
   ];
 
-  // State for the rolling dice animation
+  // State for the rolling ball animation
   const [isRolling, setIsRolling] = useState(false);
   const [dicePosition, setDicePosition] = useState<{ top: string | number; left: string | number }>({ top: 0, left: 0 });
+  const [dicePath, setDicePath] = useState<Array<{ top: string | number; left: string | number }>>([]);
+  const [currentPathIndex, setCurrentPathIndex] = useState(0);
+  const [targetStoneId, setTargetStoneId] = useState<string | null>(null);
   const diceRef = useRef<HTMLDivElement>(null);
   
-  // Function to handle rolling the dice across the board
+  // Helper to get stone position on the board
+  const getStonePosition = (stoneId: string): { top: number, left: number } | null => {
+    const stoneElement = document.getElementById(stoneId);
+    if (!stoneElement) return null;
+    
+    const board = document.getElementById('demo-game-board');
+    if (!board) return null;
+    
+    const boardRect = board.getBoundingClientRect();
+    const stoneRect = stoneElement.getBoundingClientRect();
+    
+    return {
+      top: stoneRect.top - boardRect.top + (stoneRect.height / 2) - 25, // Center of the stone minus half the ball size
+      left: stoneRect.left - boardRect.left + (stoneRect.width / 2) - 25 // Center of the stone minus half the ball size
+    };
+  };
+  
+  // Function to handle rolling the ball across the board
   const handleRollDice = () => {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
     setIsRolling(true);
     setSelectedStone(null);
+    setCurrentPathIndex(0);
     
     // Create animation path across the board
     const board = document.getElementById('demo-game-board');
     if (!board) return;
-    
-    const boardRect = board.getBoundingClientRect();
     
     // Add shaking effect to the board
     board.classList.add('shaking-board');
@@ -253,54 +272,110 @@ export default function DemoPage() {
       console.log('Audio not supported');
     }
     
-    // Create a zigzag path for the dice
-    const animateDice = () => {
+    // Generate a random path for the ball to follow
+    const generatePath = () => {
       // Get combined array of all stones
       const allStones = [...stones, ...smallStones];
       
-      // Random zigzag positions covering the board
-      const zigzagPositions = [
-        { top: '20%', left: '20%' },
-        { top: '30%', left: '70%' },
-        { top: '60%', left: '40%' },
-        { top: '70%', left: '80%' },
-        { top: '50%', left: '10%' },
-        { top: '40%', left: '60%' },
-      ] as Array<{ top: string; left: string }>;
+      // Select random stone to land on
+      const randomIndex = Math.floor(Math.random() * allStones.length);
+      const targetStone = allStones[randomIndex];
       
-      // Animate through the path
-      let currentPosition = 0;
+      // For proper index identification
+      const actualIndex = targetStone.row <= 4 
+        ? targetStone.index 
+        : 100 + targetStone.index;
+        
+      // Get the stone ID
+      const targetStoneId = targetStone.row <= 4 
+        ? `stone-${targetStone.index}` 
+        : `small-stone-${targetStone.index}`;
+      
+      setTargetStoneId(targetStoneId);
+      
+      // Create 10-15 random positions for the ball to travel through
+      const boardWidth = board.offsetWidth;
+      const boardHeight = board.offsetHeight;
+      const pathLength = 10 + Math.floor(Math.random() * 5); // 10-15 points
+      
+      const path: Array<{top: number, left: number}> = [];
+      
+      // Starting position near top right (where the arrow is pointing to START)
+      path.push({ top: 50, left: boardWidth - 100 });
+      
+      // Generate random points across the board
+      for (let i = 0; i < pathLength - 2; i++) {
+        path.push({
+          top: 50 + Math.random() * (boardHeight - 100),
+          left: 50 + Math.random() * (boardWidth - 100)
+        });
+      }
+      
+      // Get the final target position (the selected stone)
+      const finalPosition = getStonePosition(targetStoneId);
+      if (finalPosition) {
+        // Add the final position
+        path.push(finalPosition);
+      } else {
+        // Fallback if stone position can't be determined
+        path.push({
+          top: 100 + Math.random() * (boardHeight - 200),
+          left: 100 + Math.random() * (boardWidth - 200)
+        });
+      }
+      
+      setDicePath(path);
+      
+      // Initial position
+      if (path.length > 0) {
+        setDicePosition(path[0]);
+      }
+      
+      // For the stone landing animation
+      const landingIndex = actualIndex;
+      
+      // Start the animation
+      animateAlongPath(path, landingIndex);
+    };
+    
+    // Animate the ball along the path
+    const animateAlongPath = (path: Array<{top: number, left: number}>, landingStoneIndex: number) => {
+      let pathIndex = 0;
+      
       const moveInterval = setInterval(() => {
-        if (currentPosition < zigzagPositions.length) {
-          setDicePosition(zigzagPositions[currentPosition]);
-          currentPosition++;
+        if (pathIndex < path.length - 1) {
+          setDicePosition(path[pathIndex]);
+          setCurrentPathIndex(pathIndex);
+          pathIndex++;
         } else {
           clearInterval(moveInterval);
           
-          // Select random stone to land on
-          const randomIndex = Math.floor(Math.random() * allStones.length);
-          const targetStone = allStones[randomIndex];
+          // When we reach the final point, animate the target stone
+          setRollingStoneIndex(landingStoneIndex);
           
-          // For proper index identification
-          const actualIndex = targetStone.row <= 4 
-            ? targetStone.index 
-            : 100 + targetStone.index;
+          // Set final ball position
+          if (path.length > 0) {
+            setDicePosition(path[path.length - 1]);
+          }
           
-          // Trigger landing animation
-          setRollingStoneIndex(actualIndex);
+          // Get the target stone number
+          const targetStoneNumber = landingStoneIndex >= 100 
+            ? smallStones.find(s => s.index === landingStoneIndex - 100)?.number
+            : stones.find(s => s.index === landingStoneIndex)?.number;
           
           // Show the final result after animation
           setTimeout(() => {
             setRollingStoneIndex(null);
-            setSelectedStone(targetStone.number);
+            setSelectedStone(targetStoneNumber || null);
             setIsRolling(false);
+            setTargetStoneId(null);
           }, 2000);
         }
-      }, 250); // Speed of movement between positions
+      }, 200); // Speed of movement between positions
     };
     
     // Start animation after a small delay
-    setTimeout(animateDice, 100);
+    setTimeout(generatePath, 100);
   };
   
   // Handle stone click for individual stone animation
@@ -387,8 +462,8 @@ export default function DemoPage() {
             {/* Game board with stones */}
             <div 
               id="demo-game-board" 
-              className="relative p-4 rounded-lg mb-6" 
-              style={{ backgroundColor: '#0F172A', border: '2px solid #FFC107' }}
+              className="relative p-4 rounded-lg mb-6 overflow-hidden" 
+              style={{ backgroundColor: '#0F172A', border: '2px solid #FFC107', position: 'relative' }}
             >
               <h3 className="text-center text-white text-2xl font-bold mb-4">BIG BOYS GAME</h3>
               
@@ -449,6 +524,33 @@ export default function DemoPage() {
               <div className="border-t-2 border-yellow-600 mt-4 pt-2 text-center">
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
+              
+              {/* The rolling ball is positioned absolutely within the game board */}
+              {isRolling && (
+                <div 
+                  ref={diceRef}
+                  className="rolling-ball ball-rotate"
+                  style={{
+                    position: 'absolute',
+                    top: dicePosition.top,
+                    left: dicePosition.left,
+                    width: '30px',
+                    height: '30px',
+                    backgroundColor: '#FFC107',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '16px',
+                    color: '#000',
+                    boxShadow: '0 0 15px 5px rgba(255, 193, 7, 0.7)',
+                    transition: 'top 0.2s ease, left 0.2s ease',
+                    pointerEvents: 'none',
+                    zIndex: 999
+                  }}
+                />
+              )}
             </div>
             
             {/* Money display and game action */}
@@ -483,38 +585,7 @@ export default function DemoPage() {
               </div>
             </div>
             
-            {/* Game board container - need to make it relative for dice positioning */}
-            <div className="relative"> 
-              {/* The rolling dice element - positioned absolutely within the game board container */}
-              {isRolling && (
-                <div 
-                  ref={diceRef}
-                  className="absolute z-50 animate-pulse"
-                  style={{
-                    top: dicePosition.top,
-                    left: dicePosition.left,
-                    width: '50px',
-                    height: '50px',
-                    backgroundColor: '#FFC107',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '20px',
-                    color: '#000',
-                    boxShadow: '0 0 15px 5px rgba(255, 193, 7, 0.7)',
-                    transform: 'rotate(45deg)',
-                    transition: 'top 0.3s ease, left 0.3s ease',
-                    pointerEvents: 'none'
-                  }}
-                >
-                  <div className="dice-face">
-                    <span>?</span>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* This is where the rolling ball element was - moved inside the game board */}
             
             {/* Call to action */}
             <div className="text-center mt-8">

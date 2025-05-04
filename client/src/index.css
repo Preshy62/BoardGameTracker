@@ -88,6 +88,26 @@
   position: relative;
 }
 
+/* Ball rolling animation */
+.rolling-ball {
+  animation: ballRolling 0.5s infinite linear;
+}
+
+@keyframes ballRolling {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Add ball rolling effect */
+.ball-rotate {
+  animation: ballRotate 0.5s linear infinite;
+}
+
+@keyframes ballRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .rolling-dice::before {
   content: '';
   position: absolute;
