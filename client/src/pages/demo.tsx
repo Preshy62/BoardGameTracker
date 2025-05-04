@@ -452,29 +452,52 @@ export default function DemoPage() {
               {isRolling && (
                 <div 
                   ref={diceRef}
-                  className="rolling-ball"
+                  className="rolling-dice dice-roll"
                   style={{
                     position: 'absolute',
                     top: dicePosition.top,
                     left: dicePosition.left,
-                    width: '50px',
-                    height: '50px',
-                    backgroundColor: '#FFC107',
-                    borderRadius: '50%',
+                    width: '60px',
+                    height: '60px',
+                    backgroundColor: 'white',
+                    borderRadius: '10px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: 'bold',
-                    fontSize: '22px',
+                    fontSize: '24px',
                     color: '#000',
                     boxShadow: '0 0 25px 10px rgba(255, 193, 7, 0.9)',
                     transition: 'top 0.3s ease, left 0.3s ease',
                     pointerEvents: 'none',
                     zIndex: 999,
-                    border: '3px solid #fff'
+                    border: '2px solid #FFC107',
+                    perspective: '800px'
                   }}
                 >
-                  <span style={{ transform: 'rotate(45deg)' }}>⦿</span>
+                  {/* Main dice face - side 6 */}
+                  <div className="dice-face" style={{
+                    width: '100%',
+                    height: '100%',
+                    position: 'relative',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gridTemplateRows: 'repeat(3, 1fr)',
+                    padding: '5px',
+                    boxSizing: 'border-box'
+                  }}>
+                    <span style={{ height: '10px', width: '10px', backgroundColor: 'red', borderRadius: '50%', margin: 'auto' }}></span>
+                    <span style={{ visibility: 'hidden' }}></span>
+                    <span style={{ height: '10px', width: '10px', backgroundColor: 'red', borderRadius: '50%', margin: 'auto' }}></span>
+                    
+                    <span style={{ visibility: 'hidden' }}></span>
+                    <span style={{ height: '10px', width: '10px', backgroundColor: 'red', borderRadius: '50%', margin: 'auto' }}></span>
+                    <span style={{ visibility: 'hidden' }}></span>
+                    
+                    <span style={{ height: '10px', width: '10px', backgroundColor: 'red', borderRadius: '50%', margin: 'auto' }}></span>
+                    <span style={{ visibility: 'hidden' }}></span>
+                    <span style={{ height: '10px', width: '10px', backgroundColor: 'red', borderRadius: '50%', margin: 'auto' }}></span>
+                  </div>
                 </div>
               )}
             </div>
