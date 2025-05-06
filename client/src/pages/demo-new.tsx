@@ -272,7 +272,7 @@ export default function DemoPage() {
     }, 500); // Short delay to ensure elements are rendered
   }, []);
 
-  // Function to move the dice along the calculated path
+  // Simplified dice movement function
   const moveDiceAlongPath = useCallback((currentIdx: number, targetIdx: number | null, finalStoneIndex: number | null) => {
     console.log('Moving dice along path', { currentIdx, targetIdx, finalStoneIndex });
     
@@ -283,18 +283,17 @@ export default function DemoPage() {
     
     // Clear any existing timeout
     if (rollTimer) {
-      console.log('Clearing existing timeout');
       clearTimeout(rollTimer);
     }
     
+    // Ensure we have a path to follow
     if (boardPath.length === 0) {
-      console.error('No board path defined, creating emergency path');
-      // Create emergency path with all stone indices
-      const emergencyPath: number[] = [];
-      stones.forEach((stone, idx) => emergencyPath.push(idx));
-      setBoardPath(emergencyPath);
-      console.log('Created emergency path with', emergencyPath.length, 'elements');
-      // Force a small delay and retry
+      console.log('Creating simple path through all stones');
+      const newPath: number[] = [];
+      stones.forEach((stone, idx) => newPath.push(idx));
+      setBoardPath(newPath);
+      
+      // Try again after the path is set
       setTimeout(() => moveDiceAlongPath(currentIdx, targetIdx, finalStoneIndex), 100);
       return;
     }
@@ -445,63 +444,38 @@ export default function DemoPage() {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
     console.log('Starting dice roll animation');
-    console.log('Board path length:', boardPath.length);
-    console.log('Current stones:', stones.length);
     
-    // Force initialization of path if it's empty
-    if (boardPath.length === 0) {
-      console.log('Board path is empty, initializing');
-      const newPath: number[] = [];
-      for (let i = 0; i < stones.length; i++) {
-        newPath.push(i);
-      }
-      setBoardPath(newPath);
-      console.log('Created emergency board path with', newPath.length, 'stones');
+    // Create a simple dice path that goes through all stones in order
+    // This is easier to visualize than random jumping
+    const simplePath: number[] = [];
+    
+    // Add all stones in order for a predictable path 
+    for (let i = 0; i < stones.length; i++) {
+      simplePath.push(i);
     }
+    
+    // Update our path for the roll
+    setBoardPath(simplePath);
+    console.log('Created simple path with', simplePath.length, 'stones');
     
     setIsRolling(true);
     setSelectedStone(null);
-    setRollSpeed(150); // Faster initial speed
+    setRollSpeed(200); // Slower speed to make it easier to see
     setCurrentPathIdx(0);
     
-    // Determine how many stones to visit before stopping (10-15 jumps)
-    const minSteps = 10;
-    const randomAdditionalSteps = Math.floor(Math.random() * 5);
-    const totalSteps = minSteps + randomAdditionalSteps;
+    // Roll 10-15 steps before stopping
+    const totalSteps = 10 + Math.floor(Math.random() * 5);
     
-    // Pre-select the target stone for testing special stones more reliably
-    // This ensures we stop at a predetermined stone
-    const specialStoneProb = Math.random();
-    let targetStone;
-    let targetStoneIndex;
+    // Pick a random final stone to land on
+    const allStones = [...stones];
+    const finalStone = allStones[Math.floor(Math.random() * allStones.length)];
+    const finalStoneIndex = finalStone.index;
     
-    if (specialStoneProb > 0.8) {
-      // 20% chance to land on special stone
-      const specialStones = stones.filter(s => s.isSpecial);
-      targetStone = specialStones[Math.floor(Math.random() * specialStones.length)];
-      targetStoneIndex = targetStone.index;
-      console.log('Selected special stone:', targetStone.number, 'with index:', targetStoneIndex);
-    } else if (specialStoneProb > 0.7) {
-      // 10% chance to land on super stone
-      const superStones = stones.filter(s => s.isSuper);
-      targetStone = superStones[Math.floor(Math.random() * superStones.length)];
-      targetStoneIndex = targetStone.index;
-      console.log('Selected super stone:', targetStone.number, 'with index:', targetStoneIndex);
-    } else {
-      // 70% chance for regular stone
-      const regularStones = stones.filter(s => !s.isSpecial && !s.isSuper);
-      targetStone = regularStones[Math.floor(Math.random() * regularStones.length)];
-      targetStoneIndex = targetStone.index;
-      console.log('Selected regular stone:', targetStone.number, 'with index:', targetStoneIndex);
-    }
+    console.log('Will land on stone:', finalStone.number, 'with index:', finalStoneIndex);
     
-    // Calculate a path that will end at our target stone
-    // We need to ensure the final step in our path lands on the target stone
-    const finalStoneIndex = targetStoneIndex;
-    
-    // Start the dice moving through random stones but will end at our target stone
+    // Start the dice moving through the stones and it will end at our target
     moveDiceAlongPath(0, totalSteps, finalStoneIndex);
-  }, [isRolling, rollingStoneIndex, moveDiceAlongPath, stones, boardPath]);
+  }, [isRolling, rollingStoneIndex, moveDiceAlongPath, stones]);
   
   // Handle individual stone clicks (for testing)
   const handleStoneClick = useCallback((index: number, stoneNumber: number) => {
@@ -657,7 +631,7 @@ export default function DemoPage() {
                     left: dicePosition.left,
                   }}
                 >
-                  DICE
+                  <div className="inner-ball"></div>
                 </div>
               )}
             </div>
