@@ -116,8 +116,29 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat feature flag (always true for UI but internal functionality is disabled)
   const voiceChatEnabled = true;
   
+  // Explicitly add enhanced animations and specific handling for game with ID 2
+  const isSpecificGame = gameId === "2";
+  
+  // Set up animation trigger specifically for game 2
+  useEffect(() => {
+    if (isSpecificGame) {
+      // Add CSS variables to the document root for ball position
+      document.documentElement.style.setProperty('--ball-top', '50%');
+      document.documentElement.style.setProperty('--ball-left', '50%');
+      
+      // Force animation redraw by adding a class to the root element
+      document.documentElement.classList.add('specific-game-animation');
+      
+      console.log("Enhanced animations for game/2 route activated");
+      
+      return () => {
+        document.documentElement.classList.remove('specific-game-animation');
+      };
+    }
+  }, [isSpecificGame]);
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={`min-h-screen flex flex-col ${isSpecificGame ? 'game-2-specific' : ''}`}>
       <Header user={user} />
       
       <main className="flex-grow flex flex-col md:flex-row">
@@ -130,6 +151,7 @@ export default function Game({ id }: GamePageProps) {
           userId={user.id}
           timeRemaining={timeRemaining || undefined}
           isCurrentPlayerTurn={isCurrentPlayerTurn}
+          forceShowBall={isSpecificGame} // Pass prop to force showing ball on game/2
         />
         
         <div className="w-full md:w-80 bg-gray-50 border-l border-gray-200 flex flex-col">

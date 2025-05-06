@@ -13,6 +13,7 @@ interface GameBoardProps {
   userId: number;
   timeRemaining?: number;
   isCurrentPlayerTurn: boolean;
+  forceShowBall?: boolean; // Optional prop to force show ball for specific game routes
 }
 
 const GameBoard = ({
@@ -23,7 +24,8 @@ const GameBoard = ({
   rollingStoneNumber,
   userId,
   timeRemaining,
-  isCurrentPlayerTurn
+  isCurrentPlayerTurn,
+  forceShowBall = false // Default to false
 }: GameBoardProps) => {
   // No longer using a single array of game stones, as we'll be organizing them 
   // in a more realistic layout matching the physical board
@@ -419,8 +421,30 @@ const GameBoard = ({
               
               {/* Enhanced rolling ball element */}
               {/* Use CSS variables for ball positioning - avoids React state batching issues */}
-              {showBall && (
-                <div className="ball-element roll-animation" />
+              {(showBall || forceShowBall) && (
+                <div 
+                  className="ball-element roll-animation" 
+                  style={{
+                    top: forceShowBall && !showBall ? '50%' : undefined,
+                    left: forceShowBall && !showBall ? '50%' : undefined,
+                  }}
+                />
+              )}
+              
+              {/* Special ball for game/2 that's always visible */}
+              {forceShowBall && (
+                <div 
+                  className="ball-element roll-animation"
+                  style={{
+                    position: 'absolute',
+                    width: '60px',
+                    height: '60px',
+                    top: '60%', 
+                    left: '60%',
+                    display: 'block',
+                    opacity: rollingStoneNumber ? 0 : 1 // Hide when actually rolling
+                  }}
+                />
               )}
               
               {/* Backup ball that always appears when a roll happens */}
