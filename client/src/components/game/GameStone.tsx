@@ -40,9 +40,11 @@ const GameStone = ({
         className
       )}
       style={isRolling ? {
-        boxShadow: "0 0 15px 5px rgba(248, 181, 0, 0.7)",
+        boxShadow: "0 0 20px 10px rgba(255, 215, 0, 0.8)",
         zIndex: 50,
-        position: "relative"
+        position: "relative",
+        transform: "scale(1.15)", 
+        transition: "all 0.2s ease-in-out"
       } : undefined}
     >
       <span 

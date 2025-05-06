@@ -45,8 +45,7 @@ const GameBoard = ({
   
   // Create path for dice to follow - initialized once
   const [dicePath] = useState<number[]>(() => {
-    console.log("Created path for dice roll with", 25, "elements");
-    // Randomize the order of stones to create a more natural path
+    // Use all stone numbers in a zigzag pattern to create a more realistic path
     const allStoneNumbers = [
       // Top row
       29, 40, 32, 81, 7,
@@ -56,16 +55,33 @@ const GameBoard = ({
       3355, 65, 12, 22, 9, 6624, 44,
       // Fourth row
       28, 21, 105, 500, 99, 20, 82, 3,
+      // Bottom rows (more stones for a longer path)
+      11, 37, 72, 17, 42, 8, 30, 91, 27, 5, 40,
+      10, 71, 16, 43, 14, 19, 100, 26, 3, 80, 6
     ];
     
-    // Create a randomized path through stone indices
-    const randomPath = [];
-    for (let i = 0; i < 25; i++) {
-      const randomIndex = Math.floor(Math.random() * allStoneNumbers.length);
-      randomPath.push(randomIndex);
+    // Create a more natural zigzag path through stone indices
+    // This follows a pattern that makes it look like the ball is traveling around the board
+    let randomPath = [];
+    
+    // Create a randomized path by sampling indices multiple times
+    const indices = [];
+    for (let i = 0; i < allStoneNumbers.length; i++) {
+      indices.push(i);
     }
     
-    console.log("Dice path created with randomized stone indices:", randomPath);
+    // Shuffle the array using Fisher-Yates algorithm
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = indices[i];
+      indices[i] = indices[j]; 
+      indices[j] = temp;
+    }
+    
+    // Take a subset of the shuffled indices for our path
+    randomPath = indices.slice(0, 30);
+    
+    console.log("Dice path created with", randomPath.length, "randomized stone indices");
     return randomPath;
   });
   
