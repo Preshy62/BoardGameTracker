@@ -133,12 +133,12 @@ export default function DemoPage() {
     const styleEl = document.createElement('style');
     styleEl.innerHTML = `
       .dice-element {
-        animation: pulse 0.5s infinite alternate;
+        animation: pulse 0.5s infinite alternate, spin 2s linear infinite;
         z-index: 100;
         pointer-events: none;
         position: absolute;
-        width: 40px;
-        height: 40px;
+        width: 60px;
+        height: 60px;
         background-color: #FF0000;
         border-radius: 50%;
         display: flex;
@@ -146,7 +146,9 @@ export default function DemoPage() {
         justify-content: center;
         color: white;
         font-weight: bold;
-        box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.5);
+        font-size: 16px;
+        box-shadow: 0 0 15px 8px rgba(255, 215, 0, 0.7);
+        border: 3px solid white;
         transition: left 0.3s ease, top 0.3s ease;
       }
       
@@ -154,6 +156,11 @@ export default function DemoPage() {
         0% { transform: scale(1); opacity: 1; }
         50% { transform: scale(1.1); opacity: 0.9; }
         100% { transform: scale(1); opacity: 1; }
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
     `;
     document.head.appendChild(styleEl);
@@ -219,37 +226,29 @@ export default function DemoPage() {
 
   // Define the board perimeter path on component mount
   useEffect(() => {
-    // Create the path around the board perimeter
-    // Top row (left to right)
-    const topRow = stones.filter(s => s.row === 1)
-      .sort((a, b) => a.index - b.index)
-      .map(s => s.index);
+    // Create a simple hardcoded path for testing
+    const hardcodedPath = [
+      // Top row (left to right)
+      0, 1, 2, 3, 4,
+      // Right edge (top to bottom)
+      4, 4, 7,
+      // Bottom row (right to left)
+      7, 6, 5, 4, 3, 2, 1, 0,
+      // Left edge (bottom to top)
+      0, 0
+    ];
     
-    // Right edge (top to bottom)
-    const rightEdge = [];
-    for (let row = 2; row <= 4; row++) {
-      const rightmostStone = stones.filter(s => s.row === row)
-        .sort((a, b) => b.index - a.index)[0];
-      if (rightmostStone) rightEdge.push(rightmostStone.index);
+    console.log('Board path created with hardcoded values:', hardcodedPath);
+    setBoardPath(hardcodedPath);
+    
+    // Set initial position for dice
+    if (boardRef.current) {
+      const rect = boardRef.current.getBoundingClientRect();
+      setDicePosition({
+        top: rect.top + 50,
+        left: rect.right - 50,
+      });
     }
-    
-    // Bottom row (right to left)
-    const bottomRow = stones.filter(s => s.row === 4)
-      .sort((a, b) => b.index - a.index)
-      .map(s => s.index);
-    
-    // Left edge (bottom to top)
-    const leftEdge = [];
-    for (let row = 3; row >= 2; row--) {
-      const leftmostStone = stones.filter(s => s.row === row)
-        .sort((a, b) => a.index - b.index)[0];
-      if (leftmostStone) leftEdge.push(leftmostStone.index);
-    }
-    
-    // Combine to create the full perimeter path
-    const fullPath = [...topRow, ...rightEdge, ...bottomRow, ...leftEdge];
-    console.log('Board path created:', fullPath);
-    setBoardPath(fullPath);
   }, []);
 
   // Function to move the dice along the calculated path
@@ -510,6 +509,7 @@ export default function DemoPage() {
                     left: dicePosition.left,
                   }}
                 >
+                  DICE
                 </div>
               )}
             </div>
