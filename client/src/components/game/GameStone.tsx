@@ -40,12 +40,19 @@ const GameStone = ({
         className
       )}
       style={isRolling ? {
-        boxShadow: "0 0 25px 12px rgba(255, 215, 0, 0.9)",
-        zIndex: 50,
+        boxShadow: "0 0 30px 15px rgba(255, 215, 0, 0.95)",
+        zIndex: 100,
         position: "relative",
-        transform: "scale(1.2)", 
+        transform: "scale(1.3)", 
         transition: "all 0.2s ease-in-out",
-        animation: "dice-roll 0.8s linear infinite"
+        animation: "dice-roll 0.8s linear infinite",
+        border: '5px solid gold',
+        outline: '3px solid red',
+        background: isSpecial 
+          ? 'radial-gradient(circle, #FFD700 30%, #f59e0b 100%)' 
+          : isSuper 
+            ? 'radial-gradient(circle, #f87171 30%, #b91c1c 100%)'
+            : 'radial-gradient(circle, #1e3a8a 30%, #172554 100%)'
       } : undefined}
     >
       <span 

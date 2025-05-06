@@ -282,6 +282,38 @@ const GameBoard = ({
     return rollingStones[stoneNumber] || rollingStoneNumber === stoneNumber;
   };
   
+  // Effect to handle animation and sounds when stone number changes
+  useEffect(() => {
+    if (rollingStoneNumber !== null) {
+      console.log("GameBoard: Animation for stone", rollingStoneNumber);
+      
+      // Play dice rolling sound
+      try {
+        const audio = new Audio("/rolling-dice.mp3");
+        audio.volume = 0.5;
+        audio.play().catch(err => console.log("Audio error:", err));
+      } catch (e) {
+        console.log("Sound playback not supported");
+      }
+      
+      // Ensure ball visibility
+      document.documentElement.style.setProperty('--ball-top', '50%');
+      document.documentElement.style.setProperty('--ball-left', '50%');
+      
+      // Show animations
+      setShowBall(true);
+      
+      // Add shake effect
+      setIsBoardShaking(true);
+      setTimeout(() => setIsBoardShaking(false), 1500);
+      
+      // Reset animations after completing
+      setTimeout(() => {
+        setShowBall(false);
+      }, 3000);
+    }
+  }, [rollingStoneNumber]);
+
   return (
     <div className="flex-grow p-4">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-4xl mx-auto">
