@@ -131,6 +131,38 @@ export default function Game({ id }: GamePageProps) {
       
       console.log("Enhanced animations for game/2 route activated");
       
+      // Create an intro animation sequence
+      const runIntroAnimation = async () => {
+        // Create ball animation that follows a path around the board
+        const animateBallPath = async () => {
+          // Wait for board element to be available
+          const board = document.getElementById('game-board-element');
+          if (!board) return;
+          
+          // Define a path around the board to follow
+          const animationPath = [
+            { top: '20%', left: '20%' },
+            { top: '20%', left: '80%' },
+            { top: '80%', left: '80%' },
+            { top: '80%', left: '20%' },
+            { top: '50%', left: '50%' }
+          ];
+          
+          // Animate through each point in the path
+          for (const position of animationPath) {
+            document.documentElement.style.setProperty('--ball-top', position.top);
+            document.documentElement.style.setProperty('--ball-left', position.left);
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
+        };
+        
+        // Run the animation
+        await animateBallPath();
+      };
+      
+      // Run the intro animation after a short delay
+      setTimeout(runIntroAnimation, 1000);
+      
       return () => {
         document.documentElement.classList.remove('specific-game-animation');
       };
@@ -140,6 +172,14 @@ export default function Game({ id }: GamePageProps) {
   return (
     <div className={`min-h-screen flex flex-col ${isSpecificGame ? 'game-2-specific' : ''}`}>
       <Header user={user} />
+      
+      {/* Special welcome message for game/2 */}
+      {isSpecificGame && (
+        <div className="bg-yellow-500 text-primary p-3 text-center">
+          <h3 className="font-bold text-lg">Enhanced Animation Demo</h3>
+          <p>This game features special animations to showcase the ball movement. Watch as the ball moves around the board!</p>
+        </div>
+      )}
       
       <main className="flex-grow flex flex-col md:flex-row">
         <GameBoard

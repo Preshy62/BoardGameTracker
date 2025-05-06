@@ -319,13 +319,17 @@ const GameBoard = ({
         
         {/* Game Board */}
         <div className="relative p-4 md:p-8 bg-primary">
-          <div className="bg-primary-light border-4 border-gray-700 rounded-lg p-4 md:p-6 mx-auto" style={{ maxWidth: "600px" }}>
+          <div className={cn(
+            "bg-primary-light border-4 border-gray-700 rounded-lg p-4 md:p-6 mx-auto",
+            forceShowBall && "border-yellow-500 border-6"
+          )} style={{ maxWidth: "600px" }}>
             {/* Game Board with Live Layout */}
             <div 
               id="game-board-element" 
               className={cn(
                 "relative bg-primary-light border-2 border-gray-800 p-4 rounded mb-6",
-                isBoardShaking && "shaking-board"
+                isBoardShaking && "shaking-board",
+                forceShowBall && "board-enhanced"
               )}>
               {/* Game Title */}
               <h3 className="text-center text-white text-2xl font-sans font-bold mb-4">BIG BOYS GAME</h3>
