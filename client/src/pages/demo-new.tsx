@@ -12,6 +12,7 @@ interface DemoStoneProps {
   isSuper?: boolean;
   size?: 'sm' | 'md' | 'lg';
   isRolling?: boolean;
+  isWinner?: boolean; // Add winner prop for enhanced winner animation
   onClick?: () => void;
 }
 
@@ -21,6 +22,7 @@ const DemoStone = ({
   isSuper = false,
   size = 'md',
   isRolling = false,
+  isWinner = false, // New prop for winner animation
   onClick,
 }: DemoStoneProps) => {
   // Determine size values based on the size prop
@@ -89,16 +91,41 @@ const DemoStone = ({
   
   return (
     <div 
-      className="board-stone"
+      className={cn("board-stone", isWinner && "winner-stone-animation")}
       onClick={onClick}
-      style={{
+      style={isWinner ? {
+        boxShadow: "0 0 75px 35px rgba(255, 215, 0, 0.95)",
+        zIndex: 200,
+        position: "relative",
+        transform: "scale(2.0)",
+        transition: "all 0.15s ease-in-out",
+        animation: "winner-stone 1.5s infinite",
+        border: '8px solid gold',
+        outline: '5px solid red',
+        width: sizeMap.width,
+        height: sizeMap.height,
+        background: isSpecial 
+          ? 'radial-gradient(circle, #FFD700 30%, #f59e0b 100%)' 
+          : isSuper 
+            ? 'radial-gradient(circle, #f87171 30%, #b91c1c 100%)'
+            : 'radial-gradient(circle, #1e3a8a 30%, #172554 100%)'
+      } : {
         transform: `rotate(${rotation}deg) scale(${scale})`,
         boxShadow: `0 0 ${glow}px ${isSpecial ? '#FFD700' : isSuper ? '#FF0000' : '#FFFFFF'}`,
         width: sizeMap.width,
         height: sizeMap.height,
       }}
     >
-      <div className={stoneClass} style={{ width: '100%', height: '100%', fontSize: sizeMap.fontSize }}>
+      <div 
+        className={stoneClass} 
+        style={{ 
+          width: '100%', 
+          height: '100%', 
+          fontSize: sizeMap.fontSize,
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
         {number}
       </div>
     </div>
@@ -128,6 +155,9 @@ export default function DemoPage() {
   const [showBall, setShowBall] = useState(false);
   const [ballPosition, setBallPosition] = useState({ top: 0, left: 0 });
   const [isBoardShaking, setIsBoardShaking] = useState(false);
+  
+  // State for winner animation
+  const [finalStoneSelected, setFinalStoneSelected] = useState<number | null>(null);
   
   // Refs
   const boardRef = useRef<HTMLDivElement>(null);
@@ -217,6 +247,76 @@ export default function DemoPage() {
       .shaking-board {
         animation: shakeBoard 0.5s cubic-bezier(.36,.07,.19,.97) both;
         animation-iteration-count: 3;
+      }
+      
+      /* Winner stone animation with flashy color cycling */
+      @keyframes winner-stone {
+        0% { 
+          transform: scale(2.0) rotate(0deg);
+          box-shadow: 0 0 80px 40px rgba(255, 215, 0, 0.95);
+          border-color: gold;
+          filter: brightness(1.2) contrast(1.1);
+        }
+        20% { 
+          transform: scale(2.2) rotate(5deg);
+          box-shadow: 0 0 90px 45px rgba(255, 105, 180, 0.95);
+          border-color: hotpink;
+          filter: brightness(1.3) contrast(1.2);
+        }
+        40% { 
+          transform: scale(2.3) rotate(0deg);
+          box-shadow: 0 0 100px 50px rgba(65, 105, 225, 0.95);
+          border-color: royalblue;
+          filter: brightness(1.4) contrast(1.3);
+        }
+        60% { 
+          transform: scale(2.3) rotate(-5deg);
+          box-shadow: 0 0 100px 50px rgba(50, 205, 50, 0.95);
+          border-color: limegreen;
+          filter: brightness(1.4) contrast(1.3);
+        }
+        80% { 
+          transform: scale(2.2) rotate(0deg);
+          box-shadow: 0 0 90px 45px rgba(255, 0, 128, 0.95);
+          border-color: deeppink;
+          filter: brightness(1.3) contrast(1.2);
+        }
+        100% { 
+          transform: scale(2.0) rotate(0deg);
+          box-shadow: 0 0 80px 40px rgba(255, 215, 0, 0.95);
+          border-color: gold;
+          filter: brightness(1.2) contrast(1.1);
+        }
+      }
+      
+      /* Winner overlay animation styles */
+      .winner-overlay {
+        animation: fade-in 0.5s forwards;
+        z-index: 9000;
+      }
+      
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      .winner-text-animation {
+        animation: winner-text 0.8s infinite alternate;
+        text-shadow: 0 0 15px gold, 0 0 25px orange;
+      }
+      
+      @keyframes winner-text {
+        0% { transform: scale(1); text-shadow: 0 0 10px gold, 0 0 20px gold; }
+        100% { transform: scale(1.2); text-shadow: 0 0 20px gold, 0 0 30px orange, 0 0 40px red; }
+      }
+      
+      .winner-pulse-animation {
+        animation: winner-pulse 0.5s infinite alternate;
+      }
+      
+      @keyframes winner-pulse {
+        0% { opacity: 0.7; }
+        100% { opacity: 1; }
       }
     `;
     document.head.appendChild(styleEl);
