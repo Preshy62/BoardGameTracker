@@ -144,9 +144,11 @@ export default function DemoPage() {
     // Define the keyframes
     styleEl.innerHTML = `
       @keyframes roll-glow {
-        0% { transform: scale(1) rotate(0deg); box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.5); }
-        50% { transform: scale(1.2) rotate(180deg); box-shadow: 0 0 25px 8px rgba(255, 215, 0, 0.8); }
-        100% { transform: scale(1) rotate(360deg); box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.5); }
+        0% { transform: scale(1) rotate(0deg); box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); }
+        25% { transform: scale(1.1) rotate(90deg); box-shadow: 0 0 25px 15px rgba(255, 0, 0, 0.5); }
+        50% { transform: scale(1.2) rotate(180deg); box-shadow: 0 0 30px 20px rgba(255, 215, 0, 0.8); }
+        75% { transform: scale(1.1) rotate(270deg); box-shadow: 0 0 25px 15px rgba(255, 0, 0, 0.5); }
+        100% { transform: scale(1) rotate(360deg); box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); }
       }
       
       @keyframes shakeBoard {
@@ -194,13 +196,14 @@ export default function DemoPage() {
       
       .ball-element {
         position: absolute;
-        width: 40px;
-        height: 40px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
-        background: white;
-        border: 3px solid gold;
-        z-index: 1000;
-        transition: top 0.2s ease-out, left 0.2s ease-out;
+        background: radial-gradient(circle, white 30%, gold 100%);
+        border: 4px solid gold;
+        z-index: 9999;
+        transition: top 0.5s ease-out, left 0.5s ease-out;
+        box-shadow: 0 0 30px 15px rgba(255, 215, 0, 0.7);
       }
       
       .roll-animation {
@@ -305,28 +308,35 @@ export default function DemoPage() {
     const stoneArray = isSmallStone ? smallStones : stones;
     const selector = isSmallStone ? `small-stone-${actualIndex}` : `stone-${actualIndex}`;
     
+    console.log(`Getting position for stone: ${selector}`);
+    
     // Find the stone element
     const stoneElement = document.getElementById(selector);
     if (!stoneElement) {
       console.error('Stone element not found:', selector);
-      return { top: 0, left: 0 };
+      // Fallback to a visible center position so we at least see the ball
+      return { top: 200, left: 200 };
     }
     
     // Get the position relative to the game board
     const board = document.getElementById('demo-game-board');
     if (!board) {
       console.error('Game board not found');
-      return { top: 0, left: 0 };
+      // Fallback to a visible center position
+      return { top: 200, left: 200 };
     }
     
     const boardRect = board.getBoundingClientRect();
     const stoneRect = stoneElement.getBoundingClientRect();
     
     // Calculate the position inside the board
-    return {
-      left: stoneRect.left - boardRect.left + (stoneRect.width / 2) - 20, // center the ball (40px width)
-      top: stoneRect.top - boardRect.top + (stoneRect.height / 2) - 20, // center the ball (40px height)
+    const position = {
+      left: stoneRect.left - boardRect.left + (stoneRect.width / 2) - 30, // center the ball (60px width)
+      top: stoneRect.top - boardRect.top + (stoneRect.height / 2) - 30, // center the ball (60px height)
     };
+    
+    console.log(`Stone ${selector} position:`, position);
+    return position;
   };
 
   // Generate a random path through stones on the board
