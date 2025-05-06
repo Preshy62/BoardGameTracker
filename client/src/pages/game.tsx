@@ -84,8 +84,13 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat settings
   const isHighStakesGame = game ? game.stake >= 50000 : false;
 
-  // Handle if user is not logged in - special case for demo games (1 and 2)
-  const isDemoGame = gameId === "1" || gameId === "2";
+  // Handle if user is not logged in - special case for demo games (1 and 2) 
+  // and computer opponent games (game pages created at runtime)
+  const isDemoOrBotGame = gameId === "1" || gameId === "2" || 
+    (game?.status === 'in_progress' && players.some(p => p.user.username === 'Computer'));
+  
+  console.log("Game status:", game?.status, "Has computer player:", 
+    players.some(p => p.user.username === 'Computer'), "isDemoOrBotGame:", isDemoOrBotGame);
   
   // Create a mock user for demo games if needed
   const demoUser: User = {
@@ -102,15 +107,15 @@ export default function Game({ id }: GamePageProps) {
     stripeSubscriptionId: null
   };
   
-  // Use either the authenticated user or the demo user for demo games
-  const currentUser = user || (isDemoGame ? demoUser : null);
+  // Use either the authenticated user or the demo user for demo games or bot games
+  const currentUser = user || (isDemoOrBotGame ? demoUser : null);
   
   useEffect(() => {
     if (!isUserLoading && !currentUser) {
-      console.log("User not logged in and not a demo game, redirecting to auth");
+      console.log("User not logged in and not a demo or bot game, redirecting to auth");
       setLocation('/auth');
     }
-  }, [user, isUserLoading, setLocation, isDemoGame, currentUser]);
+  }, [user, isUserLoading, setLocation, isDemoOrBotGame, currentUser]);
 
   if (isUserLoading || isLoading || !currentUser) {
     return (
@@ -151,8 +156,9 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat feature flag (always true for UI but internal functionality is disabled)
   const voiceChatEnabled = true;
   
-  // Explicitly add enhanced animations and specific handling for both games 1 and 2
-  const isSpecificGame = gameId === "2" || gameId === "1";
+  // Explicitly add enhanced animations for test games and any bot games
+  const isSpecificGame = gameId === "2" || gameId === "1" || 
+    (game.status === 'in_progress' && players.some(p => p.user.username === 'Computer'));
   
   // Set up animation trigger specifically for game 2
   useEffect(() => {
