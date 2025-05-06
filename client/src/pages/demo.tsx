@@ -124,13 +124,18 @@ const DemoStone = ({
   );
 };
 
-// Demo Board Page
+// Demo Board Page - Fresh Implementation
+import { useCallback } from 'react';
+
 export default function DemoPage() {
   const { user, isLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  
+  // Core state for stone animations
   const [rollingStoneIndex, setRollingStoneIndex] = useState<number | null>(null);
   const [selectedStone, setSelectedStone] = useState<number | null>(null);
+  const [isRolling, setIsRolling] = useState(false);
 
   // Define CSS keyframes for animations
   useEffect(() => {
@@ -163,13 +168,37 @@ export default function DemoPage() {
         to { transform: rotate(360deg); }
       }
       
-      .dice-animation-active .dice-element {
-        animation: pulse 0.5s infinite alternate, spin 2s linear infinite;
+      .dice-element {
+        animation: pulse 0.5s infinite alternate;
+        z-index: 100;
+        pointer-events: none;
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        background-color: #FF0000;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.5);
+        transition: left 0.3s ease, top 0.3s ease;
       }
       
       .shaking-board {
         animation: shakeBoard 0.5s cubic-bezier(.36,.07,.19,.97) both;
         animation-iteration-count: 3;
+      }
+
+      .board-stone {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      
+      .board-stone.active {
+        transform: scale(1.1);
+        box-shadow: 0 0 20px 10px rgba(255, 255, 0, 0.5);
+        z-index: 50;
       }
     `;
     // Add to head
@@ -180,7 +209,7 @@ export default function DemoPage() {
       document.head.removeChild(styleEl);
     };
   }, []);
-
+  
   // Array of stones for the game board
   const stones = [
     { number: 29, row: 1, index: 0 },
@@ -236,13 +265,10 @@ export default function DemoPage() {
     { number: 10, row: 6, index: 10 },
   ];
 
-  // State for the rolling ball animation
-  const [isRolling, setIsRolling] = useState(false);
-  const [dicePosition, setDicePosition] = useState<{ top: string | number; left: string | number }>({ top: 0, left: 0 });
-  const [dicePath, setDicePath] = useState<Array<{ top: string | number; left: string | number }>>([]);
-  const [currentPathIndex, setCurrentPathIndex] = useState(0);
-  const [targetStoneId, setTargetStoneId] = useState<string | null>(null);
-  const diceRef = useRef<HTMLDivElement>(null);
+  // Additional path animation state
+  const [boardPathIndices, setBoardPathIndices] = useState<number[]>([]);
+  const [rollTimeout, setRollTimeout] = useState<NodeJS.Timeout | null>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
   
   // Very simple function to handle rolling dice across the board
   const handleRollDice = () => {

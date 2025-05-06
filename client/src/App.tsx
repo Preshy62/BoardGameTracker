@@ -10,7 +10,7 @@ import Wallet from "@/pages/wallet";
 import Checkout from "@/pages/checkout";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
-import DemoPage from "@/pages/demo";
+import DemoPage from "@/pages/demo-new";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
