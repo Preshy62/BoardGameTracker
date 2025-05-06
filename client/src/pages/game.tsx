@@ -136,11 +136,57 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat feature flag (always true for UI but internal functionality is disabled)
   const voiceChatEnabled = true;
   
+  // Add direct dice animation elements
+  const [showDiceAnimation, setShowDiceAnimation] = useState(false);
+  
+  // Show dice animation when rolling number changes
+  useEffect(() => {
+    if (rollingStoneNumber !== null) {
+      console.log("GAME PAGE: Rolling stone detected:", rollingStoneNumber);
+      setShowDiceAnimation(true);
+      
+      // Clear animation after a delay
+      setTimeout(() => {
+        setShowDiceAnimation(false);
+      }, 3000);
+    }
+  }, [rollingStoneNumber]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header user={user} />
       
-      <main className="flex-grow flex flex-col md:flex-row">
+      <main className="flex-grow flex flex-col md:flex-row relative">
+        {/* Global ball animation that's always visible when rolling */}
+        {showDiceAnimation && (
+          <>
+            <div 
+              className="dice-element"
+              style={{
+                position: 'fixed',
+                width: '70px',
+                height: '70px',
+                top: '50%',
+                left: '50%',
+                zIndex: 9999,
+                pointerEvents: 'none'
+              }}
+            />
+            <div 
+              className="ball-element roll-animation"
+              style={{
+                position: 'fixed',
+                width: '80px',
+                height: '80px',
+                top: '50%',
+                left: '50%',
+                zIndex: 9999,
+                pointerEvents: 'none'
+              }}
+            />
+          </>
+        )}
+        
         <GameBoard
           game={game}
           currentPlayerId={currentTurnPlayerId || 0}
