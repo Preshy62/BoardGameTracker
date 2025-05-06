@@ -112,14 +112,22 @@ const GameBoard = ({
     if (rollingStoneNumber !== null) {
       console.log("🎲 Rolling animation starting for stone number:", rollingStoneNumber);
       
+      // Debug info to console
+      console.log("Board ref exists:", !!boardRef.current);
+      
       // Clear any previous rolling animations
       setRollingStones({});
       
       // Set rolling flag
       setIsRolling(true);
       
-      // Set ball visible globally for fallback visibility
+      // Make sure ball is visible
+      setShowBall(true);
+      
+      // Set ball properties globally for fallback visibility
       document.documentElement.style.setProperty('--ball-visible', '1');
+      document.documentElement.style.setProperty('--ball-top', '50%');
+      document.documentElement.style.setProperty('--ball-left', '50%');
       
       // Start a new rolling animation
       const simulateEnhancedRolling = async () => {
@@ -413,73 +421,73 @@ const GameBoard = ({
 
               {/* Top row stones */}
               <div className="flex justify-between mb-4">
-                <GameStone number={29} isRolling={isStoneRolling(29)} />
-                <GameStone number={40} isRolling={isStoneRolling(40)} />
-                <GameStone number={32} isRolling={isStoneRolling(32)} />
-                <GameStone number={81} isRolling={isStoneRolling(81)} />
-                <GameStone number={7} isRolling={isStoneRolling(7)} />
+                <GameStone id="stone-29" number={29} isRolling={isStoneRolling(29)} />
+                <GameStone id="stone-40" number={40} isRolling={isStoneRolling(40)} />
+                <GameStone id="stone-32" number={32} isRolling={isStoneRolling(32)} />
+                <GameStone id="stone-81" number={81} isRolling={isStoneRolling(81)} />
+                <GameStone id="stone-7" number={7} isRolling={isStoneRolling(7)} />
               </div>
               
               {/* Second row with 1000 as special */}
               <div className="flex justify-between mb-4">
-                <GameStone number={13} isRolling={isStoneRolling(13)} />
-                <GameStone number={64} isRolling={isStoneRolling(64)} />
-                <GameStone number={1000} isRolling={isStoneRolling(1000)} isSpecial={true} size="lg" />
-                <GameStone number={101} isRolling={isStoneRolling(101)} />
-                <GameStone number={4} isRolling={isStoneRolling(4)} />
+                <GameStone id="stone-13" number={13} isRolling={isStoneRolling(13)} />
+                <GameStone id="stone-64" number={64} isRolling={isStoneRolling(64)} />
+                <GameStone id="stone-1000" number={1000} isRolling={isStoneRolling(1000)} isSpecial={true} size="lg" />
+                <GameStone id="stone-101" number={101} isRolling={isStoneRolling(101)} />
+                <GameStone id="stone-4" number={4} isRolling={isStoneRolling(4)} />
               </div>
               
               {/* Third row with 3355 and 6624 */}
               <div className="flex justify-between mb-4">
-                <GameStone number={3355} isRolling={isStoneRolling(3355)} isSuper={true} />
-                <GameStone number={65} isRolling={isStoneRolling(65)} />
-                <GameStone number={12} isRolling={isStoneRolling(12)} />
-                <GameStone number={22} isRolling={isStoneRolling(22)} />
-                <GameStone number={9} isRolling={isStoneRolling(9)} />
-                <GameStone number={6624} isRolling={isStoneRolling(6624)} isSuper={true} />
-                <GameStone number={44} isRolling={isStoneRolling(44)} />
+                <GameStone id="stone-3355" number={3355} isRolling={isStoneRolling(3355)} isSuper={true} />
+                <GameStone id="stone-65" number={65} isRolling={isStoneRolling(65)} />
+                <GameStone id="stone-12" number={12} isRolling={isStoneRolling(12)} />
+                <GameStone id="stone-22" number={22} isRolling={isStoneRolling(22)} />
+                <GameStone id="stone-9" number={9} isRolling={isStoneRolling(9)} />
+                <GameStone id="stone-6624" number={6624} isRolling={isStoneRolling(6624)} isSuper={true} />
+                <GameStone id="stone-44" number={44} isRolling={isStoneRolling(44)} />
               </div>
               
               {/* Fourth row with 500 as special */}
               <div className="flex justify-between mb-4">
-                <GameStone number={28} isRolling={isStoneRolling(28)} />
-                <GameStone number={21} isRolling={isStoneRolling(21)} />
-                <GameStone number={105} isRolling={isStoneRolling(105)} />
-                <GameStone number={500} isRolling={isStoneRolling(500)} isSpecial={true} size="lg" />
-                <GameStone number={99} isRolling={isStoneRolling(99)} />
-                <GameStone number={20} isRolling={isStoneRolling(20)} />
-                <GameStone number={82} isRolling={isStoneRolling(82)} />
-                <GameStone number={3} isRolling={isStoneRolling(3)} />
+                <GameStone id="stone-28" number={28} isRolling={isStoneRolling(28)} />
+                <GameStone id="stone-21" number={21} isRolling={isStoneRolling(21)} />
+                <GameStone id="stone-105" number={105} isRolling={isStoneRolling(105)} />
+                <GameStone id="stone-500" number={500} isRolling={isStoneRolling(500)} isSpecial={true} size="lg" />
+                <GameStone id="stone-99" number={99} isRolling={isStoneRolling(99)} />
+                <GameStone id="stone-20" number={20} isRolling={isStoneRolling(20)} />
+                <GameStone id="stone-82" number={82} isRolling={isStoneRolling(82)} />
+                <GameStone id="stone-3" number={3} isRolling={isStoneRolling(3)} />
               </div>
               
               {/* Fifth row */}
               <div className="flex justify-between mb-4">
-                <GameStone number={11} isRolling={isStoneRolling(11)} size="sm" />
-                <GameStone number={37} isRolling={isStoneRolling(37)} size="sm" />
-                <GameStone number={72} isRolling={isStoneRolling(72)} size="sm" />
-                <GameStone number={17} isRolling={isStoneRolling(17)} size="sm" />
-                <GameStone number={42} isRolling={isStoneRolling(42)} size="sm" />
-                <GameStone number={8} isRolling={isStoneRolling(8)} size="sm" />
-                <GameStone number={30} isRolling={isStoneRolling(30)} size="sm" />
-                <GameStone number={91} isRolling={isStoneRolling(91)} size="sm" />
-                <GameStone number={27} isRolling={isStoneRolling(27)} size="sm" />
-                <GameStone number={5} isRolling={isStoneRolling(5)} size="sm" />
-                <GameStone number={40} isRolling={isStoneRolling(40)} size="sm" />
+                <GameStone id="stone-11" number={11} isRolling={isStoneRolling(11)} size="sm" />
+                <GameStone id="stone-37" number={37} isRolling={isStoneRolling(37)} size="sm" />
+                <GameStone id="stone-72" number={72} isRolling={isStoneRolling(72)} size="sm" />
+                <GameStone id="stone-17" number={17} isRolling={isStoneRolling(17)} size="sm" />
+                <GameStone id="stone-42" number={42} isRolling={isStoneRolling(42)} size="sm" />
+                <GameStone id="stone-8" number={8} isRolling={isStoneRolling(8)} size="sm" />
+                <GameStone id="stone-30" number={30} isRolling={isStoneRolling(30)} size="sm" />
+                <GameStone id="stone-91" number={91} isRolling={isStoneRolling(91)} size="sm" />
+                <GameStone id="stone-27" number={27} isRolling={isStoneRolling(27)} size="sm" />
+                <GameStone id="stone-5" number={5} isRolling={isStoneRolling(5)} size="sm" />
+                <GameStone id="stone-40" number={40} isRolling={isStoneRolling(40)} size="sm" />
               </div>
               
               {/* Bottom row */}
               <div className="flex justify-between">
-                <GameStone number={6} isRolling={isStoneRolling(6)} size="sm" />
-                <GameStone number={80} isRolling={isStoneRolling(80)} size="sm" />
-                <GameStone number={3} isRolling={isStoneRolling(3)} size="sm" />
-                <GameStone number={26} isRolling={isStoneRolling(26)} size="sm" />
-                <GameStone number={100} isRolling={isStoneRolling(100)} size="sm" />
-                <GameStone number={19} isRolling={isStoneRolling(19)} size="sm" />
-                <GameStone number={14} isRolling={isStoneRolling(14)} size="sm" />
-                <GameStone number={43} isRolling={isStoneRolling(43)} size="sm" />
-                <GameStone number={16} isRolling={isStoneRolling(16)} size="sm" />
-                <GameStone number={71} isRolling={isStoneRolling(71)} size="sm" />
-                <GameStone number={10} isRolling={isStoneRolling(10)} size="sm" />
+                <GameStone id="stone-6" number={6} isRolling={isStoneRolling(6)} size="sm" />
+                <GameStone id="stone-80" number={80} isRolling={isStoneRolling(80)} size="sm" />
+                <GameStone id="stone-3" number={3} isRolling={isStoneRolling(3)} size="sm" />
+                <GameStone id="stone-26" number={26} isRolling={isStoneRolling(26)} size="sm" />
+                <GameStone id="stone-100" number={100} isRolling={isStoneRolling(100)} size="sm" />
+                <GameStone id="stone-19" number={19} isRolling={isStoneRolling(19)} size="sm" />
+                <GameStone id="stone-14" number={14} isRolling={isStoneRolling(14)} size="sm" />
+                <GameStone id="stone-43" number={43} isRolling={isStoneRolling(43)} size="sm" />
+                <GameStone id="stone-16" number={16} isRolling={isStoneRolling(16)} size="sm" />
+                <GameStone id="stone-71" number={71} isRolling={isStoneRolling(71)} size="sm" />
+                <GameStone id="stone-10" number={10} isRolling={isStoneRolling(10)} size="sm" />
               </div>
               
               {/* Money in the Bank Label */}
@@ -487,14 +495,14 @@ const GameBoard = ({
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
               
-              {/* Main rolling ball element */}
-              {(showBall || rollingStoneNumber) && (
+              {/* Main rolling ball element - fixed position with absolute styling */}
+              {(showBall || rollingStoneNumber !== null) && (
                 <div 
                   className="dice-ball"
                   style={{
                     position: 'absolute',
-                    width: '60px',
-                    height: '60px',
+                    width: '70px',
+                    height: '70px',
                     display: 'block',
                     top: `${ballPosition.top}px`,
                     left: `${ballPosition.left}px`,
@@ -502,22 +510,30 @@ const GameBoard = ({
                     borderRadius: '50%',
                     background: 'radial-gradient(circle, white 20%, #FF8800 60%, gold 100%)',
                     border: '5px solid gold',
-                    boxShadow: '0 0 30px 15px rgba(255, 136, 0, 0.9)',
+                    boxShadow: '0 0 40px 20px rgba(255, 136, 0, 0.95)',
                     transform: 'translate(-50%, -50%)',
+                    opacity: 1,
+                    visibility: 'visible',
                     filter: 'blur(0.5px)',
                     animation: 'ball-pulse 0.5s infinite alternate',
-                    transition: 'top 0.4s ease-out, left 0.4s ease-out'
+                    transition: 'top 0.3s ease-out, left 0.3s ease-out'
                   }}
                 />
               )}
               
               {/* Backup ball using CSS variables for consistent positioning */}
-              {(showBall || rollingStoneNumber) && (
+              {(showBall || rollingStoneNumber !== null) && (
                 <div 
                   className="ball-element roll-animation"
                   style={{
+                    position: 'absolute',
                     top: 'var(--ball-top)',
-                    left: 'var(--ball-left)'
+                    left: 'var(--ball-left)',
+                    zIndex: 9999,
+                    width: '70px',
+                    height: '70px',
+                    opacity: 1,
+                    visibility: 'visible'
                   }}
                 />
               )}
