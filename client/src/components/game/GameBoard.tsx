@@ -393,6 +393,19 @@ const GameBoard = ({
                 </svg>
               </div>
               
+              {/* Ball element that will move across the board */}
+              {showBall && (
+                <div 
+                  className="ball-element"
+                  style={{
+                    position: 'absolute',
+                    top: `${ballPosition.top}px`,
+                    left: `${ballPosition.left}px`,
+                    zIndex: 9999,
+                  }}
+                />
+              )}
+              
               {/* START label - positioned on the right side like the physical board */}
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-transparent text-white p-1 font-bold text-lg rotate-90">
                 START
