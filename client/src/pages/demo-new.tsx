@@ -828,8 +828,19 @@ export default function DemoPage() {
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
               
-              {/* Dice moving along the board path */}
-              {isRolling && (
+              {/* Ball animation moving along the board */}
+              {showBall && (
+                <div 
+                  className={`ball-element ${isRolling ? 'roll-animation' : ''}`}
+                  style={{
+                    top: ballPosition.top,
+                    left: ballPosition.left,
+                  }}
+                ></div>
+              )}
+              
+              {/* Dice moving along the board path - for backward compatibility */}
+              {isRolling && !showBall && (
                 <div 
                   ref={diceRef}
                   className="dice-element"
