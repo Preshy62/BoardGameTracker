@@ -124,6 +124,11 @@ export default function DemoPage() {
   const [rollTimer, setRollTimer] = useState<NodeJS.Timeout | null>(null);
   const [targetStone, setTargetStone] = useState<any>(null);
   
+  // New state for improved ball animation
+  const [showBall, setShowBall] = useState(false);
+  const [ballPosition, setBallPosition] = useState({ top: 0, left: 0 });
+  const [isBoardShaking, setIsBoardShaking] = useState(false);
+  
   // Refs
   const boardRef = useRef<HTMLDivElement>(null);
   const diceRef = useRef<HTMLDivElement>(null);
@@ -150,7 +155,7 @@ export default function DemoPage() {
         text-shadow: 0 0 3px black; /* Make text more visible */
         box-shadow: 0 0 10px 5px rgba(255, 215, 0, 0.6);
         border: 3px solid white;
-        transition: left 0.2s ease-out, top 0.2s ease-out; /* Faster transition */
+        transition: left 0.3s ease-out, top 0.3s ease-out; /* Smoother transition */
       }
       
       /* For demo animation only - position board as relative to make absolute positioning work */
@@ -168,6 +173,50 @@ export default function DemoPage() {
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
+      }
+      
+      @keyframes roll-glow {
+        0% { transform: scale(1) rotate(0deg); box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); }
+        25% { transform: scale(1.2) rotate(90deg); box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.8); }
+        50% { transform: scale(1.3) rotate(180deg); box-shadow: 0 0 40px 20px rgba(255, 215, 0, 0.9); }
+        75% { transform: scale(1.2) rotate(270deg); box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.8); }
+        100% { transform: scale(1) rotate(360deg); box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); }
+      }
+      
+      @keyframes shakeBoard {
+        0% { transform: translate(0, 0) rotate(0); }
+        10% { transform: translate(-1px, -2px) rotate(-1deg); }
+        20% { transform: translate(2px, 0) rotate(1deg); }
+        30% { transform: translate(-2px, 2px) rotate(0); }
+        40% { transform: translate(1px, -1px) rotate(1deg); }
+        50% { transform: translate(-1px, 2px) rotate(-1deg); }
+        60% { transform: translate(-2px, 1px) rotate(0); }
+        70% { transform: translate(2px, 1px) rotate(-1deg); }
+        80% { transform: translate(-1px, -1px) rotate(1deg); }
+        90% { transform: translate(1px, 2px) rotate(0); }
+        100% { transform: translate(0, 0) rotate(0); }
+      }
+      
+      .ball-element {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: radial-gradient(circle, white 30%, #FF8800 100%);
+        border: 4px solid gold;
+        z-index: 9999;
+        transition: top 0.8s ease, left 0.8s ease;
+        box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.7);
+        transform: translate(-50%, -50%); /* This ensures the ball is properly centered */
+      }
+      
+      .roll-animation {
+        animation: roll-glow 0.8s linear infinite;
+      }
+      
+      .shaking-board {
+        animation: shakeBoard 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        animation-iteration-count: 3;
       }
     `;
     document.head.appendChild(styleEl);
@@ -231,6 +280,72 @@ export default function DemoPage() {
     { number: 10, row: 6, index: 10 },
   ];
 
+  // Function to get stone position by number or index
+  const getStonePosition = (stoneIndexOrNumber: number, isNumber = false) => {
+    // Find the stone element
+    let stoneElement;
+    
+    if (isNumber) {
+      // Find by number
+      const allStones = [...stones, ...smallStones];
+      const foundStone = allStones.find(s => s.number === stoneIndexOrNumber);
+      
+      if (!foundStone) {
+        console.error('Could not find stone with number:', stoneIndexOrNumber);
+        // Fallback to center
+        return { top: 200, left: 200 };
+      }
+      
+      // Find by index
+      if (foundStone.row <= 4) {
+        stoneElement = document.getElementById(`stone-${foundStone.index}`);
+      } else {
+        stoneElement = document.getElementById(`small-stone-${foundStone.index}`);
+      }
+    } else {
+      // Find directly by index
+      stoneElement = document.getElementById(`stone-${stoneIndexOrNumber}`);
+      
+      // If not found, try as small stone
+      if (!stoneElement && stoneIndexOrNumber >= 100) {
+        const smallIndex = stoneIndexOrNumber - 100;
+        stoneElement = document.getElementById(`small-stone-${smallIndex}`);
+      }
+    }
+    
+    if (!stoneElement || !boardRef.current) {
+      console.error('Stone element or board not found');
+      return { top: 200, left: 200 }; // fallback
+    }
+    
+    // Get positions
+    const stoneRect = stoneElement.getBoundingClientRect();
+    const boardRect = boardRef.current.getBoundingClientRect();
+    
+    // Calculate center position relative to the board
+    return {
+      top: stoneRect.top - boardRect.top + (stoneRect.height / 2),
+      left: stoneRect.left - boardRect.left + (stoneRect.width / 2)
+    };
+  };
+  
+  // Get a list of all stone numbers for animation path
+  const getAllStoneNumbers = () => {
+    return [
+      // Top row
+      29, 40, 32, 81, 7,
+      // Second row
+      13, 64, 1000, 101, 4,
+      // Third row
+      3355, 65, 12, 22, 9, 6624, 44,
+      // Fourth row
+      28, 21, 105, 500, 99, 20, 82, 3,
+      // Bottom rows (small stones)
+      11, 37, 72, 17, 42, 8, 30, 91, 27, 5, 40,
+      6, 80, 3, 26, 100, 19, 14, 43, 16, 71, 10
+    ];
+  };
+  
   // Define the dice path to travel through numbers rather than around the edge
   useEffect(() => {
     // Wait for the board to be fully rendered
@@ -439,43 +554,135 @@ export default function DemoPage() {
     setRollTimer(nextTimeout);
   }, [isRolling, boardPath, rollSpeed, rollTimer, toast, stones, smallStones]);
   
-  // Main function to handle the dice roll
+  // Enhanced function to handle rolling dice with improved animation
   const handleRollDice = useCallback(() => {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
     console.log('Starting dice roll animation');
     
-    // Create a simple dice path that goes through all stones in order
-    // This is easier to visualize than random jumping
-    const simplePath: number[] = [];
-    
-    // Add all stones in order for a predictable path 
-    for (let i = 0; i < stones.length; i++) {
-      simplePath.push(i);
-    }
-    
-    // Update our path for the roll
-    setBoardPath(simplePath);
-    console.log('Created simple path with', simplePath.length, 'stones');
-    
+    // Reset states
     setIsRolling(true);
     setSelectedStone(null);
-    setRollSpeed(200); // Slower speed to make it easier to see
-    setCurrentPathIdx(0);
+    setIsBoardShaking(true);
     
-    // Roll 10-15 steps before stopping
-    const totalSteps = 10 + Math.floor(Math.random() * 5);
+    // Play sound effect
+    try {
+      const audio = new Audio();
+      audio.src = '/rolling-dice.mp3';
+      audio.volume = 0.3;
+      audio.play().catch(e => console.log('Audio failed:', e));
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+    
+    // Toast to draw attention to the dice roll
+    toast({
+      title: "DICE IS ROLLING",
+      description: "Watch the ball run around the board!",
+    });
+    
+    // Get all stone numbers in order (creates a logical path around the board)
+    const boardPath = getAllStoneNumbers();
     
     // Pick a random final stone to land on
-    const allStones = [...stones];
+    const allStones = [...stones, ...smallStones];
     const finalStone = allStones[Math.floor(Math.random() * allStones.length)];
-    const finalStoneIndex = finalStone.index;
     
-    console.log('Will land on stone:', finalStone.number, 'with index:', finalStoneIndex);
+    // Get the starting position (first stone in path)
+    const startPosition = getStonePosition(boardPath[0], true);
     
-    // Start the dice moving through the stones and it will end at our target
-    moveDiceAlongPath(0, totalSteps, finalStoneIndex);
-  }, [isRolling, rollingStoneIndex, moveDiceAlongPath, stones]);
+    // Show the ball at the starting position
+    setBallPosition(startPosition);
+    setShowBall(true);
+    
+    // Stop board shaking after a moment
+    setTimeout(() => {
+      setIsBoardShaking(false);
+    }, 1500);
+    
+    // Run the ball around the board
+    let step = 0;
+    const maxSteps = boardPath.length + 10; // Full board plus extra for excitement
+    
+    const animateStep = () => {
+      // Calculate which stone to highlight
+      const currentStoneIndex = step % boardPath.length;
+      const currentStoneNumber = boardPath[currentStoneIndex];
+      
+      // Move the ball to this stone's position
+      const newPosition = getStonePosition(currentStoneNumber, true);
+      setBallPosition(newPosition);
+      
+      // Find stone by number and highlight it
+      const allStones = [...stones, ...smallStones];
+      const found = allStones.find(s => s.number === currentStoneNumber);
+      if (found) {
+        setRollingStoneIndex(found.index);
+      }
+      
+      // Play sound occasionally
+      if (step % 3 === 0) {
+        try {
+          const audio = new Audio();
+          audio.src = '/rolling-dice.mp3';
+          audio.volume = 0.2;
+          audio.play().catch(e => console.log('Audio failed:', e));
+        } catch (e) {
+          console.log('Audio not supported');
+        }
+      }
+      
+      // Speed up as we go - starts slower then gets faster
+      const stepDelay = step < 10 ? 300 : 
+                        step < 20 ? 200 : 
+                        step < 30 ? 150 : 
+                        step < maxSteps - 5 ? 100 : 200; // Slow down at the end
+      
+      step++;
+      
+      // Continue animation until we reach the final step
+      if (step < maxSteps) {
+        setTimeout(animateStep, stepDelay);
+      } else {
+        // Final landing on the target stone
+        setTimeout(() => {
+          // Final position based on our chosen stone
+          const finalPosition = getStonePosition(finalStone.number, true);
+          setBallPosition(finalPosition);
+          
+          // Find the stone index for highlighting
+          if (finalStone.row <= 4) {
+            setRollingStoneIndex(finalStone.index);
+          } else {
+            setRollingStoneIndex(finalStone.index + 100);
+          }
+          
+          // After a brief pause, complete the roll
+          setTimeout(() => {
+            setRollingStoneIndex(null);
+            setSelectedStone(finalStone.number);
+            setShowBall(false);
+            setIsRolling(false);
+            
+            // Show result toast
+            const isSpecial = 'isSpecial' in finalStone && finalStone.isSpecial;
+            const isSuper = 'isSuper' in finalStone && finalStone.isSuper;
+            
+            toast({
+              title: "You Rolled: " + finalStone.number,
+              description: isSpecial ? "You hit a special stone!" : 
+                          isSuper ? "You hit a super stone!" : 
+                          "Good roll!",
+            });
+          }, 1000);
+        }, 500);
+      }
+    };
+    
+    // Start the animation sequence
+    setTimeout(animateStep, 500);
+    
+  }, [isRolling, rollingStoneIndex, toast, stones, smallStones, getStonePosition, getAllStoneNumbers]);
   
   // Handle individual stone clicks (for testing)
   const handleStoneClick = useCallback((index: number, stoneNumber: number) => {
@@ -558,7 +765,7 @@ export default function DemoPage() {
             <div 
               ref={boardRef}
               id="demo-game-board" 
-              className="relative p-4 rounded-lg mb-6 overflow-hidden" 
+              className={`relative p-4 rounded-lg mb-6 overflow-hidden ${isBoardShaking ? 'shaking-board' : ''}`} 
               style={{ backgroundColor: '#0F172A', border: '2px solid #FFC107', position: 'relative' }}
             >
               <h3 className="text-center text-white text-2xl font-bold mb-4">BIG BOYS GAME</h3>
