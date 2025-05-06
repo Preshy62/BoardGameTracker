@@ -199,11 +199,12 @@ export default function DemoPage() {
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        background: radial-gradient(circle, white 30%, gold 100%);
+        background: radial-gradient(circle, white 30%, #FF8800 100%);
         border: 4px solid gold;
         z-index: 9999;
         transition: top 0.8s ease, left 0.8s ease;
-        box-shadow: 0 0 30px 15px rgba(255, 215, 0, 0.7);
+        box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.7);
+        transform: translate(-50%, -50%); /* This ensures the ball is properly centered */
       }
       
       .roll-animation {
@@ -330,53 +331,54 @@ export default function DemoPage() {
     const stoneRect = stoneElement.getBoundingClientRect();
     
     // Calculate the position inside the board
+    // Since we're using transform: translate(-50%, -50%) on the ball,
+    // we only need to provide the center point of the stone
     const position = {
-      left: stoneRect.left - boardRect.left + (stoneRect.width / 2) - 30, // center the ball (60px width)
-      top: stoneRect.top - boardRect.top + (stoneRect.height / 2) - 30, // center the ball (60px height)
+      left: stoneRect.left - boardRect.left + (stoneRect.width / 2),  // exact center of stone
+      top: stoneRect.top - boardRect.top + (stoneRect.height / 2),   // exact center of stone
     };
     
     console.log(`Stone ${selector} position:`, position);
     return position;
   };
 
-  // Generate a deterministic path following the board layout
+  // Generate a simple sequential path of stones with the target at the end
   const generatePath = (targetStoneIndex: number) => {
-    // Define the fixed path that follows the board layout in a serpentine pattern
-    // This ensures the ball moves in a consistent, predictable manner
-    const fixedPath = [
-      // Row 1 (left to right)
-      { row: 1, index: 0 }, { row: 1, index: 1 }, { row: 1, index: 2 }, { row: 1, index: 3 }, { row: 1, index: 4 },
-      // Row 2 (right to left)
-      { row: 2, index: 4 }, { row: 2, index: 3 }, { row: 2, index: 2 }, { row: 2, index: 1 }, { row: 2, index: 0 },
-      // Row 3 (left to right)
-      { row: 3, index: 0 }, { row: 3, index: 1 }, { row: 3, index: 2 }, { row: 3, index: 3 }, { row: 3, index: 4 }, { row: 3, index: 5 }, { row: 3, index: 6 },
-      // Row 4 (right to left)
-      { row: 4, index: 7 }, { row: 4, index: 6 }, { row: 4, index: 5 }, { row: 4, index: 4 }, { row: 4, index: 3 }, { row: 4, index: 2 }, { row: 4, index: 1 }, { row: 4, index: 0 },
-      // Row 5 (small stones - left to right)
-      { row: 5, index: 0 }, { row: 5, index: 1 }, { row: 5, index: 2 }, { row: 5, index: 3 }, { row: 5, index: 4 }, { row: 5, index: 5 }, { row: 5, index: 6 }, { row: 5, index: 7 }, { row: 5, index: 8 }, { row: 5, index: 9 }, { row: 5, index: 10 },
-      // Row 6 (small stones - right to left)
-      { row: 6, index: 10 }, { row: 6, index: 9 }, { row: 6, index: 8 }, { row: 6, index: 7 }, { row: 6, index: 6 }, { row: 6, index: 5 }, { row: 6, index: 4 }, { row: 6, index: 3 }, { row: 6, index: 2 }, { row: 6, index: 1 }, { row: 6, index: 0 },
-    ];
+    // Create a sequential list of visible stone indices to create a visible path
+    const allVisibleIndices = [];
     
-    // Convert the fixed path to stone indices
-    const indexPath = fixedPath.map(stone => stone.row <= 4 ? stone.index : 100 + stone.index);
-    console.log('Created fixed path for dice roll with', indexPath.length, 'elements');
-    
-    // Find target index in the path
-    const targetIndex = indexPath.indexOf(targetStoneIndex);
-    let finalPath = [];
-    
-    // If target is in the path, take a portion of the path ending at the target
-    if (targetIndex >= 0) {
-      // Get a reasonable starting point before the target (at least 5 steps back, wrapping if needed)
-      const startOffset = Math.min(10, targetIndex);
-      finalPath = indexPath.slice(targetIndex - startOffset, targetIndex + 1);
-    } else {
-      // If target not in path (unlikely), provide a direct path to target
-      finalPath = [indexPath[0], indexPath[Math.floor(indexPath.length / 3)], indexPath[Math.floor(indexPath.length * 2 / 3)], targetStoneIndex];
+    // Add regular stones (row 1-4)
+    for (const stone of stones) {
+      allVisibleIndices.push(stone.index);
     }
     
-    return finalPath;
+    // Add small stones (row 5-6 with index offset 100)
+    for (const stone of smallStones) {
+      allVisibleIndices.push(100 + stone.index);
+    }
+    
+    // Shuffle the indices (except the target) to create variety
+    const shuffled = [...allVisibleIndices];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    // Create a path of 5-8 steps ending with the target
+    const numSteps = Math.floor(Math.random() * 4) + 5; // 5-8 steps
+    const path = shuffled.slice(0, numSteps);
+    
+    // Make sure target is not already in the path
+    const targetIndex = path.indexOf(targetStoneIndex);
+    if (targetIndex >= 0) {
+      path.splice(targetIndex, 1);
+    }
+    
+    // Add the target at the end
+    path.push(targetStoneIndex);
+    
+    console.log('Created path with', path.length, 'steps ending at', targetStoneIndex);
+    return path;
   };
 
   // Enhanced function to handle rolling dice across the board
@@ -424,10 +426,13 @@ export default function DemoPage() {
       // Generate a fixed path through stones on the board that follows the layout
       const path = generatePath(actualIndex);
       
-      // Show the ball at the first position
-      const startPosition = getStonePosition(path[0]);
+      // Show the ball at a guaranteed visible starting position
+      // Using stone at row 1, index 0 as a starting point (top left of board)
+      const startStoneIndex = 0; // This guarantees a visible starting point
+      const startPosition = getStonePosition(startStoneIndex);
       setBallPosition(startPosition);
       setShowBall(true);
+      console.log('Starting ball animation from position:', startPosition);
       
       // Animate the ball through the path
       let step = 1;
@@ -490,10 +495,13 @@ export default function DemoPage() {
     // Generate a path to the clicked stone that follows the board layout
     const path = generatePath(index); // Use our predictable path generator
     
-    // Show the ball at the first position
-    const startPosition = getStonePosition(path[0]);
+    // Show the ball at a guaranteed visible starting position
+    // Using stone at row 1, index 0 as a starting point (top left of board)
+    const startStoneIndex = 0; // This guarantees a visible starting point
+    const startPosition = getStonePosition(startStoneIndex);
     setBallPosition(startPosition);
     setShowBall(true);
+    console.log('Starting ball animation from position:', startPosition);
     
     // Animate the ball through the path
     let step = 1;
