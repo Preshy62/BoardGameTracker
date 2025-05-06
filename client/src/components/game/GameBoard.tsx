@@ -263,6 +263,9 @@ const GameBoard = ({
     return finalStoneSelected === stoneNumber;
   };
   
+  // Determine if we should show the winner overlay
+  const showWinnerOverlay = finalStoneSelected !== null;
+  
   // We don't need this effect anymore as the logic is incorporated in the enhanced effect above
 
   return (
@@ -404,6 +407,18 @@ const GameBoard = ({
               </div>
               
               {/* We've removed all GameBall components to focus purely on stone highlighting */}
+              
+              {/* Winner announcement overlay */}
+              {showWinnerOverlay && (
+                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 winner-overlay">
+                  <div className="text-center">
+                    <h2 className="text-4xl font-bold text-yellow-400 mb-2 winner-text-animation">
+                      {finalStoneSelected}
+                    </h2>
+                    <p className="text-2xl font-bold text-white winner-pulse-animation">WINNER!</p>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Total Pool */}

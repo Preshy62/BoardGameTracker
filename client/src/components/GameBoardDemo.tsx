@@ -257,6 +257,9 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
     return finalStoneSelected === stoneNumber;
   };
   
+  // Determine if we should show the winner overlay
+  const showWinnerOverlay = finalStoneSelected !== null;
+  
   return (
     <div className="p-4 bg-white mx-auto max-w-4xl">
       <div 
@@ -353,6 +356,18 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           <GameStone id="demo-stone-71" number={71} isRolling={isStoneRolling(71)} isWinner={isWinningStone(71)} size="sm" />
           <GameStone id="demo-stone-10" number={10} isRolling={isStoneRolling(10)} isWinner={isWinningStone(10)} size="sm" />
         </div>
+        
+        {/* Winner announcement overlay */}
+        {showWinnerOverlay && (
+          <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 winner-overlay">
+            <div className="text-center">
+              <h2 className="text-4xl font-bold text-yellow-400 mb-2 winner-text-animation">
+                {finalStoneSelected}
+              </h2>
+              <p className="text-2xl font-bold text-white winner-pulse-animation">WINNER!</p>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="bg-gray-100 p-4 rounded">
@@ -363,8 +378,9 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           <li>The ball moves across multiple random stones with variable speed</li>
           <li>As the ball passes over stones, they briefly highlight</li>
           <li>Sound effects play during the animation (rolling, clicking)</li>
-          <li>Finally, the ball lands on the selected stone with a landing sound</li>
-          <li>The selected stone remains highlighted</li>
+          <li>The ball lands on the selected stone with a landing sound</li>
+          <li>The winner stone displays a dramatic pulsing animation with color-cycling effects</li>
+          <li>A winner overlay appears with animated text celebrating the result</li>
         </ol>
       </div>
     </div>
