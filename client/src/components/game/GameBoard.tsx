@@ -36,10 +36,38 @@ const GameBoard = ({
   // Keep track of which stones are currently in the rolling animation
   const [rollingStones, setRollingStones] = useState<{[key: number]: boolean}>({});
   
-  // State for the rolling ball animation
+  // State for the enhanced rolling ball animation
   const [ballPosition, setBallPosition] = useState({ top: 0, left: 0 });
   const [showBall, setShowBall] = useState(false);
   const [boardElement, setBoardElement] = useState<HTMLElement | null>(null);
+  const [isBoardShaking, setIsBoardShaking] = useState(false);
+  const [rollSpeed, setRollSpeed] = useState(200); // ms between moves
+  
+  // Create path for dice to follow - initialized once
+  const [dicePath] = useState<number[]>(() => {
+    console.log("Created path for dice roll with", 25, "elements");
+    // Randomize the order of stones to create a more natural path
+    const allStoneNumbers = [
+      // Top row
+      29, 40, 32, 81, 7,
+      // Second row
+      13, 64, 1000, 101, 4,
+      // Third row
+      3355, 65, 12, 22, 9, 6624, 44,
+      // Fourth row
+      28, 21, 105, 500, 99, 20, 82, 3,
+    ];
+    
+    // Create a randomized path through stone indices
+    const randomPath = [];
+    for (let i = 0; i < 25; i++) {
+      const randomIndex = Math.floor(Math.random() * allStoneNumbers.length);
+      randomPath.push(randomIndex);
+    }
+    
+    console.log("Dice path created with randomized stone indices:", randomPath);
+    return randomPath;
+  });
   
   // Get reference to the board once it's rendered
   useEffect(() => {
@@ -49,18 +77,31 @@ const GameBoard = ({
     }
   }, []);
   
-  // Function to simulate the stone rolling across different stones before landing
+  // Enhanced function to simulate the stone rolling across different stones before landing
   useEffect(() => {
     // If there's a stone rolling
     if (rollingStoneNumber !== null) {
       // Clear any previous rolling animations
       setRollingStones({});
-      setShowBall(true);
       
-      // Create a sequence of stones to highlight as the ball rolls through them
-      const simulateRolling = async () => {
-        // Number of stones to roll through before landing on the final number
-        const rollSteps = 12;
+      // Start a new rolling animation
+      const simulateEnhancedRolling = async () => {
+        // Shake the board briefly when roll begins
+        setIsBoardShaking(true);
+        setTimeout(() => setIsBoardShaking(false), 1500);
+        
+        // Play roll sound
+        try {
+          const audio = new Audio();
+          audio.src = '/rolling-dice.mp3';
+          audio.volume = 0.3;
+          audio.play().catch(e => console.log('Audio failed:', e));
+        } catch (e) {
+          console.log('Audio not supported');
+        }
+        
+        // Show the rolling ball
+        setShowBall(true);
         
         // Get all possible stone numbers in a specific order for better visual flow
         const allStoneNumbers = [
@@ -90,11 +131,27 @@ const GameBoard = ({
           });
         }
         
-        // Simulate rolling through random stones
+        // The number of steps will vary to make it look more natural
+        const rollSteps = 15 + Math.floor(Math.random() * 10); // Between 15-24 steps
+        
+        // Variable speed for more realistic animation
+        let currentSpeed = 280; // Start slightly slower
+        
+        // Follow a path through the stones
         for (let i = 0; i < rollSteps; i++) {
-          // Choose a stone to highlight as part of the rolling animation
-          const randomIndex = Math.floor(Math.random() * allStoneNumbers.length);
-          const currentStone = allStoneNumbers[randomIndex];
+          // Adjust speed - faster in the middle, slower at start and end
+          if (i < rollSteps / 3) {
+            // Gradually speed up at the beginning
+            currentSpeed = Math.max(160, 280 - i * 10);
+          } else if (i > (rollSteps * 2) / 3) {
+            // Gradually slow down near the end
+            currentSpeed = 160 + (i - (rollSteps * 2) / 3) * 15;
+          }
+          
+          // Choose a stone to highlight from our path
+          const pathIndex = i % dicePath.length;
+          const stoneIndex = dicePath[pathIndex];
+          const currentStone = allStoneNumbers[stoneIndex % allStoneNumbers.length];
           
           // Update the rolling stones map
           setRollingStones(prev => ({ ...prev, [currentStone]: true }));
@@ -111,8 +168,20 @@ const GameBoard = ({
             });
           }
           
-          // Wait a short time before moving to the next stone
-          await new Promise(resolve => setTimeout(resolve, 200));
+          // Play a click sound periodically for movement
+          if (i % 4 === 0) {
+            try {
+              const clickAudio = new Audio();
+              clickAudio.src = '/click.mp3'; // Soft click sound
+              clickAudio.volume = 0.1;
+              clickAudio.play().catch(e => console.log('Click audio failed:', e));
+            } catch (e) {
+              // Optional sound - fail silently
+            }
+          }
+          
+          // Wait based on the current speed
+          await new Promise(resolve => setTimeout(resolve, currentSpeed));
           
           // Clear the current stone
           setRollingStones(prev => {
@@ -128,24 +197,44 @@ const GameBoard = ({
           const rect = finalStoneElement.getBoundingClientRect();
           const boardRect = boardElement.getBoundingClientRect();
           
+          // Make a more dramatic movement to the final position
           setBallPosition({
-            top: rect.top - boardRect.top + (rect.height / 2) - 20,
-            left: rect.left - boardRect.left + (rect.width / 2) - 20,
+            top: rect.top - boardRect.top + (rect.height / 2) - 30,  // Slightly higher for dramatic effect
+            left: rect.left - boardRect.left + (rect.width / 2) - 30,
           });
+          
+          // After a very short delay, settle into the final position
+          setTimeout(() => {
+            setBallPosition({
+              top: rect.top - boardRect.top + (rect.height / 2) - 20,
+              left: rect.left - boardRect.left + (rect.width / 2) - 20,
+            });
+          }, 100);
         }
         
+        // Highlight the final stone
         setRollingStones({ [rollingStoneNumber]: true });
+        
+        // Landing sound for final position
+        try {
+          const landAudio = new Audio();
+          landAudio.src = '/dice-landing.mp3'; // Final landing sound
+          landAudio.volume = 0.3;
+          landAudio.play().catch(e => console.log('Landing audio failed:', e));
+        } catch (e) {
+          // Optional sound - fail silently
+        }
         
         // Hide the ball after a short delay
         setTimeout(() => {
           setShowBall(false);
-        }, 1000);
+        }, 1500);
       };
       
-      // Start the rolling simulation
-      simulateRolling();
+      // Start the enhanced rolling simulation
+      simulateEnhancedRolling();
     }
-  }, [rollingStoneNumber, boardElement]);
+  }, [rollingStoneNumber, boardElement, dicePath]);
 
   // Function to check if a stone should be highlighted as part of the rolling animation
   const isStoneRolling = (stoneNumber: number) => {
