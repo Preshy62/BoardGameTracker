@@ -163,12 +163,26 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
       }
       
       if (data.rollingStoneNumber !== undefined) {
+        // Reset any previous ball position
+        document.documentElement.style.setProperty('--ball-top', '50%');
+        document.documentElement.style.setProperty('--ball-left', '50%');
+        
+        console.log("Received rolling stone number:", data.rollingStoneNumber);
         setRollingStoneNumber(data.rollingStoneNumber);
+        
+        // Force board to shake
+        const boardElement = document.getElementById('game-board-element');
+        if (boardElement) {
+          boardElement.classList.add('shaking-board');
+          setTimeout(() => {
+            boardElement.classList.remove('shaking-board');
+          }, 1500);
+        }
         
         // Clear rolling stone after animation
         setTimeout(() => {
           setRollingStoneNumber(null);
-        }, 2000);
+        }, 3000); // Longer animation time for more impact
       }
       
       if (data.timeRemaining !== undefined) {

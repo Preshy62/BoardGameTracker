@@ -314,7 +314,11 @@
 }
 
 .roll-animation {
-  animation: roll-glow 0.8s linear infinite;
+  animation: roll-glow 0.8s linear infinite !important;
+  display: block !important;
+  visibility: visible !important;
+  z-index: 9999 !important;
+  position: absolute !important;
 }
 
 .shaking-board {

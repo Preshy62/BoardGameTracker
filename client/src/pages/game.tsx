@@ -67,6 +67,26 @@ export default function Game({ id }: GamePageProps) {
     userId: user?.id || 0
   });
   
+  // When rollingStoneNumber changes, update CSS variables to make the ball animation visible
+  useEffect(() => {
+    if (rollingStoneNumber !== null) {
+      console.log("Game page detected rolling stone:", rollingStoneNumber);
+      
+      // Reset any previous ball position
+      document.documentElement.style.setProperty('--ball-top', '50%');
+      document.documentElement.style.setProperty('--ball-left', '50%');
+      
+      // Force board to shake
+      const boardElement = document.getElementById('game-board-element');
+      if (boardElement) {
+        boardElement.classList.add('shaking-board');
+        setTimeout(() => {
+          boardElement.classList.remove('shaking-board');
+        }, 1500);
+      }
+    }
+  }, [rollingStoneNumber]);
+  
   // Voice chat settings
   const isHighStakesGame = game ? game.stake >= 50000 : false;
 
