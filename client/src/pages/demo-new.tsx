@@ -840,7 +840,7 @@ export default function DemoPage() {
         setFinalStoneSelected(true);
       }, 500);
     }, 2000);
-  }, [rollingStoneIndex, isRolling]);
+  }, [rollingStoneIndex, isRolling, setFinalStoneSelected, setSelectedStone]);
 
   // Loading state
   if (isLoading) {
@@ -913,9 +913,18 @@ export default function DemoPage() {
                     <h2 className="text-yellow-500 text-4xl font-bold winner-text-animation mb-4">
                       WINNER!
                     </h2>
-                    <p className="text-white text-2xl winner-pulse-animation">
+                    <p className="text-white text-2xl winner-pulse-animation mb-6">
                       Stone {selectedStone} wins the pot!
                     </p>
+                    <button 
+                      onClick={() => {
+                        setFinalStoneSelected(false);
+                        setSelectedStone(null);
+                      }}
+                      className="bg-secondary hover:bg-secondary-dark text-primary font-bold py-2 px-6 rounded-full shadow-lg transform hover:scale-105 transition"
+                    >
+                      Play Again
+                    </button>
                   </div>
                 </div>
               )}
@@ -1020,20 +1029,22 @@ export default function DemoPage() {
               <div className="text-center">
                 <button
                   onClick={handleRollDice}
-                  disabled={isRolling || rollingStoneIndex !== null}
+                  disabled={isRolling || rollingStoneIndex !== null || finalStoneSelected}
                   className={`text-primary text-lg font-sans font-bold py-3 px-8 rounded-lg shadow-lg transform transition
-                    ${(isRolling || rollingStoneIndex !== null) 
+                    ${(isRolling || rollingStoneIndex !== null || finalStoneSelected) 
                       ? 'bg-gray-400 cursor-not-allowed' 
                       : 'bg-secondary hover:bg-secondary-dark hover:scale-105'}`}
                 >
-                  ROLL STONE
+                  {finalStoneSelected ? 'GAME ENDED' : 'ROLL STONE'}
                 </button>
                 <div className="mt-2 text-xs text-white">
-                  {isRolling 
-                    ? 'Rolling the stones...' 
-                    : rollingStoneIndex !== null 
-                      ? 'Revealing your roll!' 
-                      : 'Click to roll a stone!'}
+                  {finalStoneSelected
+                    ? 'Click "Play Again" to start a new game'
+                    : isRolling 
+                      ? 'Rolling the stones...' 
+                      : rollingStoneIndex !== null 
+                        ? 'Revealing your roll!' 
+                        : 'Click to roll a stone!'}
                 </div>
               </div>
             </div>
