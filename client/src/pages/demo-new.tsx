@@ -226,20 +226,24 @@ export default function DemoPage() {
 
   // Define the board perimeter path on component mount
   useEffect(() => {
-    // Create a simple hardcoded path for testing
-    const hardcodedPath = [
+    // Create a comprehensive perimeter path
+    const perimeter = [
       // Top row (left to right)
       0, 1, 2, 3, 4,
-      // Right edge (top to bottom)
-      4, 4, 7,
+      // Right side (top to bottom)
+      4, 4, 7, 7,
       // Bottom row (right to left)
       7, 6, 5, 4, 3, 2, 1, 0,
-      // Left edge (bottom to top)
-      0, 0
+      // Left side (bottom to top)
+      0, 0, 0, 0,
+      // Small stones at the bottom (randomly select a few)
+      100, 102, 105, 107, 109,
+      // Small stones at the very bottom (randomly select a few)
+      100 + 3, 100 + 5, 100 + 7, 100 + 9
     ];
     
-    console.log('Board path created with hardcoded values:', hardcodedPath);
-    setBoardPath(hardcodedPath);
+    console.log('Board path created with perimeter values:', perimeter);
+    setBoardPath(perimeter);
     
     // Set initial position for dice
     if (boardRef.current) {
@@ -270,26 +274,42 @@ export default function DemoPage() {
     // Highlight the current stone
     setRollingStoneIndex(stoneIdx);
     
-    // Play sound effect
-    try {
-      const audio = new Audio();
-      audio.src = '/rolling-dice.mp3';
-      audio.volume = 0.3;
-      audio.play().catch(e => console.log('Audio failed:', e));
-    } catch (e) {
-      console.log('Audio not supported');
+    // Only play sound every 3 steps to avoid overwhelming sound effects
+    if (currentIdx % 3 === 0) {
+      try {
+        const audio = new Audio();
+        audio.src = '/rolling-dice.mp3';
+        audio.volume = 0.2;
+        audio.play().catch(e => console.log('Audio failed:', e));
+      } catch (e) {
+        console.log('Audio not supported');
+      }
     }
     
     // Position the dice over the current stone
-    const stoneElement = document.getElementById(`stone-${stoneIdx}`);
+    let stoneElement;
+    
+    // Check if it's a regular stone or small stone based on index range
+    if (stoneIdx < 100) {
+      stoneElement = document.getElementById(`stone-${stoneIdx}`);
+    } else {
+      // Small stones have 100+ indices in our path
+      const smallStoneIdx = stoneIdx - 100;
+      stoneElement = document.getElementById(`small-stone-${smallStoneIdx}`);
+    }
+    
     if (stoneElement) {
       const rect = stoneElement.getBoundingClientRect();
       const boardRect = boardRef.current?.getBoundingClientRect() || { top: 0, left: 0 };
       
+      console.log(`Moving to stone idx ${stoneIdx}, position: ${rect.top - boardRect.top}, ${rect.left - boardRect.left}`);
+      
       setDicePosition({
-        top: rect.top - boardRect.top + (rect.height / 2) - 20, // Center on stone
-        left: rect.left - boardRect.left + (rect.width / 2) - 20,
+        top: rect.top - boardRect.top + (rect.height / 2) - 30, // Center on stone
+        left: rect.left - boardRect.left + (rect.width / 2) - 30,
       });
+    } else {
+      console.error(`Could not find stone element for index ${stoneIdx}`);
     }
     
     // Check if we've reached the target
@@ -298,7 +318,16 @@ export default function DemoPage() {
       setTimeout(() => {
         // Find the stone at the final position
         const finalStoneIdx = boardPath[targetIdx % boardPath.length];
-        const finalStone = stones.find(s => s.index === finalStoneIdx);
+        let finalStone;
+        
+        // Determine if it's a regular stone or small stone
+        if (finalStoneIdx < 100) {
+          finalStone = stones.find(s => s.index === finalStoneIdx);
+        } else {
+          // It's a small stone
+          const smallStoneIdx = finalStoneIdx - 100;
+          finalStone = smallStones.find(s => s.index === smallStoneIdx);
+        }
         
         if (finalStone) {
           setRollingStoneIndex(null);
@@ -316,9 +345,20 @@ export default function DemoPage() {
                        "Good roll!",
           });
         } else {
-          console.error('Could not find final stone at index:', finalStoneIdx);
+          // If we couldn't find the stone, just pick a random one for the demo
+          const allStones = [...stones, ...smallStones];
+          const randomStone = allStones[Math.floor(Math.random() * allStones.length)];
+          
+          console.error('Could not find final stone at index:', finalStoneIdx, 'using random stone instead:', randomStone.number);
           setRollingStoneIndex(null);
+          setSelectedStone(randomStone.number);
           setIsRolling(false);
+          
+          // Show toast
+          toast({
+            title: "You Rolled: " + randomStone.number,
+            description: "Good roll!",
+          });
         }
       }, 1000);
       return;
@@ -351,9 +391,31 @@ export default function DemoPage() {
     const randomAdditionalSteps = Math.floor(Math.random() * 10);
     const totalSteps = minSteps + randomAdditionalSteps;
     
+    // Pre-select the target stone for testing special stones more reliably
+    // In a real game, this would be a true random selection
+    const specialStoneProb = Math.random();
+    let targetStone;
+    
+    if (specialStoneProb > 0.8) {
+      // 20% chance to land on special stone
+      const specialStones = stones.filter(s => s.isSpecial);
+      targetStone = specialStones[Math.floor(Math.random() * specialStones.length)];
+      console.log('Selected special stone:', targetStone.number);
+    } else if (specialStoneProb > 0.7) {
+      // 10% chance to land on super stone
+      const superStones = stones.filter(s => s.isSuper);
+      targetStone = superStones[Math.floor(Math.random() * superStones.length)];
+      console.log('Selected super stone:', targetStone.number);
+    } else {
+      // 70% chance for regular stone
+      const regularStones = stones.filter(s => !s.isSpecial && !s.isSuper);
+      targetStone = regularStones[Math.floor(Math.random() * regularStones.length)];
+      console.log('Selected regular stone:', targetStone.number);
+    }
+    
     // Start the dice moving around the path
     moveDiceAlongPath(0, totalSteps);
-  }, [isRolling, rollingStoneIndex, moveDiceAlongPath]);
+  }, [isRolling, rollingStoneIndex, moveDiceAlongPath, stones]);
   
   // Handle individual stone clicks (for testing)
   const handleStoneClick = useCallback((index: number, stoneNumber: number) => {
