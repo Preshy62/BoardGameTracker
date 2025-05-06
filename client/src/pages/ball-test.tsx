@@ -180,7 +180,7 @@ animation: ${useEnhancedAnimation ? 'enhanced-ball-pulse' : 'none'};`}
               
               {/* The ball element */}
               {showBall && (
-                <div className={`ball-element ${useEnhancedAnimation ? 'roll-animation' : ''}`}></div>
+                <div className={`ball-element ${useEnhancedAnimation ? 'ball-test-animation' : ''}`}></div>
               )}
             </div>
           </div>

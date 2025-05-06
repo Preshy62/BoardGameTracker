@@ -32,9 +32,12 @@
   /* Game ball animation variables */
   --ball-top: 50%;
   --ball-left: 50%;
-  --ball-visible: 0;
+  --ball-visible: 1;
   --ball-size: 30px;
   --ball-glow: rgba(255, 165, 0, 0.8);
+  --ball-glow-intensity: 12px;
+  --ball-opacity: 1;
+  --ball-rotation-speed: 0.8s;
 }
 
 .dark {
@@ -337,22 +340,42 @@
 
 .ball-element {
   position: absolute !important;
-  width: 60px !important;
-  height: 60px !important;
+  width: var(--ball-size) !important;
+  height: var(--ball-size) !important;
   border-radius: 50% !important;
   background: radial-gradient(circle, white 20%, #FF8800 60%, gold 100%) !important;
   border: 5px solid gold !important;
   z-index: 9999 !important;
   transition: top 0.25s ease-out, left 0.25s ease-out !important; /* Faster transitions for more responsive animation */
-  box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.7) !important;
+  box-shadow: 0 0 var(--ball-glow-intensity) calc(var(--ball-glow-intensity) / 2) var(--ball-glow) !important;
   transform: translate(-50%, -50%) !important; /* This ensures the ball is properly centered */
   filter: blur(0.5px) !important; /* Slight blur for motion effect */
   display: block !important;
   visibility: visible !important;
-  opacity: 1 !important;
+  opacity: var(--ball-opacity) !important;
   pointer-events: none !important; /* Ensure it doesn't interfere with clicks */
   top: var(--ball-top) !important;
   left: var(--ball-left) !important;
+}
+
+/* Ball animation for the test page */
+.ball-test-animation {
+  animation: ball-test-roll var(--ball-rotation-speed) linear infinite;
+}
+
+@keyframes ball-test-roll {
+  0% { 
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    box-shadow: 0 0 15px 8px rgba(255, 165, 0, 0.7);
+  }
+  50% { 
+    transform: translate(-50%, -50%) rotate(180deg) scale(1.15);
+    box-shadow: 0 0 25px 12px rgba(255, 136, 0, 0.9);
+  }
+  100% { 
+    transform: translate(-50%, -50%) rotate(360deg) scale(1);
+    box-shadow: 0 0 15px 8px rgba(255, 165, 0, 0.7);
+  }
 }
 
 /* Enhanced styles specifically for game/2 page */
