@@ -113,6 +113,8 @@ const GameBoard = ({
       console.log("🎲 Rolling animation starting for stone number:", rollingStoneNumber);
       // Clear any previous rolling animations
       setRollingStones({});
+      // Set rolling flag
+      setIsRolling(true);
       
       // Start a new rolling animation
       const simulateEnhancedRolling = async () => {
@@ -149,17 +151,25 @@ const GameBoard = ({
           6, 80, 3, 26, 100, 19, 14, 43, 16, 71, 10
         ];
         
-        // Position for the first stone
-        const firstStoneElement = document.getElementById(`stone-${allStoneNumbers[0]}`);
-        if (firstStoneElement && boardElement) {
-          const rect = firstStoneElement.getBoundingClientRect();
-          const boardRect = boardElement.getBoundingClientRect();
+        // First set the ball at the center to ensure visibility
+        if (boardRef.current) {
+          const boardRect = boardRef.current.getBoundingClientRect();
+          const centerTop = boardRect.height / 2;
+          const centerLeft = boardRect.width / 2;
           
+          // Set variables for initial position
+          document.documentElement.style.setProperty('--ball-top', `${centerTop}px`);
+          document.documentElement.style.setProperty('--ball-left', `${centerLeft}px`);
+          
+          // Update React state as well
           setBallPosition({
-            top: rect.top - boardRect.top + (rect.height / 2) - 20, // Center vertically
-            left: rect.left - boardRect.left + (rect.width / 2) - 20, // Center horizontally
+            top: centerTop,
+            left: centerLeft,
           });
         }
+        
+        // Wait a moment for the ball to appear at center
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // The number of steps will vary to make it look more natural
         const rollSteps = 15 + Math.floor(Math.random() * 10); // Between 15-24 steps
@@ -169,6 +179,8 @@ const GameBoard = ({
         
         // Follow a path through the stones
         for (let i = 0; i < rollSteps; i++) {
+          if (!boardRef.current) continue;
+          
           // Adjust speed - faster in the middle, slower at start and end
           if (i < rollSteps / 3) {
             // Gradually speed up at the beginning
@@ -183,14 +195,17 @@ const GameBoard = ({
           const stoneIndex = dicePath[pathIndex];
           const currentStone = allStoneNumbers[stoneIndex % allStoneNumbers.length];
           
-          // Update the rolling stones map
+          // Save the current path index
+          setCurrentPathIndex(pathIndex);
+          
+          // Update the rolling stones map to highlight the current stone
           setRollingStones(prev => ({ ...prev, [currentStone]: true }));
           
           // Move the ball to this stone's position
           const stoneElement = document.getElementById(`stone-${currentStone}`);
-          if (stoneElement && boardElement) {
+          if (stoneElement && boardRef.current) {
             const rect = stoneElement.getBoundingClientRect();
-            const boardRect = boardElement.getBoundingClientRect();
+            const boardRect = boardRef.current.getBoundingClientRect();
             
             // Calculate center position with offsets that ensure ball is properly centered
             const newTop = rect.top - boardRect.top + (rect.height / 2);
@@ -198,14 +213,15 @@ const GameBoard = ({
             
             console.log(`Ball moving to stone ${currentStone} at position: `, {newTop, newLeft});
             
+            // Set variables for ball position
+            document.documentElement.style.setProperty('--ball-top', `${newTop}px`);
+            document.documentElement.style.setProperty('--ball-left', `${newLeft}px`);
+            
+            // Update React state as well
             setBallPosition({
               top: newTop,
               left: newLeft,
             });
-            
-            // Force a DOM update to ensure visibility
-            document.documentElement.style.setProperty('--ball-top', `${newTop}px`);
-            document.documentElement.style.setProperty('--ball-left', `${newLeft}px`);
           }
           
           // Play a click sound periodically for movement
@@ -233,9 +249,9 @@ const GameBoard = ({
         
         // Finally move to and highlight the actual rolled number
         const finalStoneElement = document.getElementById(`stone-${rollingStoneNumber}`);
-        if (finalStoneElement && boardElement) {
+        if (finalStoneElement && boardRef.current) {
           const rect = finalStoneElement.getBoundingClientRect();
-          const boardRect = boardElement.getBoundingClientRect();
+          const boardRect = boardRef.current.getBoundingClientRect();
           
           // Calculate final positions
           const finalTop = rect.top - boardRect.top + (rect.height / 2);
@@ -247,7 +263,7 @@ const GameBoard = ({
           document.documentElement.style.setProperty('--ball-top', `${finalTop - 10}px`);
           document.documentElement.style.setProperty('--ball-left', `${finalLeft}px`);
           
-          // Update React state as well (backup)
+          // Update React state as well
           setBallPosition({
             top: finalTop - 10, // Slightly higher for dramatic effect
             left: finalLeft,
@@ -258,7 +274,7 @@ const GameBoard = ({
             document.documentElement.style.setProperty('--ball-top', `${finalTop}px`);
             document.documentElement.style.setProperty('--ball-left', `${finalLeft}px`);
             
-            // Update React state as well (backup)
+            // Update React state as well
             setBallPosition({
               top: finalTop,
               left: finalLeft,
@@ -279,7 +295,10 @@ const GameBoard = ({
           // Optional sound - fail silently
         }
         
-        // Hide the ball after a short delay
+        // Reset rolling flag
+        setIsRolling(false);
+        
+        // Keep ball visible for a moment after landing
         setTimeout(() => {
           setShowBall(false);
         }, 1500);
@@ -288,44 +307,14 @@ const GameBoard = ({
       // Start the enhanced rolling simulation
       simulateEnhancedRolling();
     }
-  }, [rollingStoneNumber, boardElement, dicePath]);
+  }, [rollingStoneNumber, dicePath]);
 
   // Function to check if a stone should be highlighted as part of the rolling animation
   const isStoneRolling = (stoneNumber: number) => {
     return rollingStones[stoneNumber] || rollingStoneNumber === stoneNumber;
   };
   
-  // Effect to handle animation and sounds when stone number changes
-  useEffect(() => {
-    if (rollingStoneNumber !== null) {
-      console.log("GameBoard: Animation for stone", rollingStoneNumber);
-      
-      // Play dice rolling sound
-      try {
-        const audio = new Audio("/rolling-dice.mp3");
-        audio.volume = 0.5;
-        audio.play().catch(err => console.log("Audio error:", err));
-      } catch (e) {
-        console.log("Sound playback not supported");
-      }
-      
-      // Ensure ball visibility
-      document.documentElement.style.setProperty('--ball-top', '50%');
-      document.documentElement.style.setProperty('--ball-left', '50%');
-      
-      // Show animations
-      setShowBall(true);
-      
-      // Add shake effect
-      setIsBoardShaking(true);
-      setTimeout(() => setIsBoardShaking(false), 1500);
-      
-      // Reset animations after completing
-      setTimeout(() => {
-        setShowBall(false);
-      }, 3000);
-    }
-  }, [rollingStoneNumber]);
+  // We don't need this effect anymore as the logic is incorporated in the enhanced effect above
 
   return (
     <div className="flex-grow p-4">
@@ -463,16 +452,10 @@ const GameBoard = ({
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
               
-              {/* Enhanced rolling ball element */}
-              {/* Use CSS variables for ball positioning - avoids React state batching issues */}
-              {showBall && (
-                <div className="ball-element roll-animation" />
-              )}
-              
-              {/* Dynamic ball that follows a path around stones */}
+              {/* Main rolling ball element */}
               {(showBall || rollingStoneNumber) && (
                 <div 
-                  className="ball-element roll-animation"
+                  className="dice-ball"
                   style={{
                     position: 'absolute',
                     width: '60px',
@@ -493,9 +476,15 @@ const GameBoard = ({
                 />
               )}
               
-              {/* Backup ball using CSS variables for positioning */}
+              {/* Backup ball using CSS variables for consistent positioning */}
               {(showBall || rollingStoneNumber) && (
-                <div className="ball-element roll-animation" />
+                <div 
+                  className="ball-element roll-animation"
+                  style={{
+                    top: 'var(--ball-top)',
+                    left: 'var(--ball-left)'
+                  }}
+                />
               )}
               
               {/* Floating dice element for better visibility */}

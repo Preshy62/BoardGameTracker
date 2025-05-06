@@ -402,3 +402,19 @@
   border: 3px solid white !important;
   animation: pulse 0.5s infinite alternate, spin 2s linear infinite !important;
 }
+
+/* Main dice ball styling to ensure it's always visible */
+.dice-ball {
+  position: absolute !important;
+  z-index: 9999 !important; 
+  pointer-events: none !important;
+  transform: translate(-50%, -50%) !important;
+  border-radius: 50% !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  box-shadow: 0 0 40px 20px rgba(255, 136, 0, 0.9) !important;
+  filter: blur(0.5px) !important;
+  animation: ball-pulse 0.5s infinite alternate !important;
+  transition: top 0.25s ease-out, left 0.25s ease-out !important;
+}
