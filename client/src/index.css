@@ -330,7 +330,7 @@
 :root {
   --ball-top: 50%;
   --ball-left: 50%;
-  --ball-visible: 0;
+  --ball-visible: 1;
 }
 
 .ball-element {

@@ -114,6 +114,8 @@ const GameBoard = ({
       
       // Debug info to console
       console.log("Board ref exists:", !!boardRef.current);
+      console.log("Game status:", game.status);
+      console.log("Players:", players.length);
       
       // Clear any previous rolling animations
       setRollingStones({});
@@ -126,8 +128,28 @@ const GameBoard = ({
       
       // Set ball properties globally for fallback visibility
       document.documentElement.style.setProperty('--ball-visible', '1');
-      document.documentElement.style.setProperty('--ball-top', '50%');
-      document.documentElement.style.setProperty('--ball-left', '50%');
+      
+      // Set a fixed initial position in the center of the board
+      if (boardRef.current) {
+        const rect = boardRef.current.getBoundingClientRect();
+        const centerY = rect.height / 2;
+        const centerX = rect.width / 2;
+        
+        console.log("Setting initial ball position to center:", {centerX, centerY});
+        
+        document.documentElement.style.setProperty('--ball-top', `${centerY}px`);
+        document.documentElement.style.setProperty('--ball-left', `${centerX}px`);
+        
+        // Update ball position state
+        setBallPosition({
+          top: centerY,
+          left: centerX
+        });
+      } else {
+        console.error("Board ref not available for initial positioning");
+        document.documentElement.style.setProperty('--ball-top', '50%');
+        document.documentElement.style.setProperty('--ball-left', '50%');
+      }
       
       // Start a new rolling animation
       const simulateEnhancedRolling = async () => {
