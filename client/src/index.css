@@ -330,6 +330,7 @@
 :root {
   --ball-top: 50%;
   --ball-left: 50%;
+  --ball-visible: 0;
 }
 
 .ball-element {
@@ -346,7 +347,7 @@
   filter: blur(0.5px) !important; /* Slight blur for motion effect */
   display: block !important;
   visibility: visible !important;
-  opacity: 1 !important;
+  opacity: var(--ball-visible, 1) !important;
   pointer-events: none !important; /* Ensure it doesn't interfere with clicks */
   top: var(--ball-top) !important;
   left: var(--ball-left) !important;

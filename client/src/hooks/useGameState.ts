@@ -388,7 +388,8 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
       }
     }, 300);
     
-    // Add visual effects for rolling
+    // Add visual effects for rolling - these will be properly handled in the GameBoard component
+    document.documentElement.style.setProperty('--ball-visible', '1');
     document.documentElement.style.setProperty('--ball-top', '50%');
     document.documentElement.style.setProperty('--ball-left', '50%');
     

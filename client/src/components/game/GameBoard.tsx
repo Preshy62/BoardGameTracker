@@ -111,13 +111,20 @@ const GameBoard = ({
     // If there's a stone rolling
     if (rollingStoneNumber !== null) {
       console.log("🎲 Rolling animation starting for stone number:", rollingStoneNumber);
+      
       // Clear any previous rolling animations
       setRollingStones({});
+      
       // Set rolling flag
       setIsRolling(true);
       
+      // Set ball visible globally for fallback visibility
+      document.documentElement.style.setProperty('--ball-visible', '1');
+      
       // Start a new rolling animation
       const simulateEnhancedRolling = async () => {
+        console.log("Simulation animation started for stone:", rollingStoneNumber);
+        
         // Shake the board briefly when roll begins
         setIsBoardShaking(true);
         setTimeout(() => setIsBoardShaking(false), 1500);
@@ -157,6 +164,8 @@ const GameBoard = ({
           const centerTop = boardRect.height / 2;
           const centerLeft = boardRect.width / 2;
           
+          console.log("Setting initial ball position to center:", {centerTop, centerLeft});
+          
           // Set variables for initial position
           document.documentElement.style.setProperty('--ball-top', `${centerTop}px`);
           document.documentElement.style.setProperty('--ball-left', `${centerLeft}px`);
@@ -166,28 +175,36 @@ const GameBoard = ({
             top: centerTop,
             left: centerLeft,
           });
+        } else {
+          console.error("Board ref not available!");
+          // Fallback position
+          document.documentElement.style.setProperty('--ball-top', '50%');
+          document.documentElement.style.setProperty('--ball-left', '50%');
         }
         
         // Wait a moment for the ball to appear at center
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // The number of steps will vary to make it look more natural
-        const rollSteps = 15 + Math.floor(Math.random() * 10); // Between 15-24 steps
+        const rollSteps = 12 + Math.floor(Math.random() * 8); // Between 12-20 steps
         
         // Variable speed for more realistic animation
-        let currentSpeed = 280; // Start slightly slower
+        let currentSpeed = 250; // Start slightly slower
         
         // Follow a path through the stones
         for (let i = 0; i < rollSteps; i++) {
-          if (!boardRef.current) continue;
+          if (!boardRef.current) {
+            console.error("Board ref lost during animation!");
+            continue;
+          }
           
           // Adjust speed - faster in the middle, slower at start and end
           if (i < rollSteps / 3) {
             // Gradually speed up at the beginning
-            currentSpeed = Math.max(160, 280 - i * 10);
+            currentSpeed = Math.max(150, 250 - i * 8);
           } else if (i > (rollSteps * 2) / 3) {
             // Gradually slow down near the end
-            currentSpeed = 160 + (i - (rollSteps * 2) / 3) * 15;
+            currentSpeed = 150 + (i - (rollSteps * 2) / 3) * 10;
           }
           
           // Choose a stone to highlight from our path
@@ -217,15 +234,17 @@ const GameBoard = ({
             document.documentElement.style.setProperty('--ball-top', `${newTop}px`);
             document.documentElement.style.setProperty('--ball-left', `${newLeft}px`);
             
-            // Update React state as well
+            // Update React state as well - this is crucial for directly styled elements
             setBallPosition({
               top: newTop,
               left: newLeft,
             });
+          } else {
+            console.error(`Could not find stone element for stone ${currentStone}`);
           }
           
           // Play a click sound periodically for movement
-          if (i % 4 === 0) {
+          if (i % 3 === 0) {
             try {
               const clickAudio = new Audio();
               clickAudio.src = '/click.mp3'; // Soft click sound
@@ -280,6 +299,8 @@ const GameBoard = ({
               left: finalLeft,
             });
           }, 150);
+        } else {
+          console.error(`Could not find final stone element for stone ${rollingStoneNumber}`);
         }
         
         // Highlight the final stone
@@ -301,7 +322,8 @@ const GameBoard = ({
         // Keep ball visible for a moment after landing
         setTimeout(() => {
           setShowBall(false);
-        }, 1500);
+          document.documentElement.style.setProperty('--ball-visible', '0');
+        }, 3000);
       };
       
       // Start the enhanced rolling simulation
