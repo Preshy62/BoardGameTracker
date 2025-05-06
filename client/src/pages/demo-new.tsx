@@ -157,7 +157,7 @@ export default function DemoPage() {
   const [isBoardShaking, setIsBoardShaking] = useState(false);
   
   // State for winner animation
-  const [finalStoneSelected, setFinalStoneSelected] = useState<number | null>(null);
+  const [finalStoneSelected, setFinalStoneSelected] = useState<boolean>(false);
   
   // Refs
   const boardRef = useRef<HTMLDivElement>(null);
@@ -663,6 +663,7 @@ export default function DemoPage() {
     // Reset states
     setIsRolling(true);
     setSelectedStone(null);
+    setFinalStoneSelected(false);
     setIsBoardShaking(true);
     setShowBall(true); // Show the ball
     
@@ -769,9 +770,24 @@ export default function DemoPage() {
             setShowBall(false);
             setIsRolling(false);
             
+            // Play winning sound effect
+            try {
+              const audio = new Audio();
+              audio.src = '/dice-landing.mp3';
+              audio.volume = 0.5;
+              audio.play().catch(e => console.log('Audio failed:', e));
+            } catch (e) {
+              console.log('Audio not supported');
+            }
+            
             // Show result toast
             const isSpecial = 'isSpecial' in finalStone && finalStone.isSpecial;
             const isSuper = 'isSuper' in finalStone && finalStone.isSuper;
+            
+            // Set the winner stone with a slight delay for dramatic effect
+            setTimeout(() => {
+              setFinalStoneSelected(true);
+            }, 500);
             
             toast({
               title: "You Rolled: " + finalStone.number,
@@ -787,7 +803,7 @@ export default function DemoPage() {
     // Start the animation sequence
     setTimeout(animateStep, 500);
     
-  }, [isRolling, rollingStoneIndex, toast, stones, smallStones, getStonePosition, getAllStoneNumbers, boardPath, setBoardPath, setShowBall, setBallPosition, setIsBoardShaking, setSelectedStone]);
+  }, [isRolling, rollingStoneIndex, toast, stones, smallStones, getStonePosition, getAllStoneNumbers, boardPath, setBoardPath, setShowBall, setBallPosition, setIsBoardShaking, setSelectedStone, setFinalStoneSelected]);
   
   // Handle individual stone clicks (for testing)
   const handleStoneClick = useCallback((index: number, stoneNumber: number) => {
@@ -808,6 +824,21 @@ export default function DemoPage() {
     setTimeout(() => {
       setRollingStoneIndex(null);
       setSelectedStone(stoneNumber);
+      
+      // Play landing sound
+      try {
+        const audio = new Audio();
+        audio.src = '/dice-landing.mp3';
+        audio.volume = 0.4;
+        audio.play().catch(e => console.log('Audio failed:', e));
+      } catch (e) {
+        console.log('Audio not supported');
+      }
+      
+      // Set as winner stone
+      setTimeout(() => {
+        setFinalStoneSelected(true);
+      }, 500);
     }, 2000);
   }, [rollingStoneIndex, isRolling]);
 
