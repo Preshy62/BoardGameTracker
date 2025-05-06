@@ -280,40 +280,49 @@ export default function DemoPage() {
     { number: 10, row: 6, index: 10 },
   ];
 
-  // Simplified function to get stone position by index in the DOM
-  const getStonePosition = (stoneNumber: number) => {
-    // Look through all stones to find the one with matching number
-    const allStones = [...stones, ...smallStones];
-    const matchingStone = allStones.find(s => s.number === stoneNumber);
-    
-    if (!matchingStone) {
-      console.error('No matching stone found for number:', stoneNumber);
-      // Fallback to center of board
-      return boardRef.current ? { 
-        top: boardRef.current.clientHeight / 2, 
-        left: boardRef.current.clientWidth / 2 
-      } : { top: 200, left: 200 };
-    }
-    
-    // Find the DOM element
+  // Function to get stone position by number or index
+  const getStonePosition = (stoneIndexOrNumber: number, isNumber = false) => {
+    // Find the stone element
     let stoneElement;
-    if (matchingStone.row <= 4) {
-      // Regular stone
-      stoneElement = document.getElementById(`stone-${matchingStone.index}`);
+    
+    if (isNumber) {
+      // Find by number
+      const allStones = [...stones, ...smallStones];
+      const foundStone = allStones.find(s => s.number === stoneIndexOrNumber);
+      
+      if (!foundStone) {
+        console.error('Could not find stone with number:', stoneIndexOrNumber);
+        // Fallback to center
+        return { top: 200, left: 200 };
+      }
+      
+      // Find by index
+      if (foundStone.row <= 4) {
+        stoneElement = document.getElementById(`stone-${foundStone.index}`);
+      } else {
+        stoneElement = document.getElementById(`small-stone-${foundStone.index}`);
+      }
     } else {
-      // Small stone
-      stoneElement = document.getElementById(`small-stone-${matchingStone.index}`);
+      // Find directly by index
+      stoneElement = document.getElementById(`stone-${stoneIndexOrNumber}`);
+      
+      // If not found, try as small stone
+      if (!stoneElement && stoneIndexOrNumber >= 100) {
+        const smallIndex = stoneIndexOrNumber - 100;
+        stoneElement = document.getElementById(`small-stone-${smallIndex}`);
+      }
     }
     
     if (!stoneElement || !boardRef.current) {
-      console.error('Stone element not found in DOM:', matchingStone);
-      return { top: 200, left: 200 };
+      console.error('Stone element or board not found');
+      return { top: 200, left: 200 }; // fallback
     }
     
-    // Calculate position relative to game board
+    // Get positions
     const stoneRect = stoneElement.getBoundingClientRect();
     const boardRect = boardRef.current.getBoundingClientRect();
     
+    // Calculate center position relative to the board
     return {
       top: stoneRect.top - boardRect.top + (stoneRect.height / 2),
       left: stoneRect.left - boardRect.left + (stoneRect.width / 2)
@@ -545,7 +554,7 @@ export default function DemoPage() {
     setRollTimer(nextTimeout);
   }, [isRolling, boardPath, rollSpeed, rollTimer, toast, stones, smallStones]);
   
-  // Simple and direct roll animation that just uses the existing old dice animation
+  // Enhanced function to handle rolling dice with improved animation
   const handleRollDice = useCallback(() => {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
@@ -554,6 +563,7 @@ export default function DemoPage() {
     // Reset states
     setIsRolling(true);
     setSelectedStone(null);
+    setIsBoardShaking(true);
     
     // Play sound effect
     try {
@@ -568,42 +578,111 @@ export default function DemoPage() {
     // Toast to draw attention to the dice roll
     toast({
       title: "DICE IS ROLLING",
-      description: "Watch the dice roll around the board!",
+      description: "Watch the ball run around the board!",
     });
     
-    // Create a simple path for the roll
-    const simplePath: number[] = [];
-    
-    // Add all stones in order for a predictable path
-    for (let i = 0; i < stones.length; i++) {
-      simplePath.push(i);
-    }
-    
-    // Update our path for the roll
-    setBoardPath(simplePath);
-    
-    // Start from the center of the board
-    if (boardRef.current) {
-      const boardRect = boardRef.current.getBoundingClientRect();
-      setDicePosition({
-        top: boardRect.height / 2 - 20,
-        left: boardRect.width / 2 - 20,
-      });
-    }
+    // Get all stone numbers in order (creates a logical path around the board)
+    const boardPath = getAllStoneNumbers();
     
     // Pick a random final stone to land on
-    const finalStone = stones[Math.floor(Math.random() * stones.length)];
-    const finalStoneIndex = finalStone.index;
+    const allStones = [...stones, ...smallStones];
+    const finalStone = allStones[Math.floor(Math.random() * allStones.length)];
     
-    console.log('Will land on stone:', finalStone.number, 'with index:', finalStoneIndex);
+    // Get the starting position (first stone in path)
+    const startPosition = getStonePosition(boardPath[0], true);
     
-    // Roll 8-12 steps before stopping
-    const totalSteps = 8 + Math.floor(Math.random() * 5);
+    // Show the ball at the starting position
+    setBallPosition(startPosition);
+    setShowBall(true);
     
-    // Start the dice moving through the stones and it will end at our target
-    moveDiceAlongPath(0, totalSteps, finalStoneIndex);
-  }, [isRolling, rollingStoneIndex, moveDiceAlongPath, stones, boardRef]);
-
+    // Stop board shaking after a moment
+    setTimeout(() => {
+      setIsBoardShaking(false);
+    }, 1500);
+    
+    // Run the ball around the board
+    let step = 0;
+    const maxSteps = boardPath.length + 10; // Full board plus extra for excitement
+    
+    const animateStep = () => {
+      // Calculate which stone to highlight
+      const currentStoneIndex = step % boardPath.length;
+      const currentStoneNumber = boardPath[currentStoneIndex];
+      
+      // Move the ball to this stone's position
+      const newPosition = getStonePosition(currentStoneNumber, true);
+      setBallPosition(newPosition);
+      
+      // Find stone by number and highlight it
+      const allStones = [...stones, ...smallStones];
+      const found = allStones.find(s => s.number === currentStoneNumber);
+      if (found) {
+        setRollingStoneIndex(found.index);
+      }
+      
+      // Play sound occasionally
+      if (step % 3 === 0) {
+        try {
+          const audio = new Audio();
+          audio.src = '/rolling-dice.mp3';
+          audio.volume = 0.2;
+          audio.play().catch(e => console.log('Audio failed:', e));
+        } catch (e) {
+          console.log('Audio not supported');
+        }
+      }
+      
+      // Speed up as we go - starts slower then gets faster
+      const stepDelay = step < 10 ? 300 : 
+                        step < 20 ? 200 : 
+                        step < 30 ? 150 : 
+                        step < maxSteps - 5 ? 100 : 200; // Slow down at the end
+      
+      step++;
+      
+      // Continue animation until we reach the final step
+      if (step < maxSteps) {
+        setTimeout(animateStep, stepDelay);
+      } else {
+        // Final landing on the target stone
+        setTimeout(() => {
+          // Final position based on our chosen stone
+          const finalPosition = getStonePosition(finalStone.number, true);
+          setBallPosition(finalPosition);
+          
+          // Find the stone index for highlighting
+          if (finalStone.row <= 4) {
+            setRollingStoneIndex(finalStone.index);
+          } else {
+            setRollingStoneIndex(finalStone.index + 100);
+          }
+          
+          // After a brief pause, complete the roll
+          setTimeout(() => {
+            setRollingStoneIndex(null);
+            setSelectedStone(finalStone.number);
+            setShowBall(false);
+            setIsRolling(false);
+            
+            // Show result toast
+            const isSpecial = 'isSpecial' in finalStone && finalStone.isSpecial;
+            const isSuper = 'isSuper' in finalStone && finalStone.isSuper;
+            
+            toast({
+              title: "You Rolled: " + finalStone.number,
+              description: isSpecial ? "You hit a special stone!" : 
+                          isSuper ? "You hit a super stone!" : 
+                          "Good roll!",
+            });
+          }, 1000);
+        }, 500);
+      }
+    };
+    
+    // Start the animation sequence
+    setTimeout(animateStep, 500);
+    
+  }, [isRolling, rollingStoneIndex, toast, stones, smallStones, getStonePosition, getAllStoneNumbers]);
   
   // Handle individual stone clicks (for testing)
   const handleStoneClick = useCallback((index: number, stoneNumber: number) => {
