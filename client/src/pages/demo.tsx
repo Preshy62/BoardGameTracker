@@ -143,6 +143,12 @@ export default function DemoPage() {
     const styleEl = document.createElement('style');
     // Define the keyframes
     styleEl.innerHTML = `
+      @keyframes roll-glow {
+        0% { transform: scale(1) rotate(0deg); box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.5); }
+        50% { transform: scale(1.2) rotate(180deg); box-shadow: 0 0 25px 8px rgba(255, 215, 0, 0.8); }
+        100% { transform: scale(1) rotate(360deg); box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.5); }
+      }
+      
       @keyframes shakeBoard {
         0% { transform: translate(0, 0) rotate(0); }
         10% { transform: translate(-1px, -2px) rotate(-1deg); }
@@ -289,7 +295,61 @@ export default function DemoPage() {
   const [showBall, setShowBall] = useState(false);
   const [ballPosition, setBallPosition] = useState({ top: 0, left: 0 });
   
-  // Very simple function to handle rolling dice across the board
+  // Function that gets the position of a stone by its index
+  const getStonePosition = (stoneIndex: number) => {
+    // Calculate whether this is a regular stone or small stone
+    const isSmallStone = stoneIndex >= 100;
+    const actualIndex = isSmallStone ? stoneIndex - 100 : stoneIndex;
+    
+    // Get the correct array and selector
+    const stoneArray = isSmallStone ? smallStones : stones;
+    const selector = isSmallStone ? `small-stone-${actualIndex}` : `stone-${actualIndex}`;
+    
+    // Find the stone element
+    const stoneElement = document.getElementById(selector);
+    if (!stoneElement) {
+      console.error('Stone element not found:', selector);
+      return { top: 0, left: 0 };
+    }
+    
+    // Get the position relative to the game board
+    const board = document.getElementById('demo-game-board');
+    if (!board) {
+      console.error('Game board not found');
+      return { top: 0, left: 0 };
+    }
+    
+    const boardRect = board.getBoundingClientRect();
+    const stoneRect = stoneElement.getBoundingClientRect();
+    
+    // Calculate the position inside the board
+    return {
+      left: stoneRect.left - boardRect.left + (stoneRect.width / 2) - 20, // center the ball (40px width)
+      top: stoneRect.top - boardRect.top + (stoneRect.height / 2) - 20, // center the ball (40px height)
+    };
+  };
+
+  // Generate a random path through stones on the board
+  const generateRandomPath = (targetStoneIndex: number, numberOfSteps = 8) => {
+    const allStones = [...stones, ...smallStones];
+    const path = [];
+    
+    // Add random stones for the path, making sure the last one is the target
+    for (let i = 0; i < numberOfSteps - 1; i++) {
+      const randomIndex = Math.floor(Math.random() * allStones.length);
+      const stoneIndex = allStones[randomIndex].row <= 4 
+        ? allStones[randomIndex].index 
+        : 100 + allStones[randomIndex].index;
+        
+      path.push(stoneIndex);
+    }
+    
+    // Always end with the target stone
+    path.push(targetStoneIndex);
+    return path;
+  };
+
+  // Enhanced function to handle rolling dice across the board
   const handleRollDice = () => {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
@@ -316,41 +376,69 @@ export default function DemoPage() {
     setDicePosition({ top: middleY, left: middleX });
     console.log('Positioning dice in middle of screen');
     
-    // Flash a message to show dice is visible
+    // Toast to draw attention to the dice
     toast({
       title: "DICE IS ROLLING",
-      description: "Look at the bright red dice in the middle of your screen!",
+      description: "Watch the ball roll across the board!",
     });
     
-    // Keep the dice centered but shake/spin it to attract attention
+    // Animate the dice to attract attention
     document.body.classList.add('dice-animation-active');
     
-    // After the animation period, trigger the stone highlight
+    // After a short period, start the ball rolling animation
     setTimeout(() => {
-      console.log('Triggering stone animation for index:', actualIndex);
-      setRollingStoneIndex(actualIndex);
+      // Hide the big dice indicator
+      setIsRolling(false);
+      document.body.classList.remove('dice-animation-active');
       
-      // Finally, show the result
-      setTimeout(() => {
-        setRollingStoneIndex(null);
-        setSelectedStone(targetStone.number);
-        setIsRolling(false);
-        document.body.classList.remove('dice-animation-active');
-        console.log('Animation complete, selected stone:', targetStone.number);
-        
-        // Check if the stone has special properties
-        const isSpecial = 'isSpecial' in targetStone && targetStone.isSpecial;
-        const isSuper = 'isSuper' in targetStone && targetStone.isSuper;
-        
-        // Show toast with result
-        toast({
-          title: "You Rolled: " + targetStone.number,
-          description: isSpecial ? "You hit a special stone!" : 
-                       isSuper ? "You hit a super stone!" : 
-                       "Good roll!",
-        });
-      }, 2000);
-    }, 3000);
+      // Generate a random path through stones on the board
+      const path = generateRandomPath(actualIndex);
+      
+      // Show the ball at the first position
+      const startPosition = getStonePosition(path[0]);
+      setBallPosition(startPosition);
+      setShowBall(true);
+      
+      // Animate the ball through the path
+      let step = 1;
+      const animateStep = () => {
+        if (step < path.length) {
+          const newPosition = getStonePosition(path[step]);
+          setBallPosition(newPosition);
+          
+          // Highlight the current stone the ball is on
+          setRollingStoneIndex(path[step]);
+          
+          step++;
+          setTimeout(animateStep, 600); // Move to next stone every 600ms
+        } else {
+          // We've reached the final position
+          setTimeout(() => {
+            // Animation complete
+            setRollingStoneIndex(null);
+            setSelectedStone(targetStone.number);
+            setShowBall(false); // Hide the ball when done
+            
+            console.log('Animation complete, selected stone:', targetStone.number);
+            
+            // Check if the stone has special properties
+            const isSpecial = 'isSpecial' in targetStone && targetStone.isSpecial;
+            const isSuper = 'isSuper' in targetStone && targetStone.isSuper;
+            
+            // Show toast with result
+            toast({
+              title: "You Rolled: " + targetStone.number,
+              description: isSpecial ? "You hit a special stone!" : 
+                          isSuper ? "You hit a super stone!" : 
+                          "Good roll!",
+            });
+          }, 1000);
+        }
+      };
+      
+      // Start the animation
+      setTimeout(animateStep, 600); // Start moving after 600ms
+    }, 2000);
   };
   
   // Handle stone click for individual stone animation
@@ -358,9 +446,6 @@ export default function DemoPage() {
     if (rollingStoneIndex !== null || isRolling) return; // Prevent animation if already rolling
     
     console.log('Clicked stone:', index, 'with number:', stoneNumber);
-    
-    // Set the rolling state to trigger the animation
-    setRollingStoneIndex(index);
     
     // Play sound
     try {
@@ -372,11 +457,47 @@ export default function DemoPage() {
       console.log('Audio not supported');
     }
     
-    // Stop the animation and set the selected stone after 2 seconds
-    setTimeout(() => {
-      setRollingStoneIndex(null);
-      setSelectedStone(stoneNumber);
-    }, 2000);
+    // Generate a path to the clicked stone
+    const path = generateRandomPath(index, 5); // Shorter path for click animations
+    
+    // Show the ball at the first position
+    const startPosition = getStonePosition(path[0]);
+    setBallPosition(startPosition);
+    setShowBall(true);
+    
+    // Animate the ball through the path
+    let step = 1;
+    const animateStep = () => {
+      if (step < path.length) {
+        const newPosition = getStonePosition(path[step]);
+        setBallPosition(newPosition);
+        
+        // Highlight the current stone the ball is on
+        setRollingStoneIndex(path[step]);
+        
+        step++;
+        setTimeout(animateStep, 500); // Move faster than dice roll
+      } else {
+        // We've reached the final position
+        setTimeout(() => {
+          // Animation complete
+          setRollingStoneIndex(null);
+          setSelectedStone(stoneNumber);
+          setShowBall(false); // Hide the ball when done
+          
+          console.log('Animation complete, selected stone:', stoneNumber);
+          
+          // Show toast with result
+          toast({
+            title: "You Clicked: " + stoneNumber,
+            description: "Try clicking 'Roll Stone' to roll the dice!",
+          });
+        }, 800);
+      }
+    };
+    
+    // Start the animation
+    setTimeout(animateStep, 400); // Start moving after 400ms
   };
 
   // Loading state
@@ -528,6 +649,17 @@ export default function DemoPage() {
                 >
                   DICE
                 </div>
+              )}
+              
+              {/* The ball that moves between stones */}
+              {showBall && (
+                <div 
+                  className={`ball-element ${rollingStoneIndex !== null ? 'roll-animation' : ''}`}
+                  style={{
+                    top: ballPosition.top,
+                    left: ballPosition.left,
+                  }}
+                />
               )}
             </div>
             
