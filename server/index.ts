@@ -70,13 +70,57 @@ async function createDemoGames() {
       return;
     }
     
-    // Create demo game for animation testing
+    // Create demo games for animation testing
+    
+    // First check for game ID 1
+    const existingGame1 = await storage.getGame(1);
+    if (!existingGame1) {
+      console.log("Creating animation demo game #1");
+      
+      // Create game first with basic info
+      const game1 = await storage.createGame({
+        creatorId: demoUser.id,
+        maxPlayers: 2,
+        stake: 1000,
+        commissionPercentage: 0.1,
+      });
+      
+      // Then update it with the in_progress status
+      await storage.updateGameStatus(game1.id, "in_progress");
+      
+      // Create players - we can manually set fields in the DB
+      const demoPlayer1 = await storage.createGamePlayer({
+        gameId: game1.id,
+        userId: demoUser.id,
+        turnOrder: 1,
+      });
+      
+      const computerPlayer1 = await storage.createGamePlayer({
+        gameId: game1.id,
+        userId: computerUser.id,
+        turnOrder: 2,
+      });
+      
+      // Create messages
+      await storage.createMessage({
+        gameId: game1.id,
+        userId: demoUser.id,
+        content: "This game is in progress - watch the ball roll!",
+        type: "chat"
+      });
+      
+      console.log("Animation demo game #1 created successfully");
+    } else {
+      console.log("Animation demo game #1 already exists");
+    }
+    
+    // Then check for game ID 2
     const existingGame2 = await storage.getGame(2);
     if (!existingGame2) {
       console.log("Creating animation demo game #2");
       
       // Create game first with basic info
-      const game = await storage.createGame({
+      const game2 = await storage.createGame({
         creatorId: demoUser.id,
         maxPlayers: 2,
         stake: 2000,
@@ -84,37 +128,33 @@ async function createDemoGames() {
       });
       
       // Then update it with the completed status and winner info
-      await storage.updateGame(game.id, {
-        status: "completed" as GameStatus,
-        endedAt: new Date(),
-        winnerId: computerUser.id,
-        winningNumber: 21
-      });
+      await storage.updateGameStatus(game2.id, "completed");
+      await storage.updateGameWinner(game2.id, computerUser.id, 21);
       
       // Create players - we can manually set fields in the DB
-      const demoPlayer = await storage.createGamePlayer({
-        gameId: game.id,
+      const demoPlayer2 = await storage.createGamePlayer({
+        gameId: game2.id,
         userId: demoUser.id,
         turnOrder: 1,
       });
       
       // Update with rolled number
-      await storage.updateGamePlayerRoll(demoPlayer.id, 17);
+      await storage.updateGamePlayerRoll(demoPlayer2.id, 17);
       
-      const computerPlayer = await storage.createGamePlayer({
-        gameId: game.id,
+      const computerPlayer2 = await storage.createGamePlayer({
+        gameId: game2.id,
         userId: computerUser.id,
         turnOrder: 2,
       });
       
       // Update with rolled number
-      await storage.updateGamePlayerRoll(computerPlayer.id, 21);
+      await storage.updateGamePlayerRoll(computerPlayer2.id, 21);
       
       // Create messages
       await storage.createMessage({
-        gameId: 2,
+        gameId: game2.id,
         userId: demoUser.id,
-        content: "Watch the ball animation in this demo!",
+        content: "This completed game shows demo animations!",
         type: "chat"
       });
       
