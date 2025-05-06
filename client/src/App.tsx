@@ -38,6 +38,12 @@ function Router() {
       <PublicDemoRoute path="/demo" component={DemoPage} />
       <PublicDemoRoute path="/demo-new" component={DemoPage} />
       <PublicDemoRoute path="/simple-demo" component={SimpleDemo} />
+      <Route path="/ball-demo">
+        {() => {
+          const Demo = require('@/pages/demo').default;
+          return <Demo />;
+        }}
+      </Route>
       <ProtectedRoute path="/" component={Home} />
       <Route component={NotFound} />
     </Switch>

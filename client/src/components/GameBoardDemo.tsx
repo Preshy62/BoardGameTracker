@@ -22,10 +22,8 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
   
   // Capture the board as a ref on mount
   useEffect(() => {
-    const board = document.getElementById('game-board-demo');
-    if (board) {
-      boardRef.current = board;
-    }
+    // We'll use the ref that React automatically sets up
+    // No need to manually assign boardRef.current
   }, []);
   
   // Enhanced function to simulate the stone rolling across different stones before landing

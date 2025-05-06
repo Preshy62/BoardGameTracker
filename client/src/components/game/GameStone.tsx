@@ -7,6 +7,7 @@ interface GameStoneProps {
   isSuper?: boolean; // For 6624 and 3355
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl'; // Different stone sizes
+  id?: string; // Optional ID for directly targeting the stone element
 }
 
 const GameStone = ({ 
@@ -15,7 +16,8 @@ const GameStone = ({
   isSpecial = false,
   isSuper = false,
   size = 'md',
-  className
+  className,
+  id
 }: GameStoneProps) => {
   // Determine size classes based on the size prop
   const sizeClasses = {
@@ -27,7 +29,7 @@ const GameStone = ({
 
   return (
     <div 
-      id={`stone-${number}`}
+      id={id || `stone-${number}`}
       className={cn(
         "game-stone rounded-full border-2 flex items-center justify-center transition-all",
         sizeClasses,
