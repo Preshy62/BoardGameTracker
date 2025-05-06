@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Users, DollarSign, Clock, CreditCard, Gamepad2 } from "lucide-react";
+import { PlusCircle, Users, DollarSign, Clock, CreditCard, Gamepad2, BarChart4 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import GameLobbyModal from "@/components/modals/GameLobbyModal";
 import GameBoardDemo from "@/components/GameBoardDemo";
@@ -197,7 +197,14 @@ export default function Home() {
               Add Demo Funds (₦10,000)
             </Button>
             
-            {/* Removed 'Try Demo' button to avoid confusion */}
+            <Button
+              onClick={() => setLocation('/ball-test')}
+              variant="outline"
+              className="border-yellow-500 text-yellow-600 hover:bg-yellow-50"
+            >
+              <BarChart4 className="mr-2 h-5 w-5" />
+              Ball Animation Test
+            </Button>
             
             <Button 
               onClick={() => setIsLobbyModalOpen(true)}
