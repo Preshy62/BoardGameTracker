@@ -352,7 +352,7 @@ export default function DemoPage() {
     setTimeout(() => {
       // Create path through all the stones in a zigzag pattern
       // This ensures the ball rolls through all the numbers
-      const path = [];
+      const path: number[] = [];
       
       // Path through main stones - combining all stones across rows
       const allStoneIndices = stones.map(stone => stone.index);
@@ -564,6 +564,7 @@ export default function DemoPage() {
     setIsRolling(true);
     setSelectedStone(null);
     setIsBoardShaking(true);
+    setShowBall(true); // Show the ball
     
     // Play sound effect
     try {
@@ -582,7 +583,11 @@ export default function DemoPage() {
     });
     
     // Get all stone numbers in order (creates a logical path around the board)
-    const boardPath = getAllStoneNumbers();
+    const stoneNumbers = getAllStoneNumbers();
+    
+    // Create a proper path of numbers to follow
+    // Use the stone numbers directly (not indices)
+    setBoardPath(stoneNumbers);
     
     // Pick a random final stone to land on
     const allStones = [...stones, ...smallStones];
@@ -682,7 +687,7 @@ export default function DemoPage() {
     // Start the animation sequence
     setTimeout(animateStep, 500);
     
-  }, [isRolling, rollingStoneIndex, toast, stones, smallStones, getStonePosition, getAllStoneNumbers]);
+  }, [isRolling, rollingStoneIndex, toast, stones, smallStones, getStonePosition, getAllStoneNumbers, boardPath, setBoardPath, setShowBall, setBallPosition, setIsBoardShaking, setSelectedStone]);
   
   // Handle individual stone clicks (for testing)
   const handleStoneClick = useCallback((index: number, stoneNumber: number) => {
