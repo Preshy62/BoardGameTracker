@@ -42,12 +42,12 @@ const GameStone = ({
         className
       )}
       style={isRolling ? {
-        boxShadow: "0 0 30px 15px rgba(255, 215, 0, 0.95)",
+        boxShadow: "0 0 50px 25px rgba(255, 215, 0, 0.95)",
         zIndex: 100,
         position: "relative",
-        transform: "scale(1.3)", 
+        transform: "scale(1.5)", 
         transition: "all 0.2s ease-in-out",
-        animation: "dice-roll 0.8s linear infinite",
+        animation: "dice-roll 0.5s linear infinite, stone-pulse 0.8s infinite alternate",
         border: '5px solid gold',
         outline: '3px solid red',
         background: isSpecial 
