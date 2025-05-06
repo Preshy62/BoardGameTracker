@@ -145,9 +145,9 @@ export default function DemoPage() {
     styleEl.innerHTML = `
       @keyframes roll-glow {
         0% { transform: scale(1) rotate(0deg); box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); }
-        25% { transform: scale(1.1) rotate(90deg); box-shadow: 0 0 25px 15px rgba(255, 0, 0, 0.5); }
-        50% { transform: scale(1.2) rotate(180deg); box-shadow: 0 0 30px 20px rgba(255, 215, 0, 0.8); }
-        75% { transform: scale(1.1) rotate(270deg); box-shadow: 0 0 25px 15px rgba(255, 0, 0, 0.5); }
+        25% { transform: scale(1.2) rotate(90deg); box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.8); }
+        50% { transform: scale(1.3) rotate(180deg); box-shadow: 0 0 40px 20px rgba(255, 215, 0, 0.9); }
+        75% { transform: scale(1.2) rotate(270deg); box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.8); }
         100% { transform: scale(1) rotate(360deg); box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); }
       }
       
@@ -235,8 +235,8 @@ export default function DemoPage() {
     };
   }, []);
   
-  // Array of stones for the game board
-  const stones = [
+  // Define the type of stone objects and array for the game board
+  const stones: StoneType[] = [
     { number: 29, row: 1, index: 0 },
     { number: 40, row: 1, index: 1 },
     { number: 32, row: 1, index: 2 },
@@ -265,7 +265,7 @@ export default function DemoPage() {
   ];
 
   // Small stones for the bottom rows
-  const smallStones = [
+  const smallStones: StoneType[] = [
     { number: 11, row: 5, index: 0 },
     { number: 37, row: 5, index: 1 },
     { number: 72, row: 5, index: 2 },
@@ -299,22 +299,12 @@ export default function DemoPage() {
   const [showBall, setShowBall] = useState(false);
   const [ballPosition, setBallPosition] = useState({ top: 0, left: 0 });
   
-  // Function that gets the position of a stone by its index
-  const getStonePosition = (stoneIndex: number) => {
-    // Calculate whether this is a regular stone or small stone
-    const isSmallStone = stoneIndex >= 100;
-    const actualIndex = isSmallStone ? stoneIndex - 100 : stoneIndex;
-    
-    // Get the correct array and selector
-    const stoneArray = isSmallStone ? smallStones : stones;
-    const selector = isSmallStone ? `small-stone-${actualIndex}` : `stone-${actualIndex}`;
-    
-    console.log(`Getting position for stone: ${selector}`);
-    
-    // Find the stone element
-    const stoneElement = document.getElementById(selector);
+  // Function that gets the position of a stone by its number
+  const getStonePosition = (stoneNumber: number) => {
+    // Find the stone element by its number ID
+    const stoneElement = document.getElementById(`stone-${stoneNumber}`);
     if (!stoneElement) {
-      console.error('Stone element not found:', selector);
+      console.error('Stone element not found for number:', stoneNumber);
       // Fallback to a visible center position so we at least see the ball
       return { top: 200, left: 200 };
     }
@@ -338,9 +328,19 @@ export default function DemoPage() {
       top: stoneRect.top - boardRect.top + (stoneRect.height / 2),   // exact center of stone
     };
     
-    console.log(`Stone ${selector} position:`, position);
     return position;
   };
+  
+  // Get a list of all stone numbers for animation path
+  const getAllStoneNumbers = () => {
+    // Combine all stones from regular and small stones arrays
+    const stoneNumbers = [
+      ...stones.map(stone => stone.number),
+      ...smallStones.map(stone => stone.number)
+    ];
+    return stoneNumbers;
+  };
+
 
   // Generate a simple sequential path of stones with the target at the end
   const generatePath = (targetStoneIndex: number) => {
@@ -397,62 +397,87 @@ export default function DemoPage() {
     const targetStone = allStones[randomIndex];
     console.log('Selected stone:', targetStone);
     
-    // For proper index identification
-    const actualIndex = targetStone.row <= 4 
-      ? targetStone.index 
-      : 100 + targetStone.index;
+    // Play sound effect
+    try {
+      const audio = new Audio();
+      audio.src = '/rolling-dice.mp3';
+      audio.volume = 0.3;
+      audio.play().catch(e => console.log('Audio failed:', e));
+    } catch (e) {
+      console.log('Audio not supported');
+    }
     
-    // Position the dice in the middle of the screen - guaranteed to be visible
-    const middleX = window.innerWidth / 2 - 60; // Half of dice width (120px)
-    const middleY = window.innerHeight / 2 - 60; // Half of dice height (120px)
-    setDicePosition({ top: middleY, left: middleX });
-    console.log('Positioning dice in middle of screen');
-    
-    // Toast to draw attention to the dice
+    // Toast to draw attention to the dice roll
     toast({
       title: "DICE IS ROLLING",
-      description: "Watch the ball roll across the board!",
+      description: "Watch the ball run around the board!",
     });
     
-    // Animate the dice to attract attention
-    document.body.classList.add('dice-animation-active');
+    // Create an ordered path around the board that makes sense visually
+    // This follows the layout of the stones on the board
+    const boardPath = [
+      // Top row first
+      29, 40, 32, 81, 7,
+      // Then second row right-to-left
+      4, 101, 1000, 64, 13,
+      // Third row left-to-right
+      3355, 65, 12, 22, 9, 6624, 44,
+      // Fourth row right-to-left
+      3, 82, 20, 99, 500, 105, 21, 28,
+      // Bottom two rows in a snake pattern
+      11, 37, 72, 17, 42, 8, 30, 91, 27, 5, 40,
+      10, 71, 16, 43, 14, 19, 100, 26, 3, 80, 6
+    ];
     
-    // After a short period, start the ball rolling animation
-    setTimeout(() => {
-      // Hide the big dice indicator
-      setIsRolling(false);
-      document.body.classList.remove('dice-animation-active');
+    // Get the starting position (first stone in path)
+    const startPosition = getStonePosition(boardPath[0]);
+    
+    // Show the ball at the starting position
+    setBallPosition(startPosition);
+    setShowBall(true);
+    
+    // Run the ball around the board once, then land on the target stone
+    let step = 0;
+    const maxSteps = boardPath.length + 10; // Full board plus a few more for excitement
+    
+    const animateStep = () => {
+      // Calculate which stone to highlight
+      const currentStoneIndex = step % boardPath.length;
+      const currentStoneNumber = boardPath[currentStoneIndex];
       
-      // Generate a fixed path through stones on the board that follows the layout
-      const path = generatePath(actualIndex);
+      // Move the ball to this stone's position
+      const newPosition = getStonePosition(currentStoneNumber);
+      setBallPosition(newPosition);
       
-      // Show the ball at a guaranteed visible starting position
-      // Using stone at row 1, index 0 as a starting point (top left of board)
-      const startStoneIndex = 0; // This guarantees a visible starting point
-      const startPosition = getStonePosition(startStoneIndex);
-      setBallPosition(startPosition);
-      setShowBall(true);
-      console.log('Starting ball animation from position:', startPosition);
+      // Highlight the current stone the ball is on
+      setRollingStoneIndex(currentStoneNumber);
       
-      // Animate the ball through the path
-      let step = 1;
-      const animateStep = () => {
-        if (step < path.length) {
-          const newPosition = getStonePosition(path[step]);
-          setBallPosition(newPosition);
+      // Speed up as we go - starts slower then gets faster
+      const stepDelay = step < 10 ? 300 : 
+                       step < 20 ? 200 : 
+                       step < 30 ? 150 : 
+                       step < maxSteps - 5 ? 100 : 200; // Slow down at the end
+      
+      step++;
+      
+      // Continue animation until we reach the final step
+      if (step < maxSteps) {
+        setTimeout(animateStep, stepDelay);
+      } else {
+        // Final stretch - move to the target stone
+        setTimeout(() => {
+          // Show final stone position
+          const finalPosition = getStonePosition(targetStone.number);
+          setBallPosition(finalPosition);
+          setRollingStoneIndex(targetStone.number);
           
-          // Highlight the current stone the ball is on
-          setRollingStoneIndex(path[step]);
-          
-          step++;
-          setTimeout(animateStep, 800); // Move to next stone every 800ms - slower for better visibility
-        } else {
-          // We've reached the final position
+          // After reaching the final destination
           setTimeout(() => {
             // Animation complete
             setRollingStoneIndex(null);
             setSelectedStone(targetStone.number);
             setShowBall(false); // Hide the ball when done
+            setIsRolling(false);
             
             console.log('Animation complete, selected stone:', targetStone.number);
             
@@ -460,20 +485,30 @@ export default function DemoPage() {
             const isSpecial = 'isSpecial' in targetStone && targetStone.isSpecial;
             const isSuper = 'isSuper' in targetStone && targetStone.isSuper;
             
+            // Play special sound for special stones
+            try {
+              const resultAudio = new Audio();
+              resultAudio.src = isSpecial || isSuper ? '/win-sound.mp3' : '/stone-land.mp3';
+              resultAudio.volume = 0.5;
+              resultAudio.play().catch(e => console.log('Audio failed:', e));
+            } catch (e) {
+              console.log('Audio not supported');
+            }
+            
             // Show toast with result
             toast({
               title: "You Rolled: " + targetStone.number,
               description: isSpecial ? "You hit a special stone!" : 
-                          isSuper ? "You hit a super stone!" : 
-                          "Good roll!",
+                           isSuper ? "You hit a super stone!" : 
+                           "Good roll!",
             });
-          }, 1000);
-        }
-      };
-      
-      // Start the animation
-      setTimeout(animateStep, 600); // Start moving after 600ms
-    }, 2000);
+          }, 800);
+        }, 200);
+      }
+    };
+    
+    // Start the animation
+    setTimeout(animateStep, 500);
   };
   
   // Handle stone click for individual stone animation
@@ -481,6 +516,7 @@ export default function DemoPage() {
     if (rollingStoneIndex !== null || isRolling) return; // Prevent animation if already rolling
     
     console.log('Clicked stone:', index, 'with number:', stoneNumber);
+    setIsRolling(true);
     
     // Play sound
     try {
@@ -492,50 +528,108 @@ export default function DemoPage() {
       console.log('Audio not supported');
     }
     
-    // Generate a path to the clicked stone that follows the board layout
-    const path = generatePath(index); // Use our predictable path generator
+    // Create an ordered path around the board that makes sense visually
+    // This follows the layout of the stones on the board
+    const boardPath = [
+      // Top row first
+      29, 40, 32, 81, 7,
+      // Then second row right-to-left
+      4, 101, 1000, 64, 13,
+      // Third row left-to-right
+      3355, 65, 12, 22, 9, 6624, 44,
+      // Fourth row right-to-left
+      3, 82, 20, 99, 500, 105, 21, 28,
+      // Bottom two rows in a snake pattern
+      11, 37, 72, 17, 42, 8, 30, 91, 27, 5, 40,
+      10, 71, 16, 43, 14, 19, 100, 26, 3, 80, 6
+    ];
     
-    // Show the ball at a guaranteed visible starting position
-    // Using stone at row 1, index 0 as a starting point (top left of board)
-    const startStoneIndex = 0; // This guarantees a visible starting point
-    const startPosition = getStonePosition(startStoneIndex);
+    // Get the starting position (first stone in path)
+    const startPosition = getStonePosition(boardPath[0]);
+    
+    // Show the ball at the starting position
     setBallPosition(startPosition);
     setShowBall(true);
-    console.log('Starting ball animation from position:', startPosition);
     
-    // Animate the ball through the path
-    let step = 1;
+    // This time we'll go 75% of the way around the board, then target the clicked stone
+    let step = 0;
+    const maxSteps = Math.floor(boardPath.length * 0.75); // Shorter animation for clicks
+    
     const animateStep = () => {
-      if (step < path.length) {
-        const newPosition = getStonePosition(path[step]);
-        setBallPosition(newPosition);
-        
-        // Highlight the current stone the ball is on
-        setRollingStoneIndex(path[step]);
-        
-        step++;
-        setTimeout(animateStep, 800); // Same speed as dice roll for consistency
+      // Calculate which stone to highlight
+      const currentStoneIndex = step % boardPath.length;
+      const currentStoneNumber = boardPath[currentStoneIndex];
+      
+      // Move the ball to this stone's position
+      const newPosition = getStonePosition(currentStoneNumber);
+      setBallPosition(newPosition);
+      
+      // Highlight the current stone the ball is on
+      setRollingStoneIndex(currentStoneNumber);
+      
+      // Speed up as we go - starts slower then gets faster
+      const stepDelay = step < 5 ? 300 : 
+                       step < 15 ? 200 : 
+                       step < maxSteps - 3 ? 150 : 200; // Slow down at the end
+      
+      step++;
+      
+      // Continue animation until we reach the final step
+      if (step < maxSteps) {
+        setTimeout(animateStep, stepDelay);
       } else {
-        // We've reached the final position
+        // Final stretch - move to the target stone
         setTimeout(() => {
-          // Animation complete
-          setRollingStoneIndex(null);
-          setSelectedStone(stoneNumber);
-          setShowBall(false); // Hide the ball when done
+          // Show final stone position
+          const finalPosition = getStonePosition(stoneNumber);
+          setBallPosition(finalPosition);
+          setRollingStoneIndex(stoneNumber);
           
-          console.log('Animation complete, selected stone:', stoneNumber);
-          
-          // Show toast with result
-          toast({
-            title: "You Clicked: " + stoneNumber,
-            description: "Try clicking 'Roll Stone' to roll the dice!",
-          });
-        }, 800);
+          // After reaching the final destination
+          setTimeout(() => {
+            // Animation complete
+            setRollingStoneIndex(null);
+            setSelectedStone(stoneNumber);
+            setShowBall(false); // Hide the ball when done
+            setIsRolling(false);
+            
+            console.log('Animation complete, selected stone:', stoneNumber);
+            
+            // Find if the stone has special properties by searching the arrays
+            const isSpecial = [
+              ...stones.filter(s => s.number === stoneNumber && s.isSpecial),
+              ...smallStones.filter(s => s.number === stoneNumber && s.isSpecial)
+            ].length > 0;
+            
+            const isSuper = [
+              ...stones.filter(s => s.number === stoneNumber && s.isSuper),
+              ...smallStones.filter(s => s.number === stoneNumber && s.isSuper)
+            ].length > 0;
+            
+            // Play landing sound
+            try {
+              const resultAudio = new Audio();
+              resultAudio.src = isSpecial || isSuper ? '/win-sound.mp3' : '/stone-land.mp3';
+              resultAudio.volume = 0.4;
+              resultAudio.play().catch(e => console.log('Audio failed:', e));
+            } catch (e) {
+              console.log('Audio not supported');
+            }
+            
+            // Show toast with result
+            toast({
+              title: "You Selected: " + stoneNumber,
+              description: isSpecial ? "That's a special stone!" : 
+                           isSuper ? "That's a super stone!" : 
+                           "Click 'Roll Stone' to roll the dice!",
+            });
+          }, 800);
+        }, 200);
       }
     };
     
-    // Start the animation
-    setTimeout(animateStep, 400); // Start moving after 400ms
+    // Start the animation after a short delay
+    setTimeout(animateStep, 300);
   };
 
   // Loading state
