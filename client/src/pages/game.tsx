@@ -136,21 +136,8 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat feature flag (always true for UI but internal functionality is disabled)
   const voiceChatEnabled = true;
   
-  // Add direct dice animation elements
-  const [showDiceAnimation, setShowDiceAnimation] = useState(false);
-  
-  // Show dice animation when rolling number changes
-  useEffect(() => {
-    if (rollingStoneNumber !== null) {
-      console.log("GAME PAGE: Rolling stone detected:", rollingStoneNumber);
-      setShowDiceAnimation(true);
-      
-      // Clear animation after a delay
-      setTimeout(() => {
-        setShowDiceAnimation(false);
-      }, 3000);
-    }
-  }, [rollingStoneNumber]);
+  // State variables must be called in the same order every render
+  // Moving this directly after other state variables so it doesn't break React's rules of hooks
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -158,7 +145,7 @@ export default function Game({ id }: GamePageProps) {
       
       <main className="flex-grow flex flex-col md:flex-row relative">
         {/* Global ball animation that's always visible when rolling */}
-        {showDiceAnimation && (
+        {rollingStoneNumber !== null && (
           <>
             <div 
               className="dice-element"
