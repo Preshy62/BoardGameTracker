@@ -5,6 +5,7 @@ interface GameStoneProps {
   isRolling?: boolean;
   isSpecial?: boolean;
   isSuper?: boolean; // For 6624 and 3355
+  isWinner?: boolean; // New prop for the winner animation
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl'; // Different stone sizes
   id?: string; // Optional ID for directly targeting the stone element
@@ -15,6 +16,7 @@ const GameStone = ({
   isRolling = false, 
   isSpecial = false,
   isSuper = false,
+  isWinner = false,
   size = 'md',
   className,
   id
@@ -41,15 +43,19 @@ const GameStone = ({
         isRolling && "stone-roll-animation simple-rotating",
         className
       )}
-      style={isRolling ? {
-        boxShadow: "0 0 60px 30px rgba(255, 215, 0, 0.95)",
+      style={isRolling || isWinner ? {
+        boxShadow: isWinner 
+          ? "0 0 75px 35px rgba(255, 215, 0, 0.95)"
+          : "0 0 60px 30px rgba(255, 215, 0, 0.95)",
         zIndex: 100,
         position: "relative",
-        transform: "scale(1.8)", 
+        transform: isWinner ? "scale(2.0)" : "scale(1.8)", 
         transition: "all 0.15s ease-in-out",
-        animation: "dice-roll 0.5s linear infinite, stone-pulse 0.6s infinite alternate",
-        border: '6px solid gold',
-        outline: '4px solid red',
+        animation: isWinner 
+          ? "winner-stone 1.5s infinite" 
+          : "dice-roll 0.5s linear infinite, stone-pulse 0.6s infinite alternate",
+        border: isWinner ? '8px solid gold' : '6px solid gold',
+        outline: isWinner ? '5px solid red' : '4px solid red',
         background: isSpecial 
           ? 'radial-gradient(circle, #FFD700 30%, #f59e0b 100%)' 
           : isSuper 
