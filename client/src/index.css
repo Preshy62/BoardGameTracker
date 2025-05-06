@@ -363,3 +363,42 @@
     box-shadow: 0 0 45px 22px rgba(255, 215, 0, 0.95);
   }
 }
+
+/* Additional animation for dice elements */
+@keyframes dice-roll {
+  0% { transform: rotate(0deg) scale(1.1); }
+  25% { transform: rotate(90deg) scale(1.15); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  75% { transform: rotate(270deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(1.1); }
+}
+
+/* Add pulse animation for dice element */
+@keyframes pulse {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* Add spin animation for dice element */
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Dice element styling */
+.dice-element {
+  position: absolute !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: white !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 3px black !important;
+  box-shadow: 0 0 10px 5px rgba(255, 215, 0, 0.6) !important;
+  border: 3px solid white !important;
+  animation: pulse 0.5s infinite alternate, spin 2s linear infinite !important;
+}

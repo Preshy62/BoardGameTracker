@@ -455,15 +455,47 @@ const GameBoard = ({
                 <div className="ball-element roll-animation" />
               )}
               
-              {/* Backup ball that always appears when a roll happens */}
+              {/* Improved animated ball that always appears when a roll happens */}
               {rollingStoneNumber && (
                 <div 
                   className="ball-element roll-animation"
                   style={{
                     position: 'absolute',
-                    width: '50px',
-                    height: '50px',
-                    display: 'block'
+                    width: '60px',
+                    height: '60px',
+                    display: 'block',
+                    top: '50%',
+                    left: '50%',
+                    zIndex: 9999,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, white 20%, #FF8800 60%, gold 100%)',
+                    border: '5px solid gold',
+                    boxShadow: '0 0 30px 15px rgba(255, 136, 0, 0.9)',
+                    transform: 'translate(-50%, -50%)',
+                    filter: 'blur(0.5px)',
+                    animation: 'ball-pulse 0.5s infinite alternate'
+                  }}
+                />
+              )}
+              
+              {/* Additional ball element for better visibility */}
+              {rollingStoneNumber && (
+                <div 
+                  className="dice-element"
+                  style={{
+                    position: 'absolute',
+                    width: '40px',
+                    height: '40px',
+                    display: 'block',
+                    top: '30%',
+                    left: '70%',
+                    zIndex: 9999,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, white 30%, #FF0000 100%)',
+                    border: '3px solid white',
+                    boxShadow: '0 0 15px 7px rgba(255, 215, 0, 0.8)',
+                    transform: 'translate(-50%, -50%)',
+                    animation: 'roll-glow 0.8s linear infinite'
                   }}
                 />
               )}

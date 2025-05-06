@@ -248,8 +248,39 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
   const rollStone = useCallback(() => {
     if (!isConnected || !game) return;
     
+    console.log('Rolling stone in game');
+    
     // Multiple approaches to ensure dice sound plays
     let soundPlayed = false;
+    
+    // Try playing a direct audio element first (simple approach)
+    const playDirectAudio = () => {
+      try {
+        const audio = new Audio('/rolling-dice.mp3');
+        audio.volume = 0.5;
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('Audio played successfully');
+              soundPlayed = true;
+            })
+            .catch(error => {
+              console.log('Audio playback failed:', error);
+              // Try other methods if this fails
+              if (!soundPlayed) {
+                playSpeechFeedback();
+              }
+            });
+        }
+      } catch (e) {
+        console.log('Audio playback not supported, trying speech synthesis');
+        if (!soundPlayed) {
+          playSpeechFeedback();
+        }
+      }
+    };
     
     // Immediately try to use speech synthesis which has higher success rate
     const playSpeechFeedback = () => {
@@ -332,17 +363,34 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
       }
     };
     
-    // Try multiple approaches in sequence
-    playSpeechFeedback(); // Try speech first - most reliable
-    playRollSound();      // Also try regular sound
+    // Try multiple approaches in sequence - starting with the simplest one
+    playDirectAudio();   // Try direct audio first
     
-    // Also set up a backup in case the first attempts fail (for browsers with stricter policies)
+    // Use the other methods as fallbacks with a small delay to avoid conflicts
+    setTimeout(() => {
+      if (!soundPlayed) {
+        playSpeechFeedback(); // Try speech next
+        
+        // Try Web Audio as last resort
+        setTimeout(() => {
+          if (!soundPlayed) {
+            playRollSound();
+          }
+        }, 100);
+      }
+    }, 100);
+    
+    // Also set up a backup in case all attempts fail (for browsers with stricter policies)
     const timer = setTimeout(() => {
       if (!soundPlayed) {
         console.log('Retrying sound after delay');
         playRollSound();
       }
     }, 300);
+    
+    // Add visual effects for rolling
+    document.documentElement.style.setProperty('--ball-top', '50%');
+    document.documentElement.style.setProperty('--ball-left', '50%');
     
     // Send the roll message to the server
     sendMessage('roll_stone', {
@@ -351,7 +399,7 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
     
     // Clean up the timer
     return () => clearTimeout(timer);
-  }, [isConnected, game, gameId, sendMessage]);
+  }, [isConnected, game, gameId, sendMessage, players, currentTurnPlayerId, userId]);
 
   // Leave game and go to home
   const leaveGame = useCallback(() => {
