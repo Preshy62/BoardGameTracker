@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import GameStone from "./GameStone";
+import GameBall from "./GameBall";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Timer, Award } from "lucide-react";
 import { GameStatus, Game, User, GamePlayer } from "@shared/schema";
@@ -446,30 +447,23 @@ const GameBoard = ({
                 </svg>
               </div>
               
-              {/* Ball element that will move across the board */}
-              {(showBall || rollingStoneNumber !== null) && (
-                <div 
-                  className="ball-element"
-                  style={{
-                    position: 'absolute',
-                    width: '70px',
-                    height: '70px',
-                    borderRadius: '50%',
-                    display: 'block',
-                    top: `${ballPosition.top}px`,
-                    left: `${ballPosition.left}px`,
-                    zIndex: 9999,
-                    background: 'radial-gradient(circle, white 20%, #FF8800 60%, gold 100%)',
-                    border: '5px solid gold',
-                    boxShadow: '0 0 40px 20px rgba(255, 136, 0, 0.9)',
-                    transform: 'translate(-50%, -50%)',
-                    opacity: 1,
-                    visibility: 'visible',
-                    filter: 'blur(0.5px)',
-                    animation: 'ball-pulse 0.5s infinite alternate'
-                  }}
-                />
-              )}
+              {/* Use our new GameBall component that's more reliable */}
+              <GameBall 
+                visible={showBall || rollingStoneNumber !== null}
+                top={ballPosition.top}
+                left={ballPosition.left}
+                color="gold"
+                size="md"
+              />
+              
+              {/* Add a fixed test ball at the center */}
+              <GameBall 
+                visible={showBall || rollingStoneNumber !== null}
+                top="50%"
+                left="50%"
+                color="red"
+                size="sm"
+              />
               
               {/* START label - positioned on the right side like the physical board */}
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-transparent text-white p-1 font-bold text-lg rotate-90">
@@ -552,95 +546,23 @@ const GameBoard = ({
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
               
-              {/* Main rolling ball element - fixed position with absolute styling */}
-              {(showBall || rollingStoneNumber !== null) && (
-                <div 
-                  className="dice-ball"
-                  style={{
-                    position: 'absolute',
-                    width: '70px',
-                    height: '70px',
-                    display: 'block',
-                    top: `${ballPosition.top || 250}px`,
-                    left: `${ballPosition.left || 250}px`,
-                    zIndex: 9999,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, white 20%, #FF8800 60%, gold 100%)',
-                    border: '5px solid gold',
-                    boxShadow: '0 0 40px 20px rgba(255, 136, 0, 0.95)',
-                    transform: 'translate(-50%, -50%)',
-                    opacity: 1,
-                    visibility: 'visible',
-                    filter: 'blur(0.5px)',
-                    animation: 'ball-pulse 0.5s infinite alternate',
-                    transition: 'top 0.3s ease-out, left 0.3s ease-out'
-                  }}
-                />
-              )}
+              {/* Floating indicator ball showing the rolling number */}
+              <GameBall
+                visible={rollingStoneNumber !== null}
+                top="30%"
+                left="70%" 
+                color="red"
+                size="sm"
+              />
               
-              {/* Extra ball that's absolutely positioned in the middle regardless of props */}
-              {(showBall || rollingStoneNumber !== null) && (
-                <div 
-                  className="dice-ball-fixed"
-                  style={{
-                    position: 'absolute',
-                    width: '70px',
-                    height: '70px',
-                    display: 'block',
-                    top: '50%',
-                    left: '50%',
-                    zIndex: 9999,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, white 20%, #FF0000 60%, gold 100%)',
-                    border: '5px solid gold',
-                    boxShadow: '0 0 40px 20px rgba(255, 0, 0, 0.95)',
-                    transform: 'translate(-50%, -50%)',
-                    opacity: 1,
-                    visibility: 'visible',
-                    filter: 'blur(0.5px)',
-                    animation: 'ball-pulse 0.5s infinite alternate'
-                  }}
-                />
-              )}
-              
-              {/* Backup ball using CSS variables for consistent positioning */}
-              {(showBall || rollingStoneNumber !== null) && (
-                <div 
-                  className="ball-element roll-animation"
-                  style={{
-                    position: 'absolute',
-                    top: 'var(--ball-top)',
-                    left: 'var(--ball-left)',
-                    zIndex: 9999,
-                    width: '70px',
-                    height: '70px',
-                    opacity: 1,
-                    visibility: 'visible'
-                  }}
-                />
-              )}
-              
-              {/* Floating dice element for better visibility */}
-              {rollingStoneNumber && (
-                <div 
-                  className="dice-element"
-                  style={{
-                    position: 'absolute',
-                    width: '40px',
-                    height: '40px',
-                    display: 'block',
-                    top: '30%',
-                    left: '70%',
-                    zIndex: 9999,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, white 30%, #FF0000 100%)',
-                    border: '3px solid white',
-                    boxShadow: '0 0 15px 7px rgba(255, 215, 0, 0.8)',
-                    transform: 'translate(-50%, -50%)',
-                    animation: 'roll-glow 0.8s linear infinite'
-                  }}
-                />
-              )}
+              {/* Another backup ball at the bottom of the screen for testing */}
+              <GameBall
+                visible={showBall || rollingStoneNumber !== null}
+                top="90%"
+                left="50%"
+                color="gold"
+                size="md"
+              />
             </div>
             
             {/* Total Pool */}
