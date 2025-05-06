@@ -171,17 +171,11 @@ export default function Login({ isDemo = false }: LoginProps) {
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="flex flex-col items-center space-y-3">
+          <CardFooter className="flex justify-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
               <Link href="/register" className="text-primary font-medium hover:underline">
                 Sign up
-              </Link>
-            </p>
-            <p className="text-sm text-gray-500">
-              Want to see our animations?{" "}
-              <Link href="/ball-test" className="text-yellow-600 font-medium hover:underline">
-                Ball Animation Test
               </Link>
             </p>
           </CardFooter>

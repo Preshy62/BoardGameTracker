@@ -84,40 +84,14 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat settings
   const isHighStakesGame = game ? game.stake >= 50000 : false;
 
-  // Handle if user is not logged in - special case for demo games (1 and 2) 
-  // and computer opponent games (game pages created at runtime)
-  const isDemoOrBotGame = gameId === "1" || gameId === "2" || 
-    (game?.status === 'in_progress' && players.some(p => p.user.username === 'Computer'));
-  
-  console.log("Game status:", game?.status, "Has computer player:", 
-    players.some(p => p.user.username === 'Computer'), "isDemoOrBotGame:", isDemoOrBotGame);
-  
-  // Create a mock user for demo games if needed
-  const demoUser: User = {
-    id: 999,
-    username: 'Demo User',
-    password: '',
-    email: 'demo@example.com',
-    walletBalance: 100000,
-    avatarInitials: 'DU',
-    isAdmin: false,
-    isActive: true,
-    createdAt: null,
-    stripeCustomerId: null,
-    stripeSubscriptionId: null
-  };
-  
-  // Use either the authenticated user or the demo user for demo games or bot games
-  const currentUser = user || (isDemoOrBotGame ? demoUser : null);
-  
+  // Handle if user is not logged in
   useEffect(() => {
-    if (!isUserLoading && !currentUser) {
-      console.log("User not logged in and not a demo or bot game, redirecting to auth");
+    if (!isUserLoading && !user) {
       setLocation('/auth');
     }
-  }, [user, isUserLoading, setLocation, isDemoOrBotGame, currentUser]);
+  }, [user, isUserLoading, setLocation]);
 
-  if (isUserLoading || isLoading || !currentUser) {
+  if (isUserLoading || isLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading" />
@@ -156,9 +130,8 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat feature flag (always true for UI but internal functionality is disabled)
   const voiceChatEnabled = true;
   
-  // Explicitly add enhanced animations for test games and any bot games
-  const isSpecificGame = gameId === "2" || gameId === "1" || 
-    (game.status === 'in_progress' && players.some(p => p.user.username === 'Computer'));
+  // Explicitly add enhanced animations and specific handling for both games 1 and 2
+  const isSpecificGame = gameId === "2" || gameId === "1";
   
   // Set up animation trigger specifically for game 2
   useEffect(() => {
@@ -212,7 +185,7 @@ export default function Game({ id }: GamePageProps) {
 
   return (
     <div className={`min-h-screen flex flex-col ${isSpecificGame ? 'game-2-specific' : ''}`}>
-      <Header user={currentUser} />
+      <Header user={user} />
       
       {/* Special welcome message for game/2 */}
       {isSpecificGame && (
@@ -229,7 +202,7 @@ export default function Game({ id }: GamePageProps) {
           players={players}
           onRollStone={rollStone}
           rollingStoneNumber={rollingStoneNumber}
-          userId={currentUser.id}
+          userId={user.id}
           timeRemaining={timeRemaining || undefined}
           isCurrentPlayerTurn={isCurrentPlayerTurn}
           forceShowBall={isSpecificGame} // Pass prop to force showing ball on game/2
@@ -242,7 +215,7 @@ export default function Game({ id }: GamePageProps) {
               <VoiceChat 
                 game={game} 
                 isEnabled={voiceChatEnabled}
-                currentUserId={currentUser.id}
+                currentUserId={user.id}
               />
             </div>
           )}
@@ -250,7 +223,7 @@ export default function Game({ id }: GamePageProps) {
           <GameSidebar
             players={players}
             messages={messages}
-            currentUserId={currentUser.id}
+            currentUserId={user.id}
             currentPlayerTurnId={currentTurnPlayerId || 0}
             onSendMessage={sendChatMessage}
           />
@@ -289,7 +262,7 @@ export default function Game({ id }: GamePageProps) {
           winningNumber={game.winningNumber || 0}
           winner={winner}
           standings={players}
-          currentUserId={currentUser.id}
+          currentUserId={user.id}
         />
       )}
 

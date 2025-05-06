@@ -88,20 +88,11 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
     setRollingStoneNumber(null);
     setIsGameResultOpen(false);
     
-    // Special handling for demo games (1 and 2)
-    const isDemoGame = gameId === "1" || gameId === "2";
-    console.log("Is demo game:", isDemoGame, "game ID:", gameId);
-    
     // Then fetch new game data and reconnect
     fetchGameData().then(() => {
-      // Only connect to WebSocket if we have a valid user ID or it's a demo game
-      if (userId > 0 || isDemoGame) {
-        console.log("Connecting to WebSocket with user ID:", userId, "for game:", gameId);
-        disconnect();
-        connect();
-      } else {
-        console.log("Not connecting to WebSocket - no valid user ID");
-      }
+      // Reconnect to WebSocket
+      disconnect();
+      connect();
     });
 
     return () => {

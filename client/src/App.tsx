@@ -39,7 +39,7 @@ function Router() {
       <PublicDemoRoute path="/demo" component={DemoPage} />
       <PublicDemoRoute path="/demo-new" component={DemoPage} />
       <PublicDemoRoute path="/simple-demo" component={SimpleDemo} />
-      <Route path="/ball-test" component={BallTest} />
+      <PublicDemoRoute path="/ball-test" component={BallTest} />
       <ProtectedRoute path="/" component={Home} />
       <Route component={NotFound} />
     </Switch>
