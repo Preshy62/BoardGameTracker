@@ -42,14 +42,14 @@ const GameStone = ({
         className
       )}
       style={isRolling ? {
-        boxShadow: "0 0 50px 25px rgba(255, 215, 0, 0.95)",
+        boxShadow: "0 0 60px 30px rgba(255, 215, 0, 0.95)",
         zIndex: 100,
         position: "relative",
-        transform: "scale(1.5)", 
-        transition: "all 0.2s ease-in-out",
-        animation: "dice-roll 0.5s linear infinite, stone-pulse 0.8s infinite alternate",
-        border: '5px solid gold',
-        outline: '3px solid red',
+        transform: "scale(1.8)", 
+        transition: "all 0.15s ease-in-out",
+        animation: "dice-roll 0.5s linear infinite, stone-pulse 0.6s infinite alternate",
+        border: '6px solid gold',
+        outline: '4px solid red',
         background: isSpecial 
           ? 'radial-gradient(circle, #FFD700 30%, #f59e0b 100%)' 
           : isSuper 

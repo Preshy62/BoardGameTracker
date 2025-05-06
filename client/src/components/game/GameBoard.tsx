@@ -37,6 +37,9 @@ const GameBoard = ({
   // Keep track of which stones are currently in the rolling animation
   const [rollingStones, setRollingStones] = useState<{[key: number]: boolean}>({});
   
+  // Track the final selected stone with winning animation
+  const [finalStoneSelected, setFinalStoneSelected] = useState<number | null>(null);
+  
   // State for the enhanced rolling ball animation
   const [ballPosition, setBallPosition] = useState({ top: 50, left: 50 });
   const [showBall, setShowBall] = useState(false);
@@ -206,8 +209,9 @@ const GameBoard = ({
           setRollingStones({});
         }
         
-        // Finally, highlight the actual winning stone and play a landing sound
-        setRollingStones({ [rollingStoneNumber]: true });
+        // Finally, highlight the actual winning stone with a winning animation style
+        // Apply winner-stone animation class to the final stone
+        setFinalStoneSelected(rollingStoneNumber);
         
         try {
           const landingAudio = new Audio();
@@ -218,13 +222,13 @@ const GameBoard = ({
           // Optional sound - fail silently
         }
         
-        // Keep the final stone highlighted for a moment
-        await new Promise(resolve => setTimeout(resolve, 1800));
+        // Keep the final stone highlighted for a longer moment with the special animation
+        await new Promise(resolve => setTimeout(resolve, 2500));
         
         // End the animation
+        setFinalStoneSelected(null);
         setRollingStones({});
         setIsRolling(false);
-        setShowBall(false);
       };
       
       // Execute the animation
@@ -241,6 +245,11 @@ const GameBoard = ({
   // Function to check if a stone should be highlighted as part of the rolling animation
   const isStoneRolling = (stoneNumber: number) => {
     return rollingStones[stoneNumber] || rollingStoneNumber === stoneNumber;
+  };
+  
+  // Check if a stone is the final selected one that should have special winning animation
+  const isWinningStone = (stoneNumber: number) => {
+    return finalStoneSelected === stoneNumber;
   };
   
   // We don't need this effect anymore as the logic is incorporated in the enhanced effect above
@@ -300,23 +309,7 @@ const GameBoard = ({
                 </svg>
               </div>
               
-              {/* Main tracking ball that follows the game stones */}
-              <GameBall 
-                visible={showBall || rollingStoneNumber !== null}
-                top={ballPosition.top}
-                left={ballPosition.left}
-                color="gold"
-                size="md"
-              />
-              
-              {/* Fixed test ball at the center of the board */}
-              <GameBall 
-                visible={showBall || rollingStoneNumber !== null}
-                top="50%"
-                left="50%"
-                color="red"
-                size="sm"
-              />
+              {/* We've removed the GameBall components to focus purely on stone highlighting */}
               
               {/* START label - positioned on the right side like the physical board */}
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-transparent text-white p-1 font-bold text-lg rotate-90">
@@ -399,23 +392,7 @@ const GameBoard = ({
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
               
-              {/* Floating indicator ball showing the rolling number */}
-              <GameBall
-                visible={rollingStoneNumber !== null}
-                top="30%"
-                left="70%" 
-                color="red"
-                size="sm"
-              />
-              
-              {/* Another backup ball at the bottom of the screen for testing */}
-              <GameBall
-                visible={showBall || rollingStoneNumber !== null}
-                top="90%"
-                left="50%"
-                color="gold"
-                size="md"
-              />
+              {/* We've removed all GameBall components to focus purely on stone highlighting */}
             </div>
             
             {/* Total Pool */}
