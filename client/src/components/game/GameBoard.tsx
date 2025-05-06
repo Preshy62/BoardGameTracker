@@ -394,8 +394,8 @@ const GameBoard = ({
               </div>
               
               {/* Enhanced rolling ball element */}
-              {console.log("🏀 Ball display state:", {showBall, ballPosition, rollingStoneNumber, boardElement})}
-              {showBall && (
+              {/* Ball debug info logged when state changes */}
+              {showBall ? (
                 <div 
                   className="ball-element roll-animation"
                   style={{
@@ -407,7 +407,20 @@ const GameBoard = ({
                     zIndex: 9999
                   }}
                 />
-              )}
+              ) : null}
+              
+              {/* Add a permanent test ball that's always visible for debugging */}
+              <div 
+                className="ball-element roll-animation"
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '50px',
+                  height: '50px',
+                  display: rollingStoneNumber ? 'block' : 'none'
+                }}
+              />
             </div>
             
             {/* Total Pool */}
