@@ -84,14 +84,35 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat settings
   const isHighStakesGame = game ? game.stake >= 50000 : false;
 
-  // Handle if user is not logged in
+  // Handle if user is not logged in - special case for demo games (1 and 2)
+  const isDemoGame = gameId === "1" || gameId === "2";
+  
+  // Create a mock user for demo games if needed
+  const demoUser: User = {
+    id: 999,
+    username: 'Demo User',
+    password: '',
+    email: 'demo@example.com',
+    walletBalance: 100000,
+    avatarInitials: 'DU',
+    isAdmin: false,
+    isActive: true,
+    createdAt: null,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null
+  };
+  
+  // Use either the authenticated user or the demo user for demo games
+  const currentUser = user || (isDemoGame ? demoUser : null);
+  
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    if (!isUserLoading && !currentUser) {
+      console.log("User not logged in and not a demo game, redirecting to auth");
       setLocation('/auth');
     }
-  }, [user, isUserLoading, setLocation]);
+  }, [user, isUserLoading, setLocation, isDemoGame, currentUser]);
 
-  if (isUserLoading || isLoading || !user) {
+  if (isUserLoading || isLoading || !currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading" />
@@ -185,7 +206,7 @@ export default function Game({ id }: GamePageProps) {
 
   return (
     <div className={`min-h-screen flex flex-col ${isSpecificGame ? 'game-2-specific' : ''}`}>
-      <Header user={user} />
+      <Header user={currentUser} />
       
       {/* Special welcome message for game/2 */}
       {isSpecificGame && (
@@ -202,7 +223,7 @@ export default function Game({ id }: GamePageProps) {
           players={players}
           onRollStone={rollStone}
           rollingStoneNumber={rollingStoneNumber}
-          userId={user.id}
+          userId={currentUser.id}
           timeRemaining={timeRemaining || undefined}
           isCurrentPlayerTurn={isCurrentPlayerTurn}
           forceShowBall={isSpecificGame} // Pass prop to force showing ball on game/2
@@ -215,7 +236,7 @@ export default function Game({ id }: GamePageProps) {
               <VoiceChat 
                 game={game} 
                 isEnabled={voiceChatEnabled}
-                currentUserId={user.id}
+                currentUserId={currentUser.id}
               />
             </div>
           )}
@@ -223,7 +244,7 @@ export default function Game({ id }: GamePageProps) {
           <GameSidebar
             players={players}
             messages={messages}
-            currentUserId={user.id}
+            currentUserId={currentUser.id}
             currentPlayerTurnId={currentTurnPlayerId || 0}
             onSendMessage={sendChatMessage}
           />
@@ -262,7 +283,7 @@ export default function Game({ id }: GamePageProps) {
           winningNumber={game.winningNumber || 0}
           winner={winner}
           standings={players}
-          currentUserId={user.id}
+          currentUserId={currentUser.id}
         />
       )}
 
