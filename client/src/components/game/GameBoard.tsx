@@ -73,7 +73,7 @@ const GameBoard = ({
     // Shuffle the array using Fisher-Yates algorithm
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      const temp = indices[i];
+      const temp: number = indices[i];
       indices[i] = indices[j]; 
       indices[j] = temp;
     }
@@ -97,6 +97,7 @@ const GameBoard = ({
   useEffect(() => {
     // If there's a stone rolling
     if (rollingStoneNumber !== null) {
+      console.log("🎲 Rolling animation starting for stone number:", rollingStoneNumber);
       // Clear any previous rolling animations
       setRollingStones({});
       
@@ -393,13 +394,17 @@ const GameBoard = ({
               </div>
               
               {/* Enhanced rolling ball element */}
+              {console.log("🏀 Ball display state:", {showBall, ballPosition, rollingStoneNumber, boardElement})}
               {showBall && (
                 <div 
                   className="ball-element roll-animation"
                   style={{
                     position: 'absolute',
                     top: `${ballPosition.top}px`,
-                    left: `${ballPosition.left}px`
+                    left: `${ballPosition.left}px`,
+                    display: "block",
+                    visibility: "visible",
+                    zIndex: 9999
                   }}
                 />
               )}
