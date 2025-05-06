@@ -278,7 +278,12 @@ const GameBoard = ({
         <div className="relative p-4 md:p-8 bg-primary">
           <div className="bg-primary-light border-4 border-gray-700 rounded-lg p-4 md:p-6 mx-auto" style={{ maxWidth: "600px" }}>
             {/* Game Board with Live Layout */}
-            <div id="game-board-element" className="relative bg-primary-light border-2 border-gray-800 p-4 rounded mb-6">
+            <div 
+              id="game-board-element" 
+              className={cn(
+                "relative bg-primary-light border-2 border-gray-800 p-4 rounded mb-6",
+                isBoardShaking && "shaking-board"
+              )}>
               {/* Game Title */}
               <h3 className="text-center text-white text-2xl font-sans font-bold mb-4">BIG BOYS GAME</h3>
               
@@ -371,21 +376,14 @@ const GameBoard = ({
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
               
-              {/* Rolling ball element */}
+              {/* Enhanced rolling ball element */}
               {showBall && (
                 <div 
                   className="ball-element roll-animation"
                   style={{
                     position: 'absolute',
                     top: `${ballPosition.top}px`,
-                    left: `${ballPosition.left}px`,
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    border: '3px solid gold',
-                    zIndex: 1000,
-                    transition: 'top 0.2s ease-out, left 0.2s ease-out'
+                    left: `${ballPosition.left}px`
                   }}
                 />
               )}
