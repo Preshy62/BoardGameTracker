@@ -67,6 +67,20 @@ export default function Game({ id }: GamePageProps) {
     userId: user?.id || 0
   });
   
+  // Add additional debugging for game/1 and game/2 pages
+  useEffect(() => {
+    console.log(`Game page rendering for game ID: ${gameId}`);
+    console.log("Game data:", game);
+    console.log("Players:", players);
+    console.log("Current user ID:", user?.id);
+    console.log("Is loading:", isLoading);
+    
+    // If game is undefined but not loading, there might be an issue
+    if (!isLoading && !game) {
+      console.error("Game is undefined but not in loading state");
+    }
+  }, [gameId, game, players, user?.id, isLoading]);
+  
   // Voice chat settings
   const isHighStakesGame = game ? game.stake >= 50000 : false;
 
@@ -116,8 +130,8 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat feature flag (always true for UI but internal functionality is disabled)
   const voiceChatEnabled = true;
   
-  // Explicitly add enhanced animations and specific handling for game with ID 2
-  const isSpecificGame = gameId === "2";
+  // Explicitly add enhanced animations and specific handling for both games 1 and 2
+  const isSpecificGame = gameId === "2" || gameId === "1";
   
   // Set up animation trigger specifically for game 2
   useEffect(() => {
