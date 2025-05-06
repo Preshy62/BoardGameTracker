@@ -13,6 +13,7 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
   const [isRolling, setIsRolling] = useState(false);
   const [showBall, setShowBall] = useState(false);
   const [currentPathIndex, setCurrentPathIndex] = useState(0);
+  const [finalStoneSelected, setFinalStoneSelected] = useState<number | null>(null);
   
   // Ball position for direct styling
   const [ballPosition, setBallPosition] = useState({ top: 0, left: 0 });
@@ -213,8 +214,8 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           console.error(`Demo: Could not find final stone element for stone ${rollingStoneNumber}`);
         }
         
-        // Highlight the final stone
-        setRollingStones({ [rollingStoneNumber]: true });
+        // Set the final stone with winner animation
+        setFinalStoneSelected(rollingStoneNumber);
         
         // Landing sound for final position
         try {
@@ -228,6 +229,11 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         
         // Reset rolling flag
         setIsRolling(false);
+        
+        // Keep final stone highlighted for 2.5 seconds, then clear it
+        setTimeout(() => {
+          setFinalStoneSelected(null);
+        }, 2500);
         
         // Keep ball visible for a moment after landing
         setTimeout(() => {
@@ -244,6 +250,11 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
   // Function to check if a stone should be highlighted as part of the rolling animation
   const isStoneRolling = (stoneNumber: number) => {
     return rollingStones[stoneNumber] || rollingStoneNumber === stoneNumber;
+  };
+  
+  // Check if a stone is the final selected one that should have special winning animation
+  const isWinningStone = (stoneNumber: number) => {
+    return finalStoneSelected === stoneNumber;
   };
   
   return (
@@ -274,73 +285,73 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         
         {/* Game Stone Layout - Top Row */}
         <div className="flex justify-between mb-6">
-          <GameStone id="demo-stone-29" number={29} isRolling={isStoneRolling(29)} size="sm" />
-          <GameStone id="demo-stone-40" number={40} isRolling={isStoneRolling(40)} size="sm" />
-          <GameStone id="demo-stone-32" number={32} isRolling={isStoneRolling(32)} size="sm" />
-          <GameStone id="demo-stone-81" number={81} isRolling={isStoneRolling(81)} size="sm" />
-          <GameStone id="demo-stone-7" number={7} isRolling={isStoneRolling(7)} size="sm" />
+          <GameStone id="demo-stone-29" number={29} isRolling={isStoneRolling(29)} isWinner={isWinningStone(29)} size="sm" />
+          <GameStone id="demo-stone-40" number={40} isRolling={isStoneRolling(40)} isWinner={isWinningStone(40)} size="sm" />
+          <GameStone id="demo-stone-32" number={32} isRolling={isStoneRolling(32)} isWinner={isWinningStone(32)} size="sm" />
+          <GameStone id="demo-stone-81" number={81} isRolling={isStoneRolling(81)} isWinner={isWinningStone(81)} size="sm" />
+          <GameStone id="demo-stone-7" number={7} isRolling={isStoneRolling(7)} isWinner={isWinningStone(7)} size="sm" />
         </div>
         
         {/* Game Stone Layout - Second Row */}
         <div className="flex justify-between mb-6">
-          <GameStone id="demo-stone-13" number={13} isRolling={isStoneRolling(13)} size="sm" />
-          <GameStone id="demo-stone-64" number={64} isRolling={isStoneRolling(64)} size="sm" />
-          <GameStone id="demo-stone-1000" number={1000} isRolling={isStoneRolling(1000)} isSpecial size="md" />
-          <GameStone id="demo-stone-101" number={101} isRolling={isStoneRolling(101)} size="sm" />
-          <GameStone id="demo-stone-4" number={4} isRolling={isStoneRolling(4)} size="sm" />
+          <GameStone id="demo-stone-13" number={13} isRolling={isStoneRolling(13)} isWinner={isWinningStone(13)} size="sm" />
+          <GameStone id="demo-stone-64" number={64} isRolling={isStoneRolling(64)} isWinner={isWinningStone(64)} size="sm" />
+          <GameStone id="demo-stone-1000" number={1000} isRolling={isStoneRolling(1000)} isWinner={isWinningStone(1000)} isSpecial size="md" />
+          <GameStone id="demo-stone-101" number={101} isRolling={isStoneRolling(101)} isWinner={isWinningStone(101)} size="sm" />
+          <GameStone id="demo-stone-4" number={4} isRolling={isStoneRolling(4)} isWinner={isWinningStone(4)} size="sm" />
         </div>
         
         {/* Game Stone Layout - Third Row (with super stones) */}
         <div className="flex justify-between items-center mb-6">
-          <GameStone id="demo-stone-3355" number={3355} isRolling={isStoneRolling(3355)} isSuper size="md" />
-          <GameStone id="demo-stone-65" number={65} isRolling={isStoneRolling(65)} size="sm" />
-          <GameStone id="demo-stone-12" number={12} isRolling={isStoneRolling(12)} size="sm" />
-          <GameStone id="demo-stone-22" number={22} isRolling={isStoneRolling(22)} size="sm" />
-          <GameStone id="demo-stone-9" number={9} isRolling={isStoneRolling(9)} size="sm" />
-          <GameStone id="demo-stone-6624" number={6624} isRolling={isStoneRolling(6624)} isSuper size="md" />
-          <GameStone id="demo-stone-44" number={44} isRolling={isStoneRolling(44)} size="sm" />
+          <GameStone id="demo-stone-3355" number={3355} isRolling={isStoneRolling(3355)} isWinner={isWinningStone(3355)} isSuper size="md" />
+          <GameStone id="demo-stone-65" number={65} isRolling={isStoneRolling(65)} isWinner={isWinningStone(65)} size="sm" />
+          <GameStone id="demo-stone-12" number={12} isRolling={isStoneRolling(12)} isWinner={isWinningStone(12)} size="sm" />
+          <GameStone id="demo-stone-22" number={22} isRolling={isStoneRolling(22)} isWinner={isWinningStone(22)} size="sm" />
+          <GameStone id="demo-stone-9" number={9} isRolling={isStoneRolling(9)} isWinner={isWinningStone(9)} size="sm" />
+          <GameStone id="demo-stone-6624" number={6624} isRolling={isStoneRolling(6624)} isWinner={isWinningStone(6624)} isSuper size="md" />
+          <GameStone id="demo-stone-44" number={44} isRolling={isStoneRolling(44)} isWinner={isWinningStone(44)} size="sm" />
         </div>
         
         {/* Game Stone Layout - Fourth Row (with 500 special stone) */}
         <div className="flex justify-between mb-6">
-          <GameStone id="demo-stone-28" number={28} isRolling={isStoneRolling(28)} size="sm" />
-          <GameStone id="demo-stone-21" number={21} isRolling={isStoneRolling(21)} size="sm" />
-          <GameStone id="demo-stone-105" number={105} isRolling={isStoneRolling(105)} size="sm" />
-          <GameStone id="demo-stone-500" number={500} isRolling={isStoneRolling(500)} isSpecial size="md" />
-          <GameStone id="demo-stone-99" number={99} isRolling={isStoneRolling(99)} size="sm" />
-          <GameStone id="demo-stone-20" number={20} isRolling={isStoneRolling(20)} size="sm" />
-          <GameStone id="demo-stone-82" number={82} isRolling={isStoneRolling(82)} size="sm" />
-          <GameStone id="demo-stone-3" number={3} isRolling={isStoneRolling(3)} size="sm" />
+          <GameStone id="demo-stone-28" number={28} isRolling={isStoneRolling(28)} isWinner={isWinningStone(28)} size="sm" />
+          <GameStone id="demo-stone-21" number={21} isRolling={isStoneRolling(21)} isWinner={isWinningStone(21)} size="sm" />
+          <GameStone id="demo-stone-105" number={105} isRolling={isStoneRolling(105)} isWinner={isWinningStone(105)} size="sm" />
+          <GameStone id="demo-stone-500" number={500} isRolling={isStoneRolling(500)} isWinner={isWinningStone(500)} isSpecial size="md" />
+          <GameStone id="demo-stone-99" number={99} isRolling={isStoneRolling(99)} isWinner={isWinningStone(99)} size="sm" />
+          <GameStone id="demo-stone-20" number={20} isRolling={isStoneRolling(20)} isWinner={isWinningStone(20)} size="sm" />
+          <GameStone id="demo-stone-82" number={82} isRolling={isStoneRolling(82)} isWinner={isWinningStone(82)} size="sm" />
+          <GameStone id="demo-stone-3" number={3} isRolling={isStoneRolling(3)} isWinner={isWinningStone(3)} size="sm" />
         </div>
         
         {/* Game Stone Layout - Fifth Row */}
         <div className="flex justify-between mb-6">
-          <GameStone id="demo-stone-11" number={11} isRolling={isStoneRolling(11)} size="sm" />
-          <GameStone id="demo-stone-37" number={37} isRolling={isStoneRolling(37)} size="sm" />
-          <GameStone id="demo-stone-72" number={72} isRolling={isStoneRolling(72)} size="sm" />
-          <GameStone id="demo-stone-17" number={17} isRolling={isStoneRolling(17)} size="sm" />
-          <GameStone id="demo-stone-42" number={42} isRolling={isStoneRolling(42)} size="sm" />
-          <GameStone id="demo-stone-8" number={8} isRolling={isStoneRolling(8)} size="sm" />
-          <GameStone id="demo-stone-30" number={30} isRolling={isStoneRolling(30)} size="sm" />
-          <GameStone id="demo-stone-91" number={91} isRolling={isStoneRolling(91)} size="sm" />
-          <GameStone id="demo-stone-27" number={27} isRolling={isStoneRolling(27)} size="sm" />
-          <GameStone id="demo-stone-5" number={5} isRolling={isStoneRolling(5)} size="sm" />
-          <GameStone id="demo-stone-40-b" number={40} isRolling={isStoneRolling(40)} size="sm" />
+          <GameStone id="demo-stone-11" number={11} isRolling={isStoneRolling(11)} isWinner={isWinningStone(11)} size="sm" />
+          <GameStone id="demo-stone-37" number={37} isRolling={isStoneRolling(37)} isWinner={isWinningStone(37)} size="sm" />
+          <GameStone id="demo-stone-72" number={72} isRolling={isStoneRolling(72)} isWinner={isWinningStone(72)} size="sm" />
+          <GameStone id="demo-stone-17" number={17} isRolling={isStoneRolling(17)} isWinner={isWinningStone(17)} size="sm" />
+          <GameStone id="demo-stone-42" number={42} isRolling={isStoneRolling(42)} isWinner={isWinningStone(42)} size="sm" />
+          <GameStone id="demo-stone-8" number={8} isRolling={isStoneRolling(8)} isWinner={isWinningStone(8)} size="sm" />
+          <GameStone id="demo-stone-30" number={30} isRolling={isStoneRolling(30)} isWinner={isWinningStone(30)} size="sm" />
+          <GameStone id="demo-stone-91" number={91} isRolling={isStoneRolling(91)} isWinner={isWinningStone(91)} size="sm" />
+          <GameStone id="demo-stone-27" number={27} isRolling={isStoneRolling(27)} isWinner={isWinningStone(27)} size="sm" />
+          <GameStone id="demo-stone-5" number={5} isRolling={isStoneRolling(5)} isWinner={isWinningStone(5)} size="sm" />
+          <GameStone id="demo-stone-40-b" number={40} isRolling={isStoneRolling(40)} isWinner={isWinningStone(40)} size="sm" />
         </div>
         
         {/* Game Stone Layout - Bottom Row */}
         <div className="flex justify-between">
-          <GameStone id="demo-stone-6" number={6} isRolling={isStoneRolling(6)} size="sm" />
-          <GameStone id="demo-stone-80" number={80} isRolling={isStoneRolling(80)} size="sm" />
-          <GameStone id="demo-stone-3-b" number={3} isRolling={isStoneRolling(3)} size="sm" />
-          <GameStone id="demo-stone-26" number={26} isRolling={isStoneRolling(26)} size="sm" />
-          <GameStone id="demo-stone-100" number={100} isRolling={isStoneRolling(100)} size="sm" />
-          <GameStone id="demo-stone-19" number={19} isRolling={isStoneRolling(19)} size="sm" />
-          <GameStone id="demo-stone-14" number={14} isRolling={isStoneRolling(14)} size="sm" />
-          <GameStone id="demo-stone-43" number={43} isRolling={isStoneRolling(43)} size="sm" />
-          <GameStone id="demo-stone-16" number={16} isRolling={isStoneRolling(16)} size="sm" />
-          <GameStone id="demo-stone-71" number={71} isRolling={isStoneRolling(71)} size="sm" />
-          <GameStone id="demo-stone-10" number={10} isRolling={isStoneRolling(10)} size="sm" />
+          <GameStone id="demo-stone-6" number={6} isRolling={isStoneRolling(6)} isWinner={isWinningStone(6)} size="sm" />
+          <GameStone id="demo-stone-80" number={80} isRolling={isStoneRolling(80)} isWinner={isWinningStone(80)} size="sm" />
+          <GameStone id="demo-stone-3-b" number={3} isRolling={isStoneRolling(3)} isWinner={isWinningStone(3)} size="sm" />
+          <GameStone id="demo-stone-26" number={26} isRolling={isStoneRolling(26)} isWinner={isWinningStone(26)} size="sm" />
+          <GameStone id="demo-stone-100" number={100} isRolling={isStoneRolling(100)} isWinner={isWinningStone(100)} size="sm" />
+          <GameStone id="demo-stone-19" number={19} isRolling={isStoneRolling(19)} isWinner={isWinningStone(19)} size="sm" />
+          <GameStone id="demo-stone-14" number={14} isRolling={isStoneRolling(14)} isWinner={isWinningStone(14)} size="sm" />
+          <GameStone id="demo-stone-43" number={43} isRolling={isStoneRolling(43)} isWinner={isWinningStone(43)} size="sm" />
+          <GameStone id="demo-stone-16" number={16} isRolling={isStoneRolling(16)} isWinner={isWinningStone(16)} size="sm" />
+          <GameStone id="demo-stone-71" number={71} isRolling={isStoneRolling(71)} isWinner={isWinningStone(71)} size="sm" />
+          <GameStone id="demo-stone-10" number={10} isRolling={isStoneRolling(10)} isWinner={isWinningStone(10)} size="sm" />
         </div>
       </div>
       

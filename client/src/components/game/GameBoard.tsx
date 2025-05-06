@@ -211,22 +211,24 @@ const GameBoard = ({
         
         // Finally, highlight the actual winning stone with a winning animation style
         // Apply winner-stone animation class to the final stone
-        setFinalStoneSelected(rollingStoneNumber);
-        
-        try {
-          const landingAudio = new Audio();
-          landingAudio.src = '/dice-landing.mp3';
-          landingAudio.volume = 0.4;
-          landingAudio.play().catch(e => console.log('Landing audio failed:', e));
-        } catch (e) {
-          // Optional sound - fail silently
+        if (rollingStoneNumber !== null) {
+          setFinalStoneSelected(rollingStoneNumber);
+          
+          try {
+            const landingAudio = new Audio();
+            landingAudio.src = '/dice-landing.mp3';
+            landingAudio.volume = 0.4;
+            landingAudio.play().catch(e => console.log('Landing audio failed:', e));
+          } catch (e) {
+            // Optional sound - fail silently
+          }
+          
+          // Keep the final stone highlighted for a longer moment with the special animation
+          await new Promise(resolve => setTimeout(resolve, 2500));
+          
+          // End the animation
+          setFinalStoneSelected(null);
         }
-        
-        // Keep the final stone highlighted for a longer moment with the special animation
-        await new Promise(resolve => setTimeout(resolve, 2500));
-        
-        // End the animation
-        setFinalStoneSelected(null);
         setRollingStones({});
         setIsRolling(false);
       };
