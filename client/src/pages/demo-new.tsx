@@ -875,6 +875,20 @@ export default function DemoPage() {
             >
               <h3 className="text-center text-white text-2xl font-bold mb-4">BIG BOYS GAME</h3>
               
+              {/* Winner overlay */}
+              {finalStoneSelected && (
+                <div className="winner-overlay absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="text-center">
+                    <h2 className="text-yellow-500 text-4xl font-bold winner-text-animation mb-4">
+                      WINNER!
+                    </h2>
+                    <p className="text-white text-2xl winner-pulse-animation">
+                      Stone {selectedStone} wins the pot!
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               {/* Arrow pointing to start */}
               <div className="absolute top-8 right-16 text-white">
                 <svg viewBox="0 0 48 48" width="60" height="60" stroke="currentColor" strokeWidth="2" fill="none">
@@ -901,6 +915,7 @@ export default function DemoPage() {
                           isSuper={!!stone.isSuper}
                           size={stone.size as 'sm' | 'md' | 'lg'}
                           isRolling={rollingStoneIndex === stone.index}
+                          isWinner={!!(finalStoneSelected && selectedStone === stone.number)}
                           onClick={() => handleStoneClick(stone.index, stone.number)}
                         />
                       </div>
@@ -920,6 +935,7 @@ export default function DemoPage() {
                           number={stone.number}
                           size="sm"
                           isRolling={rollingStoneIndex === 100 + stone.index}
+                          isWinner={!!(finalStoneSelected && selectedStone === stone.number)}
                           onClick={() => handleStoneClick(100 + stone.index, stone.number)}
                         />
                       </div>
