@@ -36,19 +36,33 @@ const GameBoard = ({
   // Keep track of which stones are currently in the rolling animation
   const [rollingStones, setRollingStones] = useState<{[key: number]: boolean}>({});
   
+  // State for the rolling ball animation
+  const [ballPosition, setBallPosition] = useState({ top: 0, left: 0 });
+  const [showBall, setShowBall] = useState(false);
+  const [boardElement, setBoardElement] = useState<HTMLElement | null>(null);
+  
+  // Get reference to the board once it's rendered
+  useEffect(() => {
+    const board = document.getElementById('game-board-element');
+    if (board) {
+      setBoardElement(board);
+    }
+  }, []);
+  
   // Function to simulate the stone rolling across different stones before landing
   useEffect(() => {
     // If there's a stone rolling
     if (rollingStoneNumber !== null) {
       // Clear any previous rolling animations
       setRollingStones({});
+      setShowBall(true);
       
-      // Create a sequence of random stones to highlight as if the stone is rolling across them
+      // Create a sequence of stones to highlight as the ball rolls through them
       const simulateRolling = async () => {
         // Number of stones to roll through before landing on the final number
         const rollSteps = 12;
         
-        // Get all possible stone numbers
+        // Get all possible stone numbers in a specific order for better visual flow
         const allStoneNumbers = [
           // Top row
           29, 40, 32, 81, 7,
@@ -64,34 +78,74 @@ const GameBoard = ({
           6, 80, 3, 26, 100, 19, 14, 43, 16, 71, 10
         ];
         
+        // Position for the first stone
+        const firstStoneElement = document.getElementById(`stone-${allStoneNumbers[0]}`);
+        if (firstStoneElement && boardElement) {
+          const rect = firstStoneElement.getBoundingClientRect();
+          const boardRect = boardElement.getBoundingClientRect();
+          
+          setBallPosition({
+            top: rect.top - boardRect.top + (rect.height / 2) - 20, // Center vertically
+            left: rect.left - boardRect.left + (rect.width / 2) - 20, // Center horizontally
+          });
+        }
+        
         // Simulate rolling through random stones
         for (let i = 0; i < rollSteps; i++) {
-          // Choose a random stone to highlight as part of the rolling animation
+          // Choose a stone to highlight as part of the rolling animation
           const randomIndex = Math.floor(Math.random() * allStoneNumbers.length);
-          const randomStone = allStoneNumbers[randomIndex];
+          const currentStone = allStoneNumbers[randomIndex];
           
           // Update the rolling stones map
-          setRollingStones(prev => ({ ...prev, [randomStone]: true }));
+          setRollingStones(prev => ({ ...prev, [currentStone]: true }));
+          
+          // Move the ball to this stone's position
+          const stoneElement = document.getElementById(`stone-${currentStone}`);
+          if (stoneElement && boardElement) {
+            const rect = stoneElement.getBoundingClientRect();
+            const boardRect = boardElement.getBoundingClientRect();
+            
+            setBallPosition({
+              top: rect.top - boardRect.top + (rect.height / 2) - 20,
+              left: rect.left - boardRect.left + (rect.width / 2) - 20,
+            });
+          }
           
           // Wait a short time before moving to the next stone
-          await new Promise(resolve => setTimeout(resolve, 150));
+          await new Promise(resolve => setTimeout(resolve, 200));
           
           // Clear the current stone
           setRollingStones(prev => {
             const updated = { ...prev };
-            delete updated[randomStone];
+            delete updated[currentStone];
             return updated;
           });
         }
         
-        // Finally highlight the actual rolled number
+        // Finally move to and highlight the actual rolled number
+        const finalStoneElement = document.getElementById(`stone-${rollingStoneNumber}`);
+        if (finalStoneElement && boardElement) {
+          const rect = finalStoneElement.getBoundingClientRect();
+          const boardRect = boardElement.getBoundingClientRect();
+          
+          setBallPosition({
+            top: rect.top - boardRect.top + (rect.height / 2) - 20,
+            left: rect.left - boardRect.left + (rect.width / 2) - 20,
+          });
+        }
+        
         setRollingStones({ [rollingStoneNumber]: true });
+        
+        // Hide the ball after a short delay
+        setTimeout(() => {
+          setShowBall(false);
+        }, 1000);
       };
       
       // Start the rolling simulation
       simulateRolling();
     }
-  }, [rollingStoneNumber]);
+  }, [rollingStoneNumber, boardElement]);
 
   // Function to check if a stone should be highlighted as part of the rolling animation
   const isStoneRolling = (stoneNumber: number) => {
@@ -135,7 +189,7 @@ const GameBoard = ({
         <div className="relative p-4 md:p-8 bg-primary">
           <div className="bg-primary-light border-4 border-gray-700 rounded-lg p-4 md:p-6 mx-auto" style={{ maxWidth: "600px" }}>
             {/* Game Board with Live Layout */}
-            <div className="relative bg-primary-light border-2 border-gray-800 p-4 rounded mb-6">
+            <div id="game-board-element" className="relative bg-primary-light border-2 border-gray-800 p-4 rounded mb-6">
               {/* Game Title */}
               <h3 className="text-center text-white text-2xl font-sans font-bold mb-4">BIG BOYS GAME</h3>
               
@@ -227,6 +281,25 @@ const GameBoard = ({
               <div className="border-t-2 border-gray-700 mt-4 pt-2 text-center">
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
+              
+              {/* Rolling ball element */}
+              {showBall && (
+                <div 
+                  className="ball-element roll-animation"
+                  style={{
+                    position: 'absolute',
+                    top: `${ballPosition.top}px`,
+                    left: `${ballPosition.left}px`,
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: 'white',
+                    border: '3px solid gold',
+                    zIndex: 1000,
+                    transition: 'top 0.2s ease-out, left 0.2s ease-out'
+                  }}
+                />
+              )}
             </div>
             
             {/* Total Pool */}

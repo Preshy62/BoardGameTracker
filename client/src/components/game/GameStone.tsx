@@ -27,6 +27,7 @@ const GameStone = ({
 
   return (
     <div 
+      id={`stone-${number}`}
       className={cn(
         "game-stone rounded-full border-2 flex items-center justify-center transition-all",
         sizeClasses,
