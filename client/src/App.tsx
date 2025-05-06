@@ -35,6 +35,7 @@ function Router() {
       <AdminRoute path="/admin" component={Admin} />
       <ProtectedRoute path="/checkout/:amount" component={({ params }) => <Checkout amount={params.amount} />} />
       <PublicDemoRoute path="/demo" component={DemoPage} />
+      <PublicDemoRoute path="/demo-new" component={DemoPage} />
       <ProtectedRoute path="/" component={Home} />
       <Route component={NotFound} />
     </Switch>
