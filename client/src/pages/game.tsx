@@ -67,20 +67,6 @@ export default function Game({ id }: GamePageProps) {
     userId: user?.id || 0
   });
   
-  // Add additional debugging for game/1 and game/2 pages
-  useEffect(() => {
-    console.log(`Game page rendering for game ID: ${gameId}`);
-    console.log("Game data:", game);
-    console.log("Players:", players);
-    console.log("Current user ID:", user?.id);
-    console.log("Is loading:", isLoading);
-    
-    // If game is undefined but not loading, there might be an issue
-    if (!isLoading && !game) {
-      console.error("Game is undefined but not in loading state");
-    }
-  }, [gameId, game, players, user?.id, isLoading]);
-  
   // Voice chat settings
   const isHighStakesGame = game ? game.stake >= 50000 : false;
 
@@ -130,70 +116,9 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat feature flag (always true for UI but internal functionality is disabled)
   const voiceChatEnabled = true;
   
-  // Explicitly add enhanced animations and specific handling for both games 1 and 2
-  const isSpecificGame = gameId === "2" || gameId === "1";
-  
-  // Set up animation trigger specifically for game 2
-  useEffect(() => {
-    if (isSpecificGame) {
-      // Add CSS variables to the document root for ball position
-      document.documentElement.style.setProperty('--ball-top', '50%');
-      document.documentElement.style.setProperty('--ball-left', '50%');
-      
-      // Force animation redraw by adding a class to the root element
-      document.documentElement.classList.add('specific-game-animation');
-      
-      console.log("Enhanced animations for game/2 route activated");
-      
-      // Create an intro animation sequence
-      const runIntroAnimation = async () => {
-        // Create ball animation that follows a path around the board
-        const animateBallPath = async () => {
-          // Wait for board element to be available
-          const board = document.getElementById('game-board-element');
-          if (!board) return;
-          
-          // Define a path around the board to follow
-          const animationPath = [
-            { top: '20%', left: '20%' },
-            { top: '20%', left: '80%' },
-            { top: '80%', left: '80%' },
-            { top: '80%', left: '20%' },
-            { top: '50%', left: '50%' }
-          ];
-          
-          // Animate through each point in the path
-          for (const position of animationPath) {
-            document.documentElement.style.setProperty('--ball-top', position.top);
-            document.documentElement.style.setProperty('--ball-left', position.left);
-            await new Promise(resolve => setTimeout(resolve, 800));
-          }
-        };
-        
-        // Run the animation
-        await animateBallPath();
-      };
-      
-      // Run the intro animation after a short delay
-      setTimeout(runIntroAnimation, 1000);
-      
-      return () => {
-        document.documentElement.classList.remove('specific-game-animation');
-      };
-    }
-  }, [isSpecificGame]);
-
   return (
-    <div className={`min-h-screen flex flex-col ${isSpecificGame ? 'game-2-specific' : ''}`}>
+    <div className="min-h-screen flex flex-col">
       <Header user={user} />
-      
-      {/* Special welcome message for game/2 */}
-      {isSpecificGame && (
-        <div className="bg-yellow-500 text-primary p-3 text-center">
-          <h3 className="font-bold text-lg">Enhanced Animation Demo</h3>
-          <p>This game features special animations to showcase the ball movement. Watch as the ball moves around the board!</p>
-        </div>
-      )}
       
       <main className="flex-grow flex flex-col md:flex-row">
         <GameBoard
@@ -205,7 +130,6 @@ export default function Game({ id }: GamePageProps) {
           userId={user.id}
           timeRemaining={timeRemaining || undefined}
           isCurrentPlayerTurn={isCurrentPlayerTurn}
-          forceShowBall={isSpecificGame} // Pass prop to force showing ball on game/2
         />
         
         <div className="w-full md:w-80 bg-gray-50 border-l border-gray-200 flex flex-col">

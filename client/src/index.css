@@ -28,16 +28,6 @@
   --radius: 0.5rem;
   --success: 142 70% 45%;
   --error: 0 84% 60%;
-  
-  /* Game ball animation variables */
-  --ball-top: 50%;
-  --ball-left: 50%;
-  --ball-visible: 1;
-  --ball-size: 30px;
-  --ball-glow: rgba(255, 165, 0, 0.8);
-  --ball-glow-intensity: 12px;
-  --ball-opacity: 1;
-  --ball-rotation-speed: 0.8s;
 }
 
 .dark {
@@ -340,149 +330,20 @@
 
 .ball-element {
   position: absolute !important;
-  width: var(--ball-size) !important;
-  height: var(--ball-size) !important;
+  width: 60px !important;
+  height: 60px !important;
   border-radius: 50% !important;
   background: radial-gradient(circle, white 20%, #FF8800 60%, gold 100%) !important;
   border: 5px solid gold !important;
   z-index: 9999 !important;
   transition: top 0.25s ease-out, left 0.25s ease-out !important; /* Faster transitions for more responsive animation */
-  box-shadow: 0 0 var(--ball-glow-intensity) calc(var(--ball-glow-intensity) / 2) var(--ball-glow) !important;
+  box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.7) !important;
   transform: translate(-50%, -50%) !important; /* This ensures the ball is properly centered */
   filter: blur(0.5px) !important; /* Slight blur for motion effect */
   display: block !important;
   visibility: visible !important;
-  opacity: var(--ball-opacity) !important;
+  opacity: 1 !important;
   pointer-events: none !important; /* Ensure it doesn't interfere with clicks */
   top: var(--ball-top) !important;
   left: var(--ball-left) !important;
-}
-
-/* Ball animation for the test page */
-.ball-test-animation {
-  animation: ball-test-roll var(--ball-rotation-speed) linear infinite;
-}
-
-@keyframes ball-test-roll {
-  0% { 
-    transform: translate(-50%, -50%) rotate(0deg) scale(1);
-    box-shadow: 0 0 15px 8px rgba(255, 165, 0, 0.7);
-  }
-  50% { 
-    transform: translate(-50%, -50%) rotate(180deg) scale(1.15);
-    box-shadow: 0 0 25px 12px rgba(255, 136, 0, 0.9);
-  }
-  100% { 
-    transform: translate(-50%, -50%) rotate(360deg) scale(1);
-    box-shadow: 0 0 15px 8px rgba(255, 165, 0, 0.7);
-  }
-}
-
-/* Enhanced styles specifically for game/2 page */
-.game-2-specific .ball-element {
-  width: 70px !important;
-  height: 70px !important;
-  background: radial-gradient(circle, white 15%, #FF5500 50%, gold 100%) !important;
-  border: 6px solid gold !important;
-  box-shadow: 0 0 40px 20px rgba(255, 85, 0, 0.8) !important;
-  animation: enhanced-ball-animation 1.5s infinite alternate !important;
-}
-
-/* Animation specifically for game/2 */
-@keyframes enhanced-ball-animation {
-  0% {
-    transform: translate(-50%, -50%) scale(1) rotate(0deg) !important;
-    box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.7) !important;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.2) rotate(180deg) !important;
-    box-shadow: 0 0 50px 25px rgba(255, 85, 0, 0.9) !important;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1) rotate(360deg) !important;
-    box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.7) !important;
-  }
-}
-
-/* Apply special styles when specific game animation is active */
-.specific-game-animation .ball-element {
-  opacity: 1 !important;
-  visibility: visible !important;
-  display: block !important;
-  width: 80px !important;
-  height: 80px !important;
-  box-shadow: 0 0 50px 25px rgba(255, 85, 0, 0.9) !important;
-  animation: enhanced-ball-pulse 1s infinite alternate !important;
-}
-
-@keyframes enhanced-ball-pulse {
-  0% {
-    transform: translate(-50%, -50%) scale(1) rotate(0deg);
-    box-shadow: 0 0 30px 15px rgba(255, 215, 0, 0.8);
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.3) rotate(180deg);
-    box-shadow: 0 0 60px 30px rgba(255, 85, 0, 1);
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1) rotate(360deg);
-    box-shadow: 0 0 30px 15px rgba(255, 215, 0, 0.8);
-  }
-}
-
-/* Float animation for the rolling ball */
-.specific-game-animation .ball-element.floating {
-  animation: float-around 3s infinite alternate ease-in-out !important;
-}
-
-/* Enhanced board styles for game/2 */
-.board-enhanced {
-  box-shadow: 0 0 30px 10px rgba(255, 215, 0, 0.3) inset !important;
-  background: linear-gradient(145deg, rgba(33, 38, 45, 0.9), rgba(33, 38, 45, 1)) !important;
-  border-color: gold !important;
-  transition: all 0.5s ease-in-out !important;
-}
-
-.board-enhanced .game-stone {
-  transition: transform 0.4s ease-in-out, box-shadow 0.4s ease, opacity 0.4s !important;
-}
-
-.board-enhanced .game-stone:hover {
-  transform: translateY(-8px) scale(1.1) !important;
-  box-shadow: 0 12px 20px -5px rgba(255, 215, 0, 0.4) !important;
-  z-index: 100 !important;
-}
-
-/* Float animation for the ball in game/2 when not rolling */
-@keyframes float-around {
-  0% {
-    transform: translate(-50%, -50%) scale(1) rotate(0deg);
-    box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.7);
-    top: 40%;
-    left: 40%;
-  }
-  25% {
-    transform: translate(-50%, -50%) scale(1.1) rotate(90deg);
-    box-shadow: 0 0 40px 20px rgba(255, 85, 0, 0.8);
-    top: 60%;
-    left: 40%;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.2) rotate(180deg);
-    box-shadow: 0 0 50px 25px rgba(255, 85, 0, 0.9);
-    top: 60%;
-    left: 60%;
-  }
-  75% {
-    transform: translate(-50%, -50%) scale(1.1) rotate(270deg);
-    box-shadow: 0 0 40px 20px rgba(255, 85, 0, 0.8);
-    top: 40%;
-    left: 60%;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1) rotate(360deg);
-    box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.7);
-    top: 40%;
-    left: 40%;
-  }
 }

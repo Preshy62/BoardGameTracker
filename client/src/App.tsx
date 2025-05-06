@@ -12,7 +12,6 @@ import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import DemoPage from "@/pages/demo-new";
 import SimpleDemo from "@/pages/simple-demo";
-import BallTest from "@/pages/ball-test";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -39,7 +38,6 @@ function Router() {
       <PublicDemoRoute path="/demo" component={DemoPage} />
       <PublicDemoRoute path="/demo-new" component={DemoPage} />
       <PublicDemoRoute path="/simple-demo" component={SimpleDemo} />
-      <PublicDemoRoute path="/ball-test" component={BallTest} />
       <ProtectedRoute path="/" component={Home} />
       <Route component={NotFound} />
     </Switch>
