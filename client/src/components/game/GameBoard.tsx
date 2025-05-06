@@ -402,14 +402,26 @@ const GameBoard = ({
               </div>
               
               {/* Ball element that will move across the board */}
-              {showBall && (
+              {(showBall || rollingStoneNumber !== null) && (
                 <div 
                   className="ball-element"
                   style={{
                     position: 'absolute',
+                    width: '70px',
+                    height: '70px',
+                    borderRadius: '50%',
+                    display: 'block',
                     top: `${ballPosition.top}px`,
                     left: `${ballPosition.left}px`,
                     zIndex: 9999,
+                    background: 'radial-gradient(circle, white 20%, #FF8800 60%, gold 100%)',
+                    border: '5px solid gold',
+                    boxShadow: '0 0 40px 20px rgba(255, 136, 0, 0.9)',
+                    transform: 'translate(-50%, -50%)',
+                    opacity: 1,
+                    visibility: 'visible',
+                    filter: 'blur(0.5px)',
+                    animation: 'ball-pulse 0.5s infinite alternate'
                   }}
                 />
               )}
