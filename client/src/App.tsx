@@ -11,6 +11,7 @@ import Checkout from "@/pages/checkout";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import DemoPage from "@/pages/demo-new";
+import SimpleDemo from "@/pages/simple-demo";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -36,6 +37,7 @@ function Router() {
       <ProtectedRoute path="/checkout/:amount" component={({ params }) => <Checkout amount={params.amount} />} />
       <PublicDemoRoute path="/demo" component={DemoPage} />
       <PublicDemoRoute path="/demo-new" component={DemoPage} />
+      <PublicDemoRoute path="/simple-demo" component={SimpleDemo} />
       <ProtectedRoute path="/" component={Home} />
       <Route component={NotFound} />
     </Switch>
