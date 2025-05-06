@@ -186,6 +186,21 @@ export default function DemoPage() {
         transition: left 0.3s ease, top 0.3s ease;
       }
       
+      .ball-element {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid gold;
+        z-index: 1000;
+        transition: top 0.2s ease-out, left 0.2s ease-out;
+      }
+      
+      .roll-animation {
+        animation: roll-glow 0.8s linear infinite;
+      }
+      
       .shaking-board {
         animation: shakeBoard 0.5s cubic-bezier(.36,.07,.19,.97) both;
         animation-iteration-count: 3;
@@ -265,10 +280,14 @@ export default function DemoPage() {
     { number: 10, row: 6, index: 10 },
   ];
 
-  // Additional path animation state
+  // Animation state variables
   const [boardPathIndices, setBoardPathIndices] = useState<number[]>([]);
   const [rollTimeout, setRollTimeout] = useState<NodeJS.Timeout | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+  const diceRef = useRef<HTMLDivElement>(null);
+  const [dicePosition, setDicePosition] = useState({ top: 0, left: 0 });
+  const [showBall, setShowBall] = useState(false);
+  const [ballPosition, setBallPosition] = useState({ top: 0, left: 0 });
   
   // Very simple function to handle rolling dice across the board
   const handleRollDice = () => {
