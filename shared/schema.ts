@@ -138,7 +138,12 @@ export type WebSocketMessageType =
   | 'player_joined'
   | 'player_left'
   | 'turn_changed'
-  | 'error';
+  | 'error'
+  // Voice chat signaling messages
+  | 'voice_offer'
+  | 'voice_answer'
+  | 'voice_ice_candidate'
+  | 'voice_leave';
 
 export interface WebSocketMessage {
   type: WebSocketMessageType;

@@ -609,6 +609,13 @@ export class GameManager {
     // Update the map
     this.gameWebSockets.set(gameId, connections);
   }
+  
+  /**
+   * Get all WebSocket connections for a game
+   */
+  getGameConnections(gameId: number): WebSocketConnection[] {
+    return this.gameWebSockets.get(gameId) || [];
+  }
 
   /**
    * Remove a WebSocket connection for a game

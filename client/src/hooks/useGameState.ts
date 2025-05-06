@@ -543,6 +543,42 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
     rollStone,
     leaveGame,
     setIsGameResultOpen,
-    createNewGame
+    createNewGame,
+    socket: isConnected ? 
+      // Create a proxy object that implements just enough of the WebSocket interface
+      // to satisfy TypeScript but delegates the actual functionality to our custom handler
+      new Proxy({}, {
+        get: function(target, prop) {
+          if (prop === 'send') {
+            return (message: string) => { 
+              sendMessage(JSON.parse(message).type, JSON.parse(message).payload);
+              return true;
+            };
+          }
+          if (prop === 'readyState') {
+            return WebSocket.OPEN;
+          }
+          if (prop === 'addEventListener' || prop === 'removeEventListener') {
+            return () => {};
+          }
+          if (prop === 'dispatchEvent') {
+            return () => true;
+          }
+          if (prop === 'close') {
+            return () => {};
+          }
+          // Return empty values for other properties
+          if (['binaryType', 'extensions', 'protocol', 'url'].includes(prop as string)) {
+            return '';
+          }
+          if (['bufferedAmount'].includes(prop as string)) {
+            return 0;
+          }
+          if (['onclose', 'onerror', 'onmessage', 'onopen'].includes(prop as string)) {
+            return null;
+          }
+          return undefined;
+        }
+      }) as unknown as WebSocket : null
   };
 }

@@ -5,7 +5,7 @@ import WebSocket from "ws";
 import { storage } from "./storage";
 import { GameManager } from "./game/gameManager";
 import { z } from "zod";
-import { insertUserSchema, insertGameSchema, insertMessageSchema } from "@shared/schema";
+import { insertUserSchema, insertGameSchema, insertMessageSchema, InsertGame } from "@shared/schema";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import session from "express-session";
@@ -253,11 +253,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Added playWithBot flag to validatedData');
       }
       
-      // Handle voice chat enabled flag if present
-      if (typeof req.body.voiceChatEnabled === 'boolean') {
-        (validatedData as any).voiceChatEnabled = req.body.voiceChatEnabled;
-        console.log(`Voice chat ${req.body.voiceChatEnabled ? 'enabled' : 'disabled'} for this game`);
-      }
+      // Set voice chat enabled based on stake amount (>=20,000) or explicit request
+      const isHighStakeGame = validatedData.stake >= 20000;
+      const voiceChatEnabled = typeof req.body.voiceChatEnabled === 'boolean' 
+        ? req.body.voiceChatEnabled 
+        : isHighStakeGame; // Enable by default for high-stake games
+      
+      // Cast to proper type using intersection to avoid type errors
+      const gameData = {
+        ...validatedData,
+        voiceChatEnabled, // Use consistent typing - Boolean not null
+        playWithBot: isSinglePlayerGame // Make sure to include this flag properly
+      };
+      
+      console.log(`Voice chat ${voiceChatEnabled ? 'enabled' : 'disabled'} for this game (stake: ${validatedData.stake})`);
+      
       
       // Validate stake amount
       if (validatedData.stake < 1000) {
@@ -275,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create game with the validated data
-      const game = await gameManager.createGame(validatedData, req.session.userId);
+      const game = await gameManager.createGame(gameData, req.session.userId);
       
       res.status(201).json(game);
     } catch (error) {
@@ -298,6 +308,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/games/user", authenticate, async (req, res) => {
     try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
       const games = await gameManager.getUserGames(req.session.userId);
       res.json(games);
     } catch (error) {
@@ -383,6 +396,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe payment intent endpoint
   app.post("/api/create-payment-intent", authenticate, async (req, res) => {
     try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
       const { amount } = req.body;
 
       // Validate amount
@@ -463,6 +479,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Legacy deposit endpoint for demo/simulated deposits
   app.post("/api/transactions/deposit", authenticate, async (req, res) => {
     try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
       const { amount } = req.body;
       
       // Validate amount
@@ -509,6 +528,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Demo deposit (for testing only)
   app.post("/api/transactions/demo-deposit", authenticate, async (req, res) => {
     try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
       const amount = 100000; // ₦100,000 demo amount
       
       // Create transaction
@@ -544,6 +566,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/transactions/withdraw", authenticate, async (req, res) => {
     try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
       const { amount } = req.body;
       
       // Validate amount
@@ -594,6 +619,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/transactions", authenticate, async (req, res) => {
     try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
       const transactions = await storage.getUserTransactions(req.session.userId);
       res.json(transactions);
     } catch (error) {
@@ -656,18 +684,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Add the connection to game manager
-          gameManager.addWebSocketConnection(gameId, userId, ws);
+          if (gameId !== null && userId !== null) {
+            // We've verified both are non-null, so it's safe to assert them as numbers
+            gameManager.addWebSocketConnection(gameId as number, userId as number, ws);
+          }
           
           // Log
           console.log(`User ${userId} joined game ${gameId}`);
         } else if (data.type === 'leave_game') {
-          if (gameId && userId) {
-            gameManager.removeWebSocketConnection(gameId, userId);
+          if (gameId !== null && userId !== null) {
+            gameManager.removeWebSocketConnection(gameId as number, userId as number);
             gameId = null;
           }
         } else if (data.type === 'roll_stone') {
-          if (gameId && userId) {
-            await gameManager.rollStone(gameId, userId);
+          if (gameId !== null && userId !== null) {
+            await gameManager.rollStone(gameId as number, userId as number);
             console.log(`User ${userId} rolled in game ${gameId}`);
           } else {
             console.log('Cannot roll: missing gameId or userId', { gameId, userId });
@@ -676,14 +707,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!userId) {
               userId = await getSessionData();
               
-              if (userId && gameId) {
-                await gameManager.rollStone(gameId, userId);
+              if (userId !== null && gameId !== null) {
+                await gameManager.rollStone(gameId as number, userId as number);
                 console.log(`Re-authenticated user ${userId} rolled in game ${gameId}`);
               }
             }
           }
         } else if (data.type === 'chat_message') {
-          if (gameId && userId) {
+          if (gameId !== null && userId !== null) {
             const messageContent = data.payload.content;
             
             // Validate message
@@ -692,7 +723,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             // Create and broadcast message
-            await gameManager.sendChatMessage(gameId, userId, messageContent);
+            await gameManager.sendChatMessage(gameId as number, userId as number, messageContent);
+          }
+        } 
+        // Handle WebRTC signaling for voice chat
+        else if (['voice_offer', 'voice_answer', 'voice_ice_candidate', 'voice_leave'].includes(data.type)) {
+          if (gameId !== null && userId !== null) {
+            // Get the game to check if voice chat is enabled
+            const game = await storage.getGame(gameId as number);
+            if (!game) {
+              return;
+            }
+            
+            // Only relay voice chat messages if the game has voice chat enabled
+            // Voice chat is enabled for games with stake >= 20,000
+            if (game.voiceChatEnabled) {
+              // The target user ID to send the signaling message to
+              const targetUserId = data.payload.targetUserId;
+              
+              if (!targetUserId) {
+                return;
+              }
+              
+              // Find the target connection
+              const connections = gameManager.getGameConnections(gameId as number);
+              const targetConnection = connections.find(conn => conn.userId === targetUserId);
+              
+              // Send the signaling message directly to the target user
+              if (targetConnection && targetConnection.ws.readyState === WebSocket.OPEN) {
+                targetConnection.ws.send(JSON.stringify({
+                  type: data.type,
+                  payload: {
+                    ...data.payload,
+                    fromUserId: userId
+                  }
+                }));
+              }
+            }
           }
         }
       } catch (error) {

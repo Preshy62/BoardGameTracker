@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { User, GamePlayer, Message } from "@shared/schema";
+import { User, GamePlayer, Message, Game } from "@shared/schema";
 import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import GameChat from "./GameChat";
 
 interface GameSidebarProps {
   players: (GamePlayer & { user: User })[];
@@ -10,6 +11,9 @@ interface GameSidebarProps {
   currentUserId: number;
   currentPlayerTurnId: number;
   onSendMessage: (message: string) => void;
+  game: Game;
+  socket: WebSocket | null;
+  currentUser: User;
 }
 
 const GameSidebar = ({
@@ -17,28 +21,11 @@ const GameSidebar = ({
   messages,
   currentUserId,
   currentPlayerTurnId,
-  onSendMessage
+  onSendMessage,
+  game,
+  socket,
+  currentUser
 }: GameSidebarProps) => {
-  const [messageInput, setMessageInput] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      onSendMessage(messageInput.trim());
-      setMessageInput("");
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSendMessage();
-    }
-  };
-
-  // Auto-scroll to bottom of messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   return (
     <div className="flex-grow flex flex-col">
@@ -109,75 +96,22 @@ const GameSidebar = ({
       </div>
       
       {/* Chat Section */}
-      <div className="flex-grow flex flex-col p-4 overflow-hidden">
-        <h3 className="font-sans font-semibold text-lg mb-3">Chat</h3>
-        
-        {/* Message List */}
-        <ScrollArea className="flex-grow mb-4 pr-2">
-          <div className="space-y-3">
-            {messages.map((message) => {
-              const isCurrentUser = message.userId === currentUserId;
-              const player = players.find(p => p.userId === message.userId);
-              
-              if (message.type === 'system') {
-                return (
-                  <div key={message.id} className="text-center my-2">
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                      {message.content}
-                    </span>
-                  </div>
-                );
-              }
-              
-              return (
-                <div key={message.id} className={cn("flex", isCurrentUser && "justify-end")}>
-                  {!isCurrentUser && (
-                    <div className="w-8 h-8 rounded-full bg-primary-light flex-shrink-0 flex items-center justify-center text-white text-sm">
-                      {player?.user.avatarInitials}
-                    </div>
-                  )}
-                  
-                  <div className={cn(
-                    "p-2 max-w-[75%] rounded-lg",
-                    isCurrentUser 
-                      ? "mr-2 bg-secondary bg-opacity-20" 
-                      : "ml-2 bg-gray-100"
-                  )}>
-                    <p className="text-xs text-gray-500 mb-1">
-                      {isCurrentUser ? "You" : player?.user.username}
-                    </p>
-                    <p className="text-sm">{message.content}</p>
-                  </div>
-                  
-                  {isCurrentUser && (
-                    <div className="w-8 h-8 rounded-full bg-accent flex-shrink-0 flex items-center justify-center text-white text-sm">
-                      {player?.user.avatarInitials}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
-        
-        {/* Message Input */}
-        <div className="flex">
-          <input 
-            type="text" 
-            placeholder="Type a message..." 
-            value={messageInput}
-            onChange={(e) => setMessageInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="flex-grow border border-gray-300 rounded-l-lg px-3 py-2 focus:outline-none focus:border-secondary"
-          />
-          <button 
-            onClick={handleSendMessage}
-            className="bg-secondary text-primary px-4 py-2 rounded-r-lg"
-          >
-            <Send className="h-5 w-5" />
-          </button>
-        </div>
+      <div className="flex-grow p-4 overflow-hidden">
+        <GameChat 
+          game={game}
+          currentUser={currentUser}
+          players={players}
+          messages={messages.map(msg => ({
+            ...msg,
+            type: msg.type as 'chat' | 'system',
+            createdAt: msg.createdAt ? new Date(msg.createdAt) : new Date(),
+            user: players.find(p => p.userId === msg.userId)?.user && {
+              username: players.find(p => p.userId === msg.userId)!.user.username,
+              avatarInitials: players.find(p => p.userId === msg.userId)!.user.avatarInitials
+            }
+          }))}
+          socket={socket}
+        />
       </div>
     </div>
   );

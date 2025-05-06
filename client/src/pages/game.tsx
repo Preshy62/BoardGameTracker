@@ -61,7 +61,8 @@ export default function Game({ id }: GamePageProps) {
     rollStone,
     leaveGame,
     setIsGameResultOpen,
-    createNewGame
+    createNewGame,
+    socket
   } = useGameState({ 
     gameId, // Use the state variable that updates on URL changes instead of the prop
     userId: user?.id || 0
@@ -153,6 +154,9 @@ export default function Game({ id }: GamePageProps) {
             currentUserId={user.id}
             currentPlayerTurnId={currentTurnPlayerId || 0}
             onSendMessage={sendChatMessage}
+            game={game}
+            socket={socket}
+            currentUser={user}
           />
         </div>
       </main>
