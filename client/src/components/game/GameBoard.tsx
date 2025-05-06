@@ -250,6 +250,17 @@ const GameBoard = ({
           
           // Move the ball to this stone's position
           const stoneElement = document.getElementById(`stone-${currentStone}`);
+          console.log(`Looking for stone-${currentStone} element:`, !!stoneElement);
+          
+          // List all stones in the document to debug
+          const allStoneElements = document.querySelectorAll('[id^="stone-"]');
+          console.log(`Total stone elements found: ${allStoneElements.length}`);
+          if (allStoneElements.length > 0) {
+            console.log("First few stone IDs:", 
+              Array.from(allStoneElements).slice(0, 5).map(el => el.id).join(', ')
+            );
+          }
+          
           if (stoneElement && boardRef.current) {
             const rect = stoneElement.getBoundingClientRect();
             const boardRect = boardRef.current.getBoundingClientRect();
@@ -298,6 +309,18 @@ const GameBoard = ({
         
         // Finally move to and highlight the actual rolled number
         const finalStoneElement = document.getElementById(`stone-${rollingStoneNumber}`);
+        
+        console.log(`FINAL STONE: Looking for stone-${rollingStoneNumber} element:`, !!finalStoneElement);
+        
+        // List all stones in the document to debug at the final stage
+        const allFinalStoneElements = document.querySelectorAll('[id^="stone-"]');
+        console.log(`FINAL: Total stone elements found: ${allFinalStoneElements.length}`);
+        if (allFinalStoneElements.length > 0) {
+          console.log("FINAL: All stone IDs:", 
+            Array.from(allFinalStoneElements).map(el => el.id).join(', ')
+          );
+        }
+        
         if (finalStoneElement && boardRef.current) {
           const rect = finalStoneElement.getBoundingClientRect();
           const boardRect = boardRef.current.getBoundingClientRect();
@@ -538,8 +561,8 @@ const GameBoard = ({
                     width: '70px',
                     height: '70px',
                     display: 'block',
-                    top: `${ballPosition.top}px`,
-                    left: `${ballPosition.left}px`,
+                    top: `${ballPosition.top || 250}px`,
+                    left: `${ballPosition.left || 250}px`,
                     zIndex: 9999,
                     borderRadius: '50%',
                     background: 'radial-gradient(circle, white 20%, #FF8800 60%, gold 100%)',
@@ -551,6 +574,31 @@ const GameBoard = ({
                     filter: 'blur(0.5px)',
                     animation: 'ball-pulse 0.5s infinite alternate',
                     transition: 'top 0.3s ease-out, left 0.3s ease-out'
+                  }}
+                />
+              )}
+              
+              {/* Extra ball that's absolutely positioned in the middle regardless of props */}
+              {(showBall || rollingStoneNumber !== null) && (
+                <div 
+                  className="dice-ball-fixed"
+                  style={{
+                    position: 'absolute',
+                    width: '70px',
+                    height: '70px',
+                    display: 'block',
+                    top: '50%',
+                    left: '50%',
+                    zIndex: 9999,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, white 20%, #FF0000 60%, gold 100%)',
+                    border: '5px solid gold',
+                    boxShadow: '0 0 40px 20px rgba(255, 0, 0, 0.95)',
+                    transform: 'translate(-50%, -50%)',
+                    opacity: 1,
+                    visibility: 'visible',
+                    filter: 'blur(0.5px)',
+                    animation: 'ball-pulse 0.5s infinite alternate'
                   }}
                 />
               )}
