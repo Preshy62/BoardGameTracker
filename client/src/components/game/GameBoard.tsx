@@ -447,7 +447,7 @@ const GameBoard = ({
                 </svg>
               </div>
               
-              {/* Use our new GameBall component that's more reliable */}
+              {/* Main tracking ball that follows the game stones */}
               <GameBall 
                 visible={showBall || rollingStoneNumber !== null}
                 top={ballPosition.top}
@@ -456,7 +456,7 @@ const GameBoard = ({
                 size="md"
               />
               
-              {/* Add a fixed test ball at the center */}
+              {/* Fixed test ball at the center of the board */}
               <GameBall 
                 visible={showBall || rollingStoneNumber !== null}
                 top="50%"
