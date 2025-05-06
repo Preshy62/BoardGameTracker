@@ -179,10 +179,20 @@ const GameBoard = ({
             const rect = stoneElement.getBoundingClientRect();
             const boardRect = boardElement.getBoundingClientRect();
             
+            // Calculate center position with offsets that ensure ball is properly centered
+            const newTop = rect.top - boardRect.top + (rect.height / 2);
+            const newLeft = rect.left - boardRect.left + (rect.width / 2);
+            
+            console.log(`Ball moving to stone ${currentStone} at position: `, {newTop, newLeft});
+            
             setBallPosition({
-              top: rect.top - boardRect.top + (rect.height / 2) - 20,
-              left: rect.left - boardRect.left + (rect.width / 2) - 20,
+              top: newTop,
+              left: newLeft,
             });
+            
+            // Force a DOM update to ensure visibility
+            document.documentElement.style.setProperty('--ball-top', `${newTop}px`);
+            document.documentElement.style.setProperty('--ball-left', `${newLeft}px`);
           }
           
           // Play a click sound periodically for movement
@@ -214,19 +224,33 @@ const GameBoard = ({
           const rect = finalStoneElement.getBoundingClientRect();
           const boardRect = boardElement.getBoundingClientRect();
           
-          // Make a more dramatic movement to the final position
+          // Calculate final positions
+          const finalTop = rect.top - boardRect.top + (rect.height / 2);
+          const finalLeft = rect.left - boardRect.left + (rect.width / 2);
+          
+          console.log(`Ball final landing on stone ${rollingStoneNumber} at:`, {finalTop, finalLeft});
+          
+          // Make a more dramatic movement to the final position (slightly above target)
+          document.documentElement.style.setProperty('--ball-top', `${finalTop - 10}px`);
+          document.documentElement.style.setProperty('--ball-left', `${finalLeft}px`);
+          
+          // Update React state as well (backup)
           setBallPosition({
-            top: rect.top - boardRect.top + (rect.height / 2) - 30,  // Slightly higher for dramatic effect
-            left: rect.left - boardRect.left + (rect.width / 2) - 30,
+            top: finalTop - 10, // Slightly higher for dramatic effect
+            left: finalLeft,
           });
           
           // After a very short delay, settle into the final position
           setTimeout(() => {
+            document.documentElement.style.setProperty('--ball-top', `${finalTop}px`);
+            document.documentElement.style.setProperty('--ball-left', `${finalLeft}px`);
+            
+            // Update React state as well (backup)
             setBallPosition({
-              top: rect.top - boardRect.top + (rect.height / 2) - 20,
-              left: rect.left - boardRect.left + (rect.width / 2) - 20,
+              top: finalTop,
+              left: finalLeft,
             });
-          }, 100);
+          }, 150);
         }
         
         // Highlight the final stone
@@ -394,33 +418,23 @@ const GameBoard = ({
               </div>
               
               {/* Enhanced rolling ball element */}
-              {/* Ball debug info logged when state changes */}
-              {showBall ? (
+              {/* Use CSS variables for ball positioning - avoids React state batching issues */}
+              {showBall && (
+                <div className="ball-element roll-animation" />
+              )}
+              
+              {/* Backup ball that always appears when a roll happens */}
+              {rollingStoneNumber && (
                 <div 
                   className="ball-element roll-animation"
                   style={{
                     position: 'absolute',
-                    top: `${ballPosition.top}px`,
-                    left: `${ballPosition.left}px`,
-                    display: "block",
-                    visibility: "visible",
-                    zIndex: 9999
+                    width: '50px',
+                    height: '50px',
+                    display: 'block'
                   }}
                 />
-              ) : null}
-              
-              {/* Add a permanent test ball that's always visible for debugging */}
-              <div 
-                className="ball-element roll-animation"
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  width: '50px',
-                  height: '50px',
-                  display: rollingStoneNumber ? 'block' : 'none'
-                }}
-              />
+              )}
             </div>
             
             {/* Total Pool */}

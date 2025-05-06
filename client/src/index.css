@@ -323,6 +323,11 @@
   transform-origin: center center;
 }
 
+:root {
+  --ball-top: 50%;
+  --ball-left: 50%;
+}
+
 .ball-element {
   position: absolute !important;
   width: 60px !important;
@@ -331,7 +336,7 @@
   background: radial-gradient(circle, white 20%, #FF8800 60%, gold 100%) !important;
   border: 5px solid gold !important;
   z-index: 9999 !important;
-  transition: top 0.3s ease-out, left 0.3s ease-out !important; /* Faster, more responsive transitions */
+  transition: top 0.25s ease-out, left 0.25s ease-out !important; /* Faster transitions for more responsive animation */
   box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.7) !important;
   transform: translate(-50%, -50%) !important; /* This ensures the ball is properly centered */
   filter: blur(0.5px) !important; /* Slight blur for motion effect */
@@ -339,4 +344,6 @@
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: none !important; /* Ensure it doesn't interfere with clicks */
+  top: var(--ball-top) !important;
+  left: var(--ball-left) !important;
 }
