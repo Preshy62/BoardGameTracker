@@ -134,11 +134,11 @@ export default function DemoPage() {
     styleEl.innerHTML = `
       .dice-element {
         animation: pulse 0.5s infinite alternate, spin 2s linear infinite;
-        z-index: 100;
+        z-index: 1000; /* Ensure it's above everything */
         pointer-events: none;
         position: absolute;
-        width: 60px;
-        height: 60px;
+        width: 70px;
+        height: 70px;
         background-color: #FF0000;
         border-radius: 50%;
         display: flex;
@@ -146,10 +146,17 @@ export default function DemoPage() {
         justify-content: center;
         color: white;
         font-weight: bold;
-        font-size: 16px;
-        box-shadow: 0 0 15px 8px rgba(255, 215, 0, 0.7);
-        border: 3px solid white;
-        transition: left 0.3s ease, top 0.3s ease;
+        font-size: 18px;
+        text-shadow: 0 0 5px black, 0 0 3px black; /* Make text more visible */
+        box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.8);
+        border: 4px solid white;
+        transition: left 0.25s ease-out, top 0.25s ease-out; /* Slightly faster for more accurate movement */
+      }
+      
+      /* For demo animation only - position board as relative to make absolute positioning work */
+      #demo-game-board {
+        position: relative !important;
+        overflow: visible !important; /* Allow dice to be visible when it moves */
       }
       
       @keyframes pulse {
@@ -226,33 +233,55 @@ export default function DemoPage() {
 
   // Define the board perimeter path on component mount
   useEffect(() => {
-    // Create a comprehensive perimeter path
-    const perimeter = [
+    // Wait for the board to be fully rendered
+    setTimeout(() => {
+      // Create perimeter path based on the actual stone elements
+      // This guarantees the ball will follow the outer edges
+      const perimeter = [];
+      
       // Top row (left to right)
-      0, 1, 2, 3, 4,
-      // Right side (top to bottom)
-      4, 4, 7, 7,
+      for (let i = 0; i <= 4; i++) {
+        perimeter.push(i);
+      }
+      
+      // Right edge (top to bottom)
+      perimeter.push(4); // row 2 rightmost
+      perimeter.push(6); // row 3 rightmost
+      perimeter.push(7); // row 4 rightmost
+      
       // Bottom row (right to left)
-      7, 6, 5, 4, 3, 2, 1, 0,
-      // Left side (bottom to top)
-      0, 0, 0, 0,
-      // Small stones at the bottom (randomly select a few)
-      100, 102, 105, 107, 109,
-      // Small stones at the very bottom (randomly select a few)
-      100 + 3, 100 + 5, 100 + 7, 100 + 9
-    ];
-    
-    console.log('Board path created with perimeter values:', perimeter);
-    setBoardPath(perimeter);
-    
-    // Set initial position for dice
-    if (boardRef.current) {
-      const rect = boardRef.current.getBoundingClientRect();
-      setDicePosition({
-        top: rect.top + 50,
-        left: rect.right - 50,
-      });
-    }
+      for (let i = 7; i >= 0; i--) {
+        perimeter.push(i);
+      }
+      
+      // Left edge (bottom to top)
+      perimeter.push(0); // row 3 leftmost
+      perimeter.push(0); // row 2 leftmost
+      
+      console.log('Board path created with exact perimeter values:', perimeter);
+      setBoardPath(perimeter);
+      
+      // Set initial position for dice near the START arrow
+      if (boardRef.current) {
+        // Get the rightmost stone in row 1 (top row)
+        const startStone = document.getElementById('stone-4');
+        if (startStone) {
+          const rect = startStone.getBoundingClientRect();
+          const boardRect = boardRef.current.getBoundingClientRect();
+          
+          setDicePosition({
+            top: rect.top - boardRect.top,
+            left: rect.left - boardRect.left + rect.width,
+          });
+        } else {
+          const rect = boardRef.current.getBoundingClientRect();
+          setDicePosition({
+            top: 50,
+            left: rect.width - 80,
+          });
+        }
+      }
+    }, 500); // Short delay to ensure elements are rendered
   }, []);
 
   // Function to move the dice along the calculated path
@@ -298,15 +327,20 @@ export default function DemoPage() {
       stoneElement = document.getElementById(`small-stone-${smallStoneIdx}`);
     }
     
-    if (stoneElement) {
+    if (stoneElement && boardRef.current) {
       const rect = stoneElement.getBoundingClientRect();
-      const boardRect = boardRef.current?.getBoundingClientRect() || { top: 0, left: 0 };
+      const boardRect = boardRef.current.getBoundingClientRect();
       
-      console.log(`Moving to stone idx ${stoneIdx}, position: ${rect.top - boardRect.top}, ${rect.left - boardRect.left}`);
+      // Calculate position relative to the board
+      const relativeTop = rect.top - boardRect.top;
+      const relativeLeft = rect.left - boardRect.left;
       
+      console.log(`Moving to stone idx ${stoneIdx}, position: ${relativeTop}, ${relativeLeft}`);
+      
+      // Update the dice position with absolute coordinates
       setDicePosition({
-        top: rect.top - boardRect.top + (rect.height / 2) - 30, // Center on stone
-        left: rect.left - boardRect.left + (rect.width / 2) - 30,
+        top: relativeTop + (rect.height / 2) - 30, // Center on stone
+        left: relativeLeft + (rect.width / 2) - 30,
       });
     } else {
       console.error(`Could not find stone element for index ${stoneIdx}`);
