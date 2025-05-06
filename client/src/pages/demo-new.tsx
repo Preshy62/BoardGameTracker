@@ -545,7 +545,7 @@ export default function DemoPage() {
     setRollTimer(nextTimeout);
   }, [isRolling, boardPath, rollSpeed, rollTimer, toast, stones, smallStones]);
   
-  // Enhanced function to handle rolling dice with improved animation
+  // Simple and direct roll animation that just uses the existing old dice animation
   const handleRollDice = useCallback(() => {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
@@ -554,7 +554,6 @@ export default function DemoPage() {
     // Reset states
     setIsRolling(true);
     setSelectedStone(null);
-    setIsBoardShaking(true);
     
     // Play sound effect
     try {
@@ -569,174 +568,42 @@ export default function DemoPage() {
     // Toast to draw attention to the dice roll
     toast({
       title: "DICE IS ROLLING",
-      description: "Watch the ball run around the board!",
+      description: "Watch the dice roll around the board!",
     });
     
-    // Pick a random final stone to land on
-    const allStones = [...stones, ...smallStones];
-    const finalStone = allStones[Math.floor(Math.random() * allStones.length)];
-    console.log('Will land on final stone:', finalStone.number);
+    // Create a simple path for the roll
+    const simplePath: number[] = [];
     
-    // First position the ball in center of board
-    if (boardRef.current) {
-      const startPos = {
-        top: boardRef.current.clientHeight / 2,
-        left: boardRef.current.clientWidth / 2
-      };
-      setBallPosition(startPos);
-      setShowBall(true);
+    // Add all stones in order for a predictable path
+    for (let i = 0; i < stones.length; i++) {
+      simplePath.push(i);
     }
     
-    // Stop board shaking after a moment
-    setTimeout(() => {
-      setIsBoardShaking(false);
-    }, 1500);
+    // Update our path for the roll
+    setBoardPath(simplePath);
     
-    // Create a logical path for the ball - this is a pre-defined sequence for animation
-    // Use actual stone numbers to identify stops along the way
-    const animationStones = [
-      // Follow in a logical sequence - right to left, top to bottom
-      29, 40, 32, 81, 7,  // Top row
-      4, 101, 1000, 64, 13,  // Second row - right to left
-      44, 6624, 9, 22, 12, 65, 3355,  // Third row - left to right 
-      28, 21, 105, 500, 99, 20, 82, 3  // Fourth row - right to left
-    ];
+    // Start from the center of the board
+    if (boardRef.current) {
+      const boardRect = boardRef.current.getBoundingClientRect();
+      setDicePosition({
+        top: boardRect.height / 2 - 20,
+        left: boardRect.width / 2 - 20,
+      });
+    }
     
-    // Add some small stones
-    const smallStoneNumbers = [11, 37, 72, 17, 42, 8, 30, 91, 27];
-    animationStones.push(...smallStoneNumbers);
+    // Pick a random final stone to land on
+    const finalStone = stones[Math.floor(Math.random() * stones.length)];
+    const finalStoneIndex = finalStone.index;
     
-    // Maximum steps to take before landing on final stone
-    const minSteps = 15; // At least this many steps before landing
-    const maxSteps = minSteps + 10; // Can land anytime between min and max
-    const targetSteps = minSteps + Math.floor(Math.random() * 10); // Actual number of steps
+    console.log('Will land on stone:', finalStone.number, 'with index:', finalStoneIndex);
     
-    let step = 0;
+    // Roll 8-12 steps before stopping
+    const totalSteps = 8 + Math.floor(Math.random() * 5);
     
-    // The main animation function
-    const animateStep = () => {
-      // First add some random jitter to make path look more natural
-      const jitter = 5;
-      const randomJitter = {
-        top: Math.random() * jitter - jitter/2,
-        left: Math.random() * jitter - jitter/2
-      };
-      
-      // Calculate which stone to visit in the animation path
-      const pathIndex = step % animationStones.length;
-      const currentStoneNumber = animationStones[pathIndex];
-      
-      console.log(`Animation step ${step}: stone ${currentStoneNumber}`);
-      
-      // Find this stone in our list
-      const currentStone = allStones.find(s => s.number === currentStoneNumber);
-      
-      if (!currentStone) {
-        console.error('Could not find stone with number:', currentStoneNumber);
-        // Skip to next step
-        step++;
-        setTimeout(animateStep, 200);
-        return;
-      }
-      
-      // Get the position of this stone
-      const stonePosition = getStonePosition(currentStoneNumber);
-      
-      // Add the jitter
-      const position = {
-        top: stonePosition.top + randomJitter.top,
-        left: stonePosition.left + randomJitter.left
-      };
-      
-      // Move ball to this position
-      setBallPosition(position);
-      
-      // Highlight this stone
-      const stoneIndex = currentStone.row <= 4 ? 
-        currentStone.index : 
-        currentStone.index + 100;
-      setRollingStoneIndex(stoneIndex);
-      
-      // Play sound on some steps
-      if (step % 4 === 0) {
-        try {
-          const audio = new Audio();
-          audio.src = '/rolling-dice.mp3';
-          audio.volume = 0.15;
-          audio.play().catch(e => console.log('Audio failed:', e));
-        } catch (e) {
-          console.log('Audio not supported');
-        }
-      }
-      
-      // Determine delay based on progress
-      // Start slow, get faster, then slow down at end
-      let delay;
-      if (step < 5) {
-        delay = 400 - (step * 20); // 400, 380, 360, 340, 320
-      } else if (step < targetSteps - 5) {
-        delay = 200; // Maintain medium speed most of the time
-      } else {
-        // Slow down at the end
-        const remainingSteps = targetSteps - step;
-        delay = 200 + (100 * (5 - remainingSteps)); // 200, 300, 400, 500, 600
-      }
-      
-      step++;
-      
-      // Continue animation until we reach the final step
-      if (step < targetSteps) {
-        setTimeout(animateStep, delay);
-      } else {
-        // Final landing on the target stone
-        setTimeout(() => {
-          // Get final position
-          const finalPosition = getStonePosition(finalStone.number);
-          setBallPosition(finalPosition);
-          
-          // Highlight final stone
-          if (finalStone.row <= 4) {
-            setRollingStoneIndex(finalStone.index);
-          } else {
-            setRollingStoneIndex(finalStone.index + 100);
-          }
-          
-          // Final sound effect
-          try {
-            const audio = new Audio();
-            audio.src = '/rolling-dice.mp3';
-            audio.volume = 0.4;
-            audio.play().catch(e => console.log('Audio failed:', e));
-          } catch (e) {
-            console.log('Audio not supported');
-          }
-          
-          // After a brief pause, complete the roll
-          setTimeout(() => {
-            setRollingStoneIndex(null);
-            setSelectedStone(finalStone.number);
-            setShowBall(false);
-            setIsRolling(false);
-            
-            // Show result toast
-            const isSpecial = 'isSpecial' in finalStone && finalStone.isSpecial;
-            const isSuper = 'isSuper' in finalStone && finalStone.isSuper;
-            
-            toast({
-              title: "You Rolled: " + finalStone.number,
-              description: isSpecial ? "You hit a special stone!" : 
-                          isSuper ? "You hit a super stone!" : 
-                          "Good roll!",
-            });
-          }, 1000);
-        }, 400);
-      }
-    };
-    
-    // Start the animation after a short delay
-    setTimeout(animateStep, 1000);
-    
-  }, [isRolling, rollingStoneIndex, toast, stones, smallStones, getStonePosition]);
+    // Start the dice moving through the stones and it will end at our target
+    moveDiceAlongPath(0, totalSteps, finalStoneIndex);
+  }, [isRolling, rollingStoneIndex, moveDiceAlongPath, stones, boardRef]);
+
   
   // Handle individual stone clicks (for testing)
   const handleStoneClick = useCallback((index: number, stoneNumber: number) => {
