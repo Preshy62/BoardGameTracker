@@ -47,7 +47,7 @@ const GameStone = ({
         boxShadow: isWinner 
           ? "0 0 75px 35px rgba(255, 215, 0, 0.95)"
           : "0 0 60px 30px rgba(255, 215, 0, 0.95)",
-        zIndex: 100,
+        zIndex: isWinner ? 200 : 100,
         position: "relative",
         transform: isWinner ? "scale(2.0)" : "scale(1.8)", 
         transition: "all 0.15s ease-in-out",

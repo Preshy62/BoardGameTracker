@@ -212,7 +212,16 @@ const GameBoard = ({
         // Finally, highlight the actual winning stone with a winning animation style
         // Apply winner-stone animation class to the final stone
         if (rollingStoneNumber !== null) {
+          // Clear any previous winner selection to ensure we get a fresh animation
+          setFinalStoneSelected(null);
+          
+          // Small delay to ensure state update has processed before setting the new winner
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          // Now set the winner stone
           setFinalStoneSelected(rollingStoneNumber);
+          
+          console.log("🏆 WINNER ANIMATION: Stone", rollingStoneNumber);
           
           try {
             const landingAudio = new Audio();
