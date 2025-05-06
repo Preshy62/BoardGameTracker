@@ -136,44 +136,11 @@ export default function Game({ id }: GamePageProps) {
   // Voice chat feature flag (always true for UI but internal functionality is disabled)
   const voiceChatEnabled = true;
   
-  // State variables must be called in the same order every render
-  // Moving this directly after other state variables so it doesn't break React's rules of hooks
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header user={user} />
       
-      <main className="flex-grow flex flex-col md:flex-row relative">
-        {/* Global ball animation that's always visible when rolling */}
-        {rollingStoneNumber !== null && (
-          <>
-            <div 
-              className="dice-element"
-              style={{
-                position: 'fixed',
-                width: '70px',
-                height: '70px',
-                top: '50%',
-                left: '50%',
-                zIndex: 9999,
-                pointerEvents: 'none'
-              }}
-            />
-            <div 
-              className="ball-element roll-animation"
-              style={{
-                position: 'fixed',
-                width: '80px',
-                height: '80px',
-                top: '50%',
-                left: '50%',
-                zIndex: 9999,
-                pointerEvents: 'none'
-              }}
-            />
-          </>
-        )}
-        
+      <main className="flex-grow flex flex-col md:flex-row">
         <GameBoard
           game={game}
           currentPlayerId={currentTurnPlayerId || 0}

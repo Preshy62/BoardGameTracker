@@ -300,41 +300,6 @@ const GameBoard = ({
       document.documentElement.style.setProperty('--ball-top', '50%');
       document.documentElement.style.setProperty('--ball-left', '50%');
       
-      // Add direct animations to the page
-      const addDirectAnimations = () => {
-        // Create a special animation element if it doesn't already exist
-        if (!document.getElementById('special-ball-animation')) {
-          const specialBall = document.createElement('div');
-          specialBall.id = 'special-ball-animation';
-          specialBall.style.cssText = `
-            position: fixed;
-            width: 80px;
-            height: 80px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(circle, white 20%, #FF8800 60%, red 100%);
-            border: 6px solid gold;
-            border-radius: 50%;
-            box-shadow: 0 0 40px 20px rgba(255, 136, 0, 0.9);
-            z-index: 9999;
-            pointer-events: none;
-            animation: ball-pulse 0.5s infinite alternate;
-          `;
-          document.body.appendChild(specialBall);
-          
-          // Remove it after animation completes
-          setTimeout(() => {
-            if (specialBall && specialBall.parentNode) {
-              document.body.removeChild(specialBall);
-            }
-          }, 3000);
-        }
-      };
-      
-      // Add direct animations to ensure visibility
-      addDirectAnimations();
-      
       // Show animations
       setShowBall(true);
       
