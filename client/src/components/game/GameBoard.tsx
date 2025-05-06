@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import GameStone from "./GameStone";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Timer, Award } from "lucide-react";
@@ -37,11 +37,24 @@ const GameBoard = ({
   const [rollingStones, setRollingStones] = useState<{[key: number]: boolean}>({});
   
   // State for the enhanced rolling ball animation
-  const [ballPosition, setBallPosition] = useState({ top: 0, left: 0 });
+  const [ballPosition, setBallPosition] = useState({ top: 50, left: 50 });
   const [showBall, setShowBall] = useState(false);
   const [boardElement, setBoardElement] = useState<HTMLElement | null>(null);
   const [isBoardShaking, setIsBoardShaking] = useState(false);
   const [rollSpeed, setRollSpeed] = useState(200); // ms between moves
+  const [rollTimer, setRollTimer] = useState<NodeJS.Timeout | null>(null);
+  const [currentPathIndex, setCurrentPathIndex] = useState(0);
+  const [isRolling, setIsRolling] = useState(false);
+  
+  // Get a reference to the board element
+  const boardRef = useRef<HTMLDivElement>(null);
+
+  // Set board element ref once mounted
+  useEffect(() => {
+    if (boardRef.current) {
+      setBoardElement(boardRef.current);
+    }
+  }, []);
   
   // Create path for dice to follow - initialized once
   const [dicePath] = useState<number[]>(() => {
@@ -353,6 +366,7 @@ const GameBoard = ({
             {/* Game Board with Live Layout */}
             <div 
               id="game-board-element" 
+              ref={boardRef}
               className={cn(
                 "relative bg-primary-light border-2 border-gray-800 p-4 rounded mb-6",
                 isBoardShaking && "shaking-board"
@@ -455,8 +469,8 @@ const GameBoard = ({
                 <div className="ball-element roll-animation" />
               )}
               
-              {/* Improved animated ball that always appears when a roll happens */}
-              {rollingStoneNumber && (
+              {/* Dynamic ball that follows a path around stones */}
+              {(showBall || rollingStoneNumber) && (
                 <div 
                   className="ball-element roll-animation"
                   style={{
@@ -464,8 +478,8 @@ const GameBoard = ({
                     width: '60px',
                     height: '60px',
                     display: 'block',
-                    top: '50%',
-                    left: '50%',
+                    top: `${ballPosition.top}px`,
+                    left: `${ballPosition.left}px`,
                     zIndex: 9999,
                     borderRadius: '50%',
                     background: 'radial-gradient(circle, white 20%, #FF8800 60%, gold 100%)',
@@ -473,12 +487,18 @@ const GameBoard = ({
                     boxShadow: '0 0 30px 15px rgba(255, 136, 0, 0.9)',
                     transform: 'translate(-50%, -50%)',
                     filter: 'blur(0.5px)',
-                    animation: 'ball-pulse 0.5s infinite alternate'
+                    animation: 'ball-pulse 0.5s infinite alternate',
+                    transition: 'top 0.4s ease-out, left 0.4s ease-out'
                   }}
                 />
               )}
               
-              {/* Additional ball element for better visibility */}
+              {/* Backup ball using CSS variables for positioning */}
+              {(showBall || rollingStoneNumber) && (
+                <div className="ball-element roll-animation" />
+              )}
+              
+              {/* Floating dice element for better visibility */}
               {rollingStoneNumber && (
                 <div 
                   className="dice-element"
