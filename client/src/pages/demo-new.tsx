@@ -249,11 +249,13 @@ export default function DemoPage() {
         [shuffledIndices[i], shuffledIndices[j]] = [shuffledIndices[j], shuffledIndices[i]];
       }
       
-      // Use the first 15 stones in the shuffled array
-      const pathIndices = shuffledIndices.slice(0, 15);
+      // Use all the shuffled indices to ensure we have enough stones in our path
+      const pathIndices = shuffledIndices;
       
       // Add the indices to our path
       pathIndices.forEach(index => path.push(index));
+      
+      console.log('Created path for dice roll with', path.length, 'elements');
       
       console.log('Dice path created with randomized stone indices:', path);
       setBoardPath(path);
@@ -272,13 +274,28 @@ export default function DemoPage() {
 
   // Function to move the dice along the calculated path
   const moveDiceAlongPath = useCallback((currentIdx: number, targetIdx: number | null, finalStoneIndex: number | null) => {
-    if (!isRolling) return;
+    console.log('Moving dice along path', { currentIdx, targetIdx, finalStoneIndex });
+    
+    if (!isRolling) {
+      console.log('Not rolling - aborting moveDiceAlongPath');
+      return;
+    }
     
     // Clear any existing timeout
-    if (rollTimer) clearTimeout(rollTimer);
+    if (rollTimer) {
+      console.log('Clearing existing timeout');
+      clearTimeout(rollTimer);
+    }
     
     if (boardPath.length === 0) {
-      console.error('No board path defined');
+      console.error('No board path defined, creating emergency path');
+      // Create emergency path with all stone indices
+      const emergencyPath: number[] = [];
+      stones.forEach((stone, idx) => emergencyPath.push(idx));
+      setBoardPath(emergencyPath);
+      console.log('Created emergency path with', emergencyPath.length, 'elements');
+      // Force a small delay and retry
+      setTimeout(() => moveDiceAlongPath(currentIdx, targetIdx, finalStoneIndex), 100);
       return;
     }
     
@@ -421,13 +438,27 @@ export default function DemoPage() {
     }, nextSpeed);
     
     setRollTimer(nextTimeout);
-  }, [isRolling, boardPath, rollSpeed, rollTimer, toast]);
+  }, [isRolling, boardPath, rollSpeed, rollTimer, toast, stones, smallStones]);
   
   // Main function to handle the dice roll
   const handleRollDice = useCallback(() => {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
     console.log('Starting dice roll animation');
+    console.log('Board path length:', boardPath.length);
+    console.log('Current stones:', stones.length);
+    
+    // Force initialization of path if it's empty
+    if (boardPath.length === 0) {
+      console.log('Board path is empty, initializing');
+      const newPath: number[] = [];
+      for (let i = 0; i < stones.length; i++) {
+        newPath.push(i);
+      }
+      setBoardPath(newPath);
+      console.log('Created emergency board path with', newPath.length, 'stones');
+    }
+    
     setIsRolling(true);
     setSelectedStone(null);
     setRollSpeed(150); // Faster initial speed
@@ -470,7 +501,7 @@ export default function DemoPage() {
     
     // Start the dice moving through random stones but will end at our target stone
     moveDiceAlongPath(0, totalSteps, finalStoneIndex);
-  }, [isRolling, rollingStoneIndex, moveDiceAlongPath, stones]);
+  }, [isRolling, rollingStoneIndex, moveDiceAlongPath, stones, boardPath]);
   
   // Handle individual stone clicks (for testing)
   const handleStoneClick = useCallback((index: number, stoneNumber: number) => {

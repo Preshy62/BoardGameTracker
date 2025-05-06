@@ -234,3 +234,27 @@
   transform-origin: center center;
   transform-style: preserve-3d;
 }
+
+/* Dice element styling */
+.dice-element {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(to bottom right, #ffffff, #f0f0f0);
+  border-radius: 50%;
+  box-shadow: 0 0 15px 5px rgba(255, 193, 7, 0.7);
+  position: absolute;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 0;
+  animation: dice-bounce 0.5s ease-in-out infinite alternate;
+  border: 2px solid gold;
+  transition: all 0.2s ease-in-out;
+}
+
+@keyframes dice-bounce {
+  0% { transform: scale(1) rotate(0deg); }
+  100% { transform: scale(1.1) rotate(360deg); }
+}
