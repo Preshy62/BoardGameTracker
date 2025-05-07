@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,8 +8,7 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle, 
-  CardFooter 
+  CardTitle
 } from "@/components/ui/card";
 import {
   Form,
@@ -19,16 +17,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getInitials } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+  // International fields
+  countryCode: z.string().min(2, "Country code is required"),
+  preferredCurrency: z.string().min(3, "Currency is required"),
+  language: z.string().min(2, "Language is required"),
+  timeZone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -36,12 +42,45 @@ const registerSchema = z.object({
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-export default function Register() {
-  const { user, registerMutation } = useAuth();
-  const [, setLocation] = useLocation();
+// Country options list
+const countries = [
+  { code: "NG", name: "Nigeria" },
+  { code: "US", name: "United States" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "CA", name: "Canada" },
+  { code: "ZA", name: "South Africa" },
+  { code: "GH", name: "Ghana" },
+  { code: "KE", name: "Kenya" },
+  { code: "DE", name: "Germany" },
+  { code: "FR", name: "France" },
+  { code: "JP", name: "Japan" },
+];
 
-  // No automatic redirection to allow user to stay on this page
-  // We're intentionally disabling the auto-redirect behavior
+// Currency options list
+const currencies = [
+  { code: "NGN", name: "Nigerian Naira (₦)" },
+  { code: "USD", name: "US Dollar ($)" },
+  { code: "GBP", name: "British Pound (£)" },
+  { code: "EUR", name: "Euro (€)" },
+  { code: "ZAR", name: "South African Rand (R)" },
+  { code: "GHS", name: "Ghanaian Cedi (GH₵)" },
+  { code: "KES", name: "Kenyan Shilling (KSh)" },
+];
+
+// Language options list
+const languages = [
+  { code: "en", name: "English" },
+  { code: "fr", name: "French" },
+  { code: "es", name: "Spanish" },
+  { code: "de", name: "German" },
+  { code: "yo", name: "Yoruba" },
+  { code: "ha", name: "Hausa" },
+  { code: "ig", name: "Igbo" },
+];
+
+export default function Register() {
+  const { registerMutation } = useAuth();
+  const [registrationStep, setRegistrationStep] = useState<"basic" | "international">("basic");
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -50,6 +89,10 @@ export default function Register() {
       email: "",
       password: "",
       confirmPassword: "",
+      countryCode: "NG", // Default to Nigeria
+      preferredCurrency: "NGN", // Default to Naira
+      language: "en", // Default to English
+      timeZone: "", // Will be set automatically
     },
   });
 
@@ -57,33 +100,39 @@ export default function Register() {
     // Calculate initials from username
     const avatarInitials = getInitials(data.username);
     
+    // Get browser timezone if not provided
+    const timeZone = data.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
     // Register request with all needed data
     registerMutation.mutate({
       ...data,
-      avatarInitials
+      avatarInitials,
+      timeZone,
     });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold font-sans">
-            <span className="text-secondary">BIG BOYS</span> GAME
-          </h1>
-          <p className="text-gray-600 mt-2">Create your account</p>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Register</CardTitle>
-            <CardDescription>
-              Fill in your details to create an account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>Create an account</CardTitle>
+        <CardDescription>
+          Join Big Boys Game and start winning big
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <Tabs 
+              defaultValue={registrationStep} 
+              onValueChange={(value) => setRegistrationStep(value as "basic" | "international")}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="international">Location & Preferences</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="basic" className="space-y-4">
                 <FormField
                   control={form.control}
                   name="username"
@@ -141,28 +190,131 @@ export default function Register() {
                 />
                 
                 <Button 
-                  type="submit" 
-                  className="w-full bg-secondary hover:bg-secondary-dark text-primary font-bold"
-                  disabled={registerMutation.isPending}
+                  type="button" 
+                  className="w-full"
+                  onClick={() => setRegistrationStep("international")}
                 >
-                  {registerMutation.isPending ? (
-                    <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full mr-2" />
-                  ) : null}
-                  Create Account
+                  Next: Set Location & Preferences
                 </Button>
-              </form>
-            </Form>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{" "}
-              <Link href="/login" className="text-primary font-medium hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </Card>
-      </div>
-    </div>
+              </TabsContent>
+              
+              <TabsContent value="international" className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="countryCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your country" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {countries.map((country) => (
+                            <SelectItem key={country.code} value={country.code}>
+                              {country.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Your country of residence
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="preferredCurrency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preferred Currency</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencies.map((currency) => (
+                            <SelectItem key={currency.code} value={currency.code}>
+                              {currency.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Currency used for deposits, stakes, and withdrawals
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="language"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preferred Language</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your language" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {languages.map((language) => (
+                            <SelectItem key={language.code} value={language.code}>
+                              {language.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex space-x-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => setRegistrationStep("basic")}
+                  >
+                    Back
+                  </Button>
+                  
+                  <Button 
+                    type="submit" 
+                    className="flex-1 bg-secondary hover:bg-secondary-dark text-primary font-bold"
+                    disabled={registerMutation.isPending}
+                  >
+                    {registerMutation.isPending ? (
+                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full mr-2" />
+                    ) : null}
+                    Create Account
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 }
