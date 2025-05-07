@@ -174,6 +174,32 @@ export default function DemoPage() {
     volume: 1.0
   });
   
+  // Effect to handle speech announcement when winner is selected
+  useEffect(() => {
+    if (finalStoneSelected && selectedStone && speechSupported) {
+      // Create the announcement message
+      let message = `Stone ${selectedStone} wins the pot!`;
+      if (selectedStone === 1000 || selectedStone === 500) {
+        message = `Special stone ${selectedStone} wins! Double payout!`;
+      } else if (selectedStone === 3355 || selectedStone === 6624) {
+        message = `Super stone ${selectedStone} wins! Triple payout!`;
+      }
+      
+      // Set the message and speak it with a slight delay
+      setAnnounceText(message);
+      
+      // Small delay to let the UI update first
+      const timer = setTimeout(() => {
+        speak();
+      }, 500);
+      
+      return () => {
+        clearTimeout(timer);
+        cancel();
+      };
+    }
+  }, [finalStoneSelected, selectedStone, speechSupported, speak, cancel, setAnnounceText]);
+  
   // Refs
   const boardRef = useRef<HTMLDivElement>(null);
   const diceRef = useRef<HTMLDivElement>(null);
@@ -868,30 +894,15 @@ export default function DemoPage() {
         console.log('Audio not supported');
       }
       
-      // Prepare the announcement message based on stone type
-      let winnerMessage = `Stone ${stoneNumber} wins the pot!`;
-      if (stoneNumber === 1000 || stoneNumber === 500) {
-        winnerMessage = `Special stone ${stoneNumber} wins! Double payout!`;
-      } else if (stoneNumber === 3355 || stoneNumber === 6624) {
-        winnerMessage = `Super stone ${stoneNumber} wins! Triple payout!`;
-      }
-      
-      // Set the announcement text for speech synthesis
-      setAnnounceText(winnerMessage);
+      // Speech announcement will be handled by the useEffect
       
       // Set as winner stone
       setTimeout(() => {
         setFinalStoneSelected(true);
-        
-        // Small delay to let the winner visualization appear first
-        setTimeout(() => {
-          if (speechSupported) {
-            speak();
-          }
-        }, 300);
+        // Speech will be handled by the useEffect
       }, 500);
     }, 2000);
-  }, [rollingStoneIndex, isRolling, setFinalStoneSelected, setSelectedStone, setAnnounceText, speak, speechSupported]);
+  }, [rollingStoneIndex, isRolling, setFinalStoneSelected, setSelectedStone]);
 
   // Loading state
   if (isLoading) {
@@ -981,15 +992,7 @@ export default function DemoPage() {
                           message = `Super stone ${selectedStone} wins! Triple payout!`;
                         }
                         
-                        // Set the announcement text and speak it
-                        if (speechSupported && finalStoneSelected) {
-                          setAnnounceText(message);
-                          // Small delay to ensure the overlay is visible first
-                          setTimeout(() => {
-                            speak();
-                          }, 300);
-                        }
-                        
+                        // Just return the message - we'll handle speech elsewhere
                         return message;
                       })()}
                     </p>
