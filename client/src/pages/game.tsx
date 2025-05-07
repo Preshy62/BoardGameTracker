@@ -37,8 +37,10 @@ export default function GamePage() {
     error,
     refetch,
   } = useQuery<GameResponse>({
-    queryKey: ['/api/games', gameId],
+    queryKey: [`/api/games/${gameId}`],
     enabled: !isNaN(gameId),
+    retry: 1, // Only retry once to avoid excessive requests if the game doesn't exist
+    retryDelay: 1000 // Wait 1 second between retries
   });
 
   useEffect(() => {
