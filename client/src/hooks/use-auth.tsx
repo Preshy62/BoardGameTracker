@@ -57,7 +57,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
-      setLocation("/");
+      setLocation("/home");
     },
     onError: (error: Error) => {
       toast({
@@ -77,7 +77,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
-      setLocation("/");
+      setLocation("/home");
       toast({
         title: "Registration successful",
         description: "Welcome to Big Boys Game!",
