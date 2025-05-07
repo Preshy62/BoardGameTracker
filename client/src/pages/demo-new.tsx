@@ -5,6 +5,7 @@ import { useLocation } from "wouter";
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import DemoVoiceChat from "@/components/game/DemoVoiceChat";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 
 // Stone Component with React-based animation
 interface DemoStoneProps {
@@ -163,6 +164,15 @@ export default function DemoPage() {
   // State for voice chat demo
   const [showVoiceChat, setShowVoiceChat] = useState<boolean>(true);
   const [voiceChatStake, setVoiceChatStake] = useState<number>(50000);
+  
+  // Speech synthesis for winner announcements
+  const [announceText, setAnnounceText] = useState<string>('');
+  const { speak, supported: speechSupported } = useSpeechSynthesis({
+    text: announceText,
+    rate: 0.9,
+    pitch: 1.1,
+    volume: 1.0
+  });
   
   // Refs
   const boardRef = useRef<HTMLDivElement>(null);
