@@ -1,25 +1,31 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Users, DollarSign, Clock, CreditCard, Gamepad2 } from "lucide-react";
+import { 
+  PlusCircle, 
+  Users, 
+  DollarSign, 
+  Clock, 
+  CreditCard, 
+  Gamepad2,
+  BarChart4,
+  Globe2,
+  Trophy,
+  Wallet
+} from "lucide-react";
 import Header from "@/components/layout/Header";
-import GameLobbyModal from "@/components/modals/GameLobbyModal";
-import GameBoardDemo from "@/components/GameBoardDemo";
 import { formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
-import { Game } from "@shared/schema";
 
 export default function Home() {
-  const [isLobbyModalOpen, setIsLobbyModalOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { user, isLoading: isUserLoading } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   
   // Demo deposit mutation (for testing)
@@ -28,7 +34,7 @@ export default function Home() {
       const response = await apiRequest('POST', '/api/transactions/demo-deposit', {});
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       toast({
         title: "Demo Funds Added",
@@ -44,351 +50,319 @@ export default function Home() {
     }
   });
 
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!user && !isUserLoading) {
-      setLocation('/auth');
-    }
-  }, [user, isUserLoading, setLocation]);
-
-  // Fetch available games
-  const { data: availableGames, isLoading: isGamesLoading, refetch: refetchGames } = useQuery<Game[]>({
-    queryKey: ['/api/games/available'],
-  });
-
-  // Fetch user's active games
-  const { data: userGames, isLoading: isUserGamesLoading, refetch: refetchUserGames } = useQuery<Game[]>({
-    queryKey: ['/api/games/user'],
-  });
-
-  // Poll for new games
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refetchGames();
-      refetchUserGames();
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [refetchGames, refetchUserGames]);
-
-  // Create new game
-  const handleCreateGame = async (playerCount: number, stake: number, playWithBot?: boolean) => {
-    try {
-      // Check authentication first
-      if (!user) {
-        console.error('Attempting to create game while not logged in');
-        toast({
-          title: 'Authentication Required',
-          description: 'Please log in to create a game',
-          variant: 'destructive',
-        });
-        setLocation('/auth');
-        return;
-      }
-
-      // Create a new game with the specified settings
-      const gameData: any = {
-        maxPlayers: playerCount,
-        stake
-      };
-      
-      // Add the playWithBot flag for single player games
-      if (playWithBot) {
-        gameData.playWithBot = true;
-        console.log('Creating a game with bot player:', gameData);
-      } else {
-        console.log('Creating a standard multiplayer game:', gameData);
-      }
-      
-      console.log('Sending game creation request to /api/games with data:', gameData);
-      const response = await apiRequest('POST', '/api/games', gameData);
-      
-      const data = await response.json();
-      console.log('Game created successfully:', data);
-      setIsLobbyModalOpen(false);
-      setLocation(`/game/${data.id}`);
-    } catch (error) {
-      console.error('Game creation error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create game. Please try again.';
-      
-      toast({
-        title: 'Error Creating Game',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-      
-      // If unauthorized, redirect to auth page
-      if (errorMessage.includes('401')) {
-        setLocation('/auth');
-      }
-    }
+  // Redirect to game creation
+  const handleCreateGame = () => {
+    setLocation('/create-game');
   };
 
-  // Join existing game
-  const handleJoinGame = async (gameId: number) => {
-    try {
-      // Check authentication first
-      if (!user) {
-        console.error('Attempting to join game while not logged in');
-        toast({
-          title: 'Authentication Required',
-          description: 'Please log in to join a game',
-          variant: 'destructive',
-        });
-        setLocation('/auth');
-        return;
-      }
-
-      console.log('Sending game join request to /api/games/' + gameId + '/join');
-      await apiRequest('POST', `/api/games/${gameId}/join`, {});
-      console.log('Joined game successfully, navigating to game page');
-      setLocation(`/game/${gameId}`);
-    } catch (error) {
-      console.error('Game join error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to join game';
-      
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-      
-      // If unauthorized, redirect to auth page
-      if (errorMessage.includes('401')) {
-        setLocation('/auth');
-      }
-    }
+  // Redirect to dashboard
+  const handleViewDashboard = () => {
+    setLocation('/dashboard');
   };
 
-  if (isUserLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading" />
-      </div>
-    );
-  }
-  
-  if (!user) {
-    return null;
-  }
+  // Redirect to wallet page
+  const handleViewWallet = () => {
+    setLocation('/wallet');
+  };
+
+  if (!user) return null;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <Header user={user} />
       
       <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        {/* Welcome Header with User Info */}
+        <div className="flex flex-col md:flex-row justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-bold font-sans">Welcome, {user.username}</h1>
-            <p className="text-gray-600">Ready to play Big Boys Game?</p>
+            <h1 className="text-3xl font-bold">Welcome, {user.username}</h1>
+            <p className="text-gray-600">
+              Your Balance: <span className="font-medium">{formatCurrency(user.walletBalance)}</span> • Location: <span className="font-medium">{user.countryCode || 'Global'}</span>
+            </p>
           </div>
           
-          <div className="flex flex-col md:flex-row gap-3 mt-4 md:mt-0">
+          <div className="mt-4 md:mt-0 flex space-x-3">
             <Button 
               onClick={() => demoDepositMutation.mutate()}
+              variant="outline"
+              className="border-green-500 text-green-600 hover:bg-green-50"
               disabled={demoDepositMutation.isPending}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold"
             >
-              {demoDepositMutation.isPending ? (
-                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2" />
-              ) : (
-                <CreditCard className="mr-2 h-5 w-5" />
-              )}
-              Add Demo Funds (₦10,000)
+              <DollarSign className="h-4 w-4 mr-2" />
+              Add Demo Funds
             </Button>
             
-            {/* Removed 'Try Demo' button to avoid confusion */}
-            
             <Button 
-              onClick={() => setIsLobbyModalOpen(true)}
+              onClick={handleCreateGame}
               className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
             >
-              <PlusCircle className="mr-2 h-5 w-5" />
+              <PlusCircle className="h-4 w-4 mr-2" />
               Create Game
             </Button>
           </div>
         </div>
         
-        <Tabs defaultValue="available" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="available">Available Games</TabsTrigger>
-            <TabsTrigger value="my-games">My Games</TabsTrigger>
-          </TabsList>
+        {/* Quick Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="mr-4 p-3 bg-white bg-opacity-20 rounded-full">
+                  <Trophy className="h-6 w-6"/>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-100">Games Won</p>
+                  <h3 className="text-2xl font-bold">0</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
-          <TabsContent value="available" className="space-y-6">
-            {isGamesLoading ? (
-              <div className="flex justify-center p-8">
-                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading" />
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="mr-4 p-3 bg-white bg-opacity-20 rounded-full">
+                  <Gamepad2 className="h-6 w-6"/>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-purple-100">Games Played</p>
+                  <h3 className="text-2xl font-bold">0</h3>
+                </div>
               </div>
-            ) : availableGames && availableGames.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableGames.map(game => (
-                  <Card key={game.id} className="overflow-hidden">
-                    <CardHeader className="bg-primary text-white p-4">
-                      <CardTitle>Game #{game.id}</CardTitle>
-                      <CardDescription className="text-gray-300">
-                        Waiting for players
-                      </CardDescription>
-                    </CardHeader>
-                    
-                    <CardContent className="p-6">
-                      <div className="space-y-4">
-                        <div className="flex items-center">
-                          <Users className="h-5 w-5 text-gray-500 mr-3" />
-                          <div>
-                            <p className="text-sm text-gray-500">Players</p>
-                            <p className="font-medium">{/* Implement player count */}/
-                            {game.maxPlayers}</p>
-                          </div>
-                        </div>
-                        
-                        <Separator />
-                        
-                        <div className="flex items-center">
-                          <DollarSign className="h-5 w-5 text-gray-500 mr-3" />
-                          <div>
-                            <p className="text-sm text-gray-500">Stake Amount</p>
-                            <p className="font-medium">{formatCurrency(game.stake)}</p>
-                          </div>
-                        </div>
-                        
-                        <Separator />
-                        
-                        <div className="flex items-center">
-                          <Clock className="h-5 w-5 text-gray-500 mr-3" />
-                          <div>
-                            <p className="text-sm text-gray-500">Created</p>
-                            <p className="font-medium">
-                              {game.createdAt ? (typeof game.createdAt === 'string' ? new Date(game.createdAt).toLocaleTimeString() : 'Recently') : 'Recently'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                    
-                    <CardFooter className="bg-gray-50 p-4">
-                      <Button 
-                        onClick={() => handleJoinGame(game.id)}
-                        className="w-full bg-secondary hover:bg-secondary-dark text-primary font-bold"
-                      >
-                        Join Game
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="mr-4 p-3 bg-white bg-opacity-20 rounded-full">
+                  <Wallet className="h-6 w-6"/>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-emerald-100">Total Winnings</p>
+                  <h3 className="text-2xl font-bold">{formatCurrency(0)}</h3>
+                </div>
               </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <h3 className="text-xl font-medium mb-2">No Games Available</h3>
-                <p className="text-gray-600 mb-4">
-                  There are no open games at the moment. Create your own game to get started!
-                </p>
-                <Button 
-                  onClick={() => setIsLobbyModalOpen(true)}
-                  className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="mr-4 p-3 bg-white bg-opacity-20 rounded-full">
+                  <Globe2 className="h-6 w-6"/>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-amber-100">Currency</p>
+                  <h3 className="text-2xl font-bold">{user.preferredCurrency || 'NGN'}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <div className="p-4 bg-blue-100 text-blue-700 rounded-full mb-4">
+                <BarChart4 className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">View Statistics</h3>
+              <p className="text-gray-500 mb-4">
+                Check your game history and performance statistics
+              </p>
+              <Button 
+                onClick={handleViewDashboard}
+                className="w-full mt-auto"
+                variant="outline"
+              >
+                View Dashboard
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <div className="p-4 bg-secondary bg-opacity-20 text-secondary rounded-full mb-4">
+                <Gamepad2 className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Play Now</h3>
+              <p className="text-gray-500 mb-4">
+                Create a new game and invite players to join
+              </p>
+              <Button 
+                onClick={handleCreateGame}
+                className="w-full mt-auto bg-secondary hover:bg-secondary-dark text-primary font-bold"
+              >
+                Create Game
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <div className="p-4 bg-green-100 text-green-700 rounded-full mb-4">
+                <Wallet className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Manage Wallet</h3>
+              <p className="text-gray-500 mb-4">
+                Deposit funds or withdraw your winnings
+              </p>
+              <Button 
+                onClick={handleViewWallet}
+                className="w-full mt-auto"
+                variant="outline"
+              >
+                Open Wallet
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <Separator className="my-8" />
+        
+        {/* How to Play */}
+        <div className="bg-white rounded-lg shadow p-8 mb-8">
+          <h2 className="text-2xl font-bold mb-6">How to Play Big Boys Game</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-blue-100 text-blue-700 rounded-full p-4 mb-4">
+                <DollarSign className="h-8 w-8" />
+              </div>
+              <h3 className="font-medium mb-2">1. Place Your Stake</h3>
+              <p className="text-sm text-gray-600">
+                Create a game with your desired stake amount or join an existing game
+              </p>
+            </div>
+            
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-purple-100 text-purple-700 rounded-full p-4 mb-4">
+                <Users className="h-8 w-8" />
+              </div>
+              <h3 className="font-medium mb-2">2. Wait for Players</h3>
+              <p className="text-sm text-gray-600">
+                Games can host 2-10 players. Game starts when all players are ready.
+              </p>
+            </div>
+            
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-amber-100 text-amber-700 rounded-full p-4 mb-4">
+                <Gamepad2 className="h-8 w-8" />
+              </div>
+              <h3 className="font-medium mb-2">3. Roll Your Stone</h3>
+              <p className="text-sm text-gray-600">
+                Take turns rolling your stone. The player with the highest number wins!
+              </p>
+            </div>
+            
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-green-100 text-green-700 rounded-full p-4 mb-4">
+                <CreditCard className="h-8 w-8" />
+              </div>
+              <h3 className="font-medium mb-2">4. Collect Winnings</h3>
+              <p className="text-sm text-gray-600">
+                Winners automatically receive their share of the pot in their wallet
+              </p>
+            </div>
+          </div>
+          
+          <div className="mt-8 text-center">
+            <Button 
+              onClick={handleCreateGame}
+              className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
+            >
+              Start Playing Now
+            </Button>
+          </div>
+        </div>
+        
+        {/* International Features */}
+        <Card className="mb-8 overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <div className="p-8">
+              <h2 className="text-2xl font-bold mb-4">Play From Anywhere</h2>
+              <p className="text-gray-600 mb-6">
+                Big Boys Game supports players from around the world with multiple currency options and local bank withdrawals.
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                    <span className="text-blue-600 font-bold">₦</span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Multi-Currency Support</h3>
+                    <p className="text-sm text-gray-500">Play with NGN, USD, EUR, GBP and more</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                    <span className="text-green-600 font-bold">$</span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Local Bank Withdrawals</h3>
+                    <p className="text-sm text-gray-500">Withdraw your winnings to your local bank</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mr-4">
+                    <span className="text-amber-600 font-bold">€</span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Automatic Conversion</h3>
+                    <p className="text-sm text-gray-500">Real-time currency conversion for all transactions</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-8 flex flex-col justify-center">
+              <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 rounded-full bg-white text-blue-600 flex items-center justify-center text-xl font-bold mr-4">
+                    {user.avatarInitials}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xl">{user.username}</h3>
+                    <p className="text-white text-opacity-80">{user.email}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-white text-opacity-80">Country:</span>
+                    <span className="font-medium">{user.countryCode || 'Not set'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white text-opacity-80">Currency:</span>
+                    <span className="font-medium">{user.preferredCurrency || 'NGN'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white text-opacity-80">Language:</span>
+                    <span className="font-medium">{user.language || 'English'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white text-opacity-80">Wallet Balance:</span>
+                    <span className="font-medium">{formatCurrency(user.walletBalance)}</span>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={() => setLocation('/dashboard')}
+                  className="w-full mt-6 bg-white text-blue-600 hover:bg-white/90"
                 >
-                  Create Game
+                  Update Profile
                 </Button>
               </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="my-games" className="space-y-6">
-            {isUserGamesLoading ? (
-              <div className="flex justify-center p-8">
-                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading" />
-              </div>
-            ) : userGames && userGames.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userGames.map(game => (
-                  <Card key={game.id} className="overflow-hidden">
-                    <CardHeader className={`p-4 text-white ${
-                      game.status === 'waiting' ? 'bg-secondary' : 
-                      game.status === 'in_progress' ? 'bg-accent' : 
-                      'bg-success'
-                    }`}>
-                      <CardTitle>Game #{game.id}</CardTitle>
-                      <CardDescription className="text-gray-100">
-                        {game.status === 'waiting' ? 'Waiting for players' : 
-                        game.status === 'in_progress' ? 'Game in progress' : 
-                        'Game completed'}
-                      </CardDescription>
-                    </CardHeader>
-                    
-                    <CardContent className="p-6">
-                      <div className="space-y-4">
-                        <div className="flex items-center">
-                          <Users className="h-5 w-5 text-gray-500 mr-3" />
-                          <div>
-                            <p className="text-sm text-gray-500">Players</p>
-                            <p className="font-medium">{/* Implement player count */}/{game.maxPlayers}</p>
-                          </div>
-                        </div>
-                        
-                        <Separator />
-                        
-                        <div className="flex items-center">
-                          <DollarSign className="h-5 w-5 text-gray-500 mr-3" />
-                          <div>
-                            <p className="text-sm text-gray-500">Stake Amount</p>
-                            <p className="font-medium">{formatCurrency(game.stake)}</p>
-                          </div>
-                        </div>
-                        
-                        <Separator />
-                        
-                        <div className="flex items-center">
-                          <Clock className="h-5 w-5 text-gray-500 mr-3" />
-                          <div>
-                            <p className="text-sm text-gray-500">Status</p>
-                            <p className="font-medium">
-                              {game.status === 'waiting' ? 'Waiting' : 
-                              game.status === 'in_progress' ? 'In Progress' : 
-                              'Completed'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                    
-                    <CardFooter className="bg-gray-50 p-4">
-                      <Button 
-                        onClick={() => setLocation(`/game/${game.id}`)}
-                        className="w-full bg-primary hover:bg-primary-light text-white"
-                      >
-                        {game.status === 'waiting' ? 'Join Lobby' : 
-                        game.status === 'in_progress' ? 'Continue Game' : 
-                        'View Results'}
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <h3 className="text-xl font-medium mb-2">No Active Games</h3>
-                <p className="text-gray-600 mb-4">
-                  You haven't joined any games yet. Create a new game or join an existing one!
-                </p>
-                <Button 
-                  onClick={() => setIsLobbyModalOpen(true)}
-                  className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
-                >
-                  Create Game
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-          
-
-        </Tabs>
+            </div>
+          </div>
+        </Card>
       </main>
-      
-      <GameLobbyModal
-        open={isLobbyModalOpen}
-        onClose={() => setIsLobbyModalOpen(false)}
-        onCreateGame={handleCreateGame}
-      />
     </div>
   );
 }

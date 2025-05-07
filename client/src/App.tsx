@@ -3,21 +3,29 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
+import Home from "@/pages/home";
+import Dashboard from "@/pages/dashboard";
 import DemoPage from "@/pages/demo-new";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import AuthProvider from "./hooks/use-auth";
-import { PublicDemoRoute } from "@/lib/protected-route";
+import { ProtectedRoute, PublicDemoRoute } from "@/lib/protected-route";
 
 function Router() {
   return (
     <Switch>
+      {/* Public routes */}
       <Route path="/auth" component={AuthPage} />
       <PublicDemoRoute path="/demo-new" component={DemoPage} />
       
-      {/* Redirect older demo pages to demo-new */}
+      {/* Protected routes - require login */}
+      <ProtectedRoute path="/" component={Home} />
+      <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <ProtectedRoute path="/game/:id" component={Home} />
+      
+      {/* Redirects for legacy routes */}
       <Route path="/demo">
         {() => <Redirect to="/demo-new" />}
       </Route>
@@ -28,8 +36,7 @@ function Router() {
         {() => <Redirect to="/demo-new" />}
       </Route>
       
-      {/* Make demo-new the home page */}
-      <PublicDemoRoute path="/" component={DemoPage} />
+      {/* 404 route */}
       <Route component={NotFound} />
     </Switch>
   );
