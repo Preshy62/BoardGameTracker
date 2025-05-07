@@ -416,7 +416,7 @@ export default function VoiceChatTest() {
             )}
           </div>
           
-          <div className="flex justify-center space-x-2">
+          <div className="flex justify-center space-x-2 flex-wrap">
             {!isConnected && !isConnecting ? (
               <Button onClick={connectToVoiceChat}>
                 Connect to Voice Chat
@@ -429,6 +429,30 @@ export default function VoiceChatTest() {
                   className={isMuted ? "bg-red-100" : ""}
                 >
                   {isMuted ? "Unmute" : "Mute"}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    try {
+                      // Play a short sound to unlock audio
+                      const audioContext = new AudioContext();
+                      const oscillator = audioContext.createOscillator();
+                      oscillator.type = 'sine';
+                      oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                      oscillator.connect(audioContext.destination);
+                      oscillator.start();
+                      oscillator.stop(audioContext.currentTime + 0.1);
+                      
+                      toast({
+                        title: "Audio Unlocked",
+                        description: "Browser audio should now be unlocked",
+                      });
+                    } catch (e) {
+                      console.error("Error unlocking audio:", e);
+                    }
+                  }}
+                >
+                  Unlock Audio
                 </Button>
                 <Button 
                   variant="destructive" 
@@ -521,17 +545,53 @@ export default function VoiceChatTest() {
                 If you see no volume activity when the other person speaks, try clicking the play button above
               </p>
               <Button 
-                variant="secondary" 
+                variant="destructive" 
                 size="sm" 
                 onClick={() => {
                   if (remoteAudioRef.current) {
-                    remoteAudioRef.current.play()
-                      .then(() => console.log("Remote audio playback started manually"))
-                      .catch(e => console.error("Manual play failed:", e));
+                    try {
+                      // Force audio to be unmuted and volume up
+                      remoteAudioRef.current.muted = false;
+                      remoteAudioRef.current.volume = 1.0;
+                      
+                      // Create and play a short beep to unlock audio
+                      const audioContext = new AudioContext();
+                      const oscillator = audioContext.createOscillator();
+                      oscillator.type = 'sine';
+                      oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                      oscillator.connect(audioContext.destination);
+                      oscillator.start();
+                      oscillator.stop(audioContext.currentTime + 0.1);
+                      
+                      // After a short delay, try to play the remote audio
+                      setTimeout(() => {
+                        if (remoteAudioRef.current) {
+                          console.log("Trying force play after audio context");
+                          remoteAudioRef.current.play()
+                            .then(() => {
+                              console.log("Remote audio playback started manually!");
+                              toast({
+                                title: "Audio started",
+                                description: "Remote audio should now be playing",
+                              });
+                            })
+                            .catch(e => {
+                              console.error("Manual play still failed:", e);
+                              toast({
+                                title: "Audio play failed",
+                                description: "Try clicking the audio controls directly",
+                                variant: "destructive"
+                              });
+                            });
+                        }
+                      }, 200);
+                    } catch (e) {
+                      console.error("Force play error:", e);
+                    }
                   }
                 }}
               >
-                Force Play Remote Audio
+                Force Play with Sound Unlock
               </Button>
             </div>
           </div>
