@@ -7,6 +7,7 @@ import Home from "@/pages/home";
 import CreateGame from "@/pages/create-game";
 import GamePage from "@/pages/game";
 import Dashboard from "@/pages/dashboard";
+import DemoNewPage from "@/pages/demo-new";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -25,6 +26,7 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/create-game" component={CreateGame} />
       <ProtectedRoute path="/game/:id" component={GamePage} />
+      <ProtectedRoute path="/demo-new" component={DemoNewPage} />
       
       {/* Legacy routes - disabled */}
       

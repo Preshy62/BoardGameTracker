@@ -55,6 +55,11 @@ export default function Home() {
     setLocation('/create-game');
   };
 
+  // Redirect to quick demo game
+  const handleQuickDemo = () => {
+    setLocation('/demo-new');
+  };
+
   // Redirect to dashboard
   const handleViewDashboard = () => {
     setLocation('/dashboard');
@@ -90,6 +95,15 @@ export default function Home() {
             >
               <DollarSign className="h-4 w-4 mr-2" />
               Add Demo Funds
+            </Button>
+            
+            <Button 
+              onClick={handleQuickDemo}
+              variant="outline"
+              className="border-purple-500 text-purple-600 hover:bg-purple-50"
+            >
+              <Gamepad2 className="h-4 w-4 mr-2" />
+              Quick Demo
             </Button>
             
             <Button 
