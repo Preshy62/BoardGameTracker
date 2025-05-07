@@ -15,7 +15,9 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser & { avatarInitials: string }): Promise<User>;
   updateUserBalance(userId: number, newBalance: number): Promise<User>;
-
+  updateUserProfile(userId: number, updates: Partial<User>): Promise<User>;
+  updateUserBankDetails(userId: number, bankDetails: any): Promise<User>;
+  
   // Game operations
   getGame(id: number): Promise<Game | undefined>;
   getGames(): Promise<Game[]>;
@@ -24,22 +26,32 @@ export interface IStorage {
   createGame(game: InsertGame): Promise<Game>;
   updateGame(gameId: number, updates: Partial<InsertGame>): Promise<Game>;
   updateGameStatus(gameId: number, status: GameStatus): Promise<Game>;
-  updateGameWinner(gameId: number, winnerId: number, winningNumber: number): Promise<Game>;
+  updateGameWinners(gameId: number, winnerIds: number[], winningNumber: number): Promise<Game>;
   endGame(gameId: number): Promise<Game>;
-
+  getAvailableGames(currency?: string, minStake?: number, maxStake?: number): Promise<Game[]>;
+  
   // GamePlayer operations
   getGamePlayer(gameId: number, userId: number): Promise<GamePlayer | undefined>;
   getGamePlayers(gameId: number): Promise<(GamePlayer & { user: User })[]>;
   createGamePlayer(gamePlayer: InsertGamePlayer): Promise<GamePlayer>;
   updateGamePlayerRoll(gamePlayerId: number, rolledNumber: number): Promise<GamePlayer>;
-
+  updateGamePlayerStatus(gamePlayerId: number, updates: Partial<GamePlayer>): Promise<GamePlayer>;
+  markPlayerAsWinner(gameId: number, userId: number, winShare: number): Promise<GamePlayer>;
+  getGameWinners(gameId: number): Promise<(GamePlayer & { user: User })[]>;
+  
   // Message operations
   getGameMessages(gameId: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
-
+  
   // Transaction operations
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: number): Promise<Transaction[]>;
+  createWithdrawalRequest(userId: number, amount: number, currency: string, bankDetails: any): Promise<Transaction>;
+  getTransaction(transactionId: number): Promise<Transaction | undefined>;
+  updateTransactionStatus(transactionId: number, status: string): Promise<Transaction>;
+  
+  // Currency operations
+  convertCurrency(amount: number, fromCurrency: string, toCurrency: string): Promise<{amount: number, rate: number}>;
 }
 
 // In-memory implementation of the storage interface
@@ -98,7 +110,18 @@ export class MemStorage implements IStorage {
       isAdmin: false,
       isActive: true,
       stripeCustomerId: null,
-      stripeSubscriptionId: null
+      stripeSubscriptionId: null,
+      
+      // International fields
+      countryCode: insertUser.countryCode || 'NG',
+      preferredCurrency: insertUser.preferredCurrency || 'NGN',
+      language: insertUser.language || 'en',
+      timeZone: insertUser.timeZone || null,
+      
+      // Bank & verification
+      bankDetails: null,
+      isVerified: false,
+      verificationLevel: 0
     };
     this.users.set(id, user);
     console.log('Created user in storage:', id, user.username);
@@ -112,6 +135,28 @@ export class MemStorage implements IStorage {
     }
     
     const updatedUser = { ...user, walletBalance: newBalance };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserProfile(userId: number, updates: Partial<User>): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    const updatedUser = { ...user, ...updates };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserBankDetails(userId: number, bankDetails: any): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    const updatedUser = { ...user, bankDetails };
     this.users.set(userId, updatedUser);
     return updatedUser;
   }
@@ -130,6 +175,28 @@ export class MemStorage implements IStorage {
       (game) => game.status === status
     );
   }
+  
+  async getAvailableGames(currency?: string, minStake?: number, maxStake?: number): Promise<Game[]> {
+    // Get all waiting games
+    let availableGames = await this.getGamesByStatus('waiting');
+    
+    // Filter by currency if provided
+    if (currency) {
+      availableGames = availableGames.filter(game => game.currency === currency);
+    }
+    
+    // Filter by min stake if provided
+    if (minStake !== undefined) {
+      availableGames = availableGames.filter(game => game.stake >= minStake);
+    }
+    
+    // Filter by max stake if provided
+    if (maxStake !== undefined) {
+      availableGames = availableGames.filter(game => game.stake <= maxStake);
+    }
+    
+    return availableGames;
+  }
 
   async getUserGames(userId: number): Promise<Game[]> {
     // Get game IDs for games where user is a player
@@ -146,15 +213,26 @@ export class MemStorage implements IStorage {
   async createGame(insertGame: InsertGame): Promise<Game> {
     const id = this.currentGameId++;
     const now = new Date();
+    const stakePot = insertGame.stake * insertGame.maxPlayers;
+    
     const game: Game = {
       ...insertGame,
       id,
       status: "waiting",
       createdAt: now,
       endedAt: null,
-      winnerId: null,
+      winnerIds: null,
       winningNumber: null,
-      voiceChatEnabled: insertGame.voiceChatEnabled || false
+      
+      // Game features
+      voiceChatEnabled: insertGame.voiceChatEnabled || false,
+      textChatEnabled: true,
+      
+      // International settings
+      currency: insertGame.currency || 'NGN',
+      stakePot: stakePot,
+      region: insertGame.region || null,
+      language: insertGame.language || 'en'
     };
     this.games.set(id, game);
     return game;
@@ -182,7 +260,7 @@ export class MemStorage implements IStorage {
     return updatedGame;
   }
 
-  async updateGameWinner(gameId: number, winnerId: number, winningNumber: number): Promise<Game> {
+  async updateGameWinners(gameId: number, winnerIds: number[], winningNumber: number): Promise<Game> {
     const game = await this.getGame(gameId);
     if (!game) {
       throw new Error(`Game with ID ${gameId} not found`);
@@ -190,12 +268,18 @@ export class MemStorage implements IStorage {
     
     const updatedGame = { 
       ...game, 
-      winnerId, 
+      winnerIds, 
       winningNumber,
-      status: "completed"
+      status: "completed",
+      endedAt: new Date()
     };
     this.games.set(gameId, updatedGame);
     return updatedGame;
+  }
+  
+  // Keep for backward compatibility
+  async updateGameWinner(gameId: number, winnerId: number, winningNumber: number): Promise<Game> {
+    return this.updateGameWinners(gameId, [winnerId], winningNumber);
   }
 
   async endGame(gameId: number): Promise<Game> {
@@ -240,9 +324,30 @@ export class MemStorage implements IStorage {
     const gamePlayer: GamePlayer = {
       ...insertGamePlayer,
       id,
+      
+      // Rolling information
       rolledNumber: null,
       hasRolled: false,
-      joinedAt: now
+      rollTimestamp: null,
+      
+      // Player status
+      isWinner: false,
+      winShare: null,
+      
+      // Player game info
+      joinedAt: now,
+      lastActiveAt: now,
+      disconnectedAt: null,
+      isActive: true,
+      isReady: false,
+      
+      // Player game settings
+      isMuted: false,
+      voiceChatEnabled: false,
+      
+      // Timeout handling
+      hasTimedOut: false,
+      timeoutCount: 0
     };
     this.gamePlayers.set(id, gamePlayer);
     return gamePlayer;
@@ -263,13 +368,60 @@ export class MemStorage implements IStorage {
       throw new Error(`GamePlayer with ID ${gamePlayerId} not found`);
     }
     
+    const now = new Date();
     const updatedGamePlayer = { 
       ...gamePlayer, 
       rolledNumber, 
-      hasRolled: true 
+      hasRolled: true,
+      rollTimestamp: now,
+      lastActiveAt: now
     };
     this.gamePlayers.set(gamePlayer.id, updatedGamePlayer);
     return updatedGamePlayer;
+  }
+  
+  async updateGamePlayerStatus(gamePlayerId: number, updates: Partial<GamePlayer>): Promise<GamePlayer> {
+    // Find the game player by ID
+    let gamePlayer: GamePlayer | undefined;
+    
+    for (const [id, player] of this.gamePlayers.entries()) {
+      if (player.id === gamePlayerId) {
+        gamePlayer = player;
+        break;
+      }
+    }
+    
+    if (!gamePlayer) {
+      throw new Error(`GamePlayer with ID ${gamePlayerId} not found`);
+    }
+    
+    const updatedGamePlayer = { 
+      ...gamePlayer,
+      ...updates,
+      lastActiveAt: new Date()
+    };
+    this.gamePlayers.set(gamePlayer.id, updatedGamePlayer);
+    return updatedGamePlayer;
+  }
+  
+  async markPlayerAsWinner(gameId: number, userId: number, winShare: number): Promise<GamePlayer> {
+    const gamePlayer = await this.getGamePlayer(gameId, userId);
+    if (!gamePlayer) {
+      throw new Error(`GamePlayer for game ${gameId} and user ${userId} not found`);
+    }
+    
+    const updatedGamePlayer = { 
+      ...gamePlayer,
+      isWinner: true,
+      winShare
+    };
+    this.gamePlayers.set(gamePlayer.id, updatedGamePlayer);
+    return updatedGamePlayer;
+  }
+  
+  async getGameWinners(gameId: number): Promise<(GamePlayer & { user: User })[]> {
+    const players = await this.getGamePlayers(gameId);
+    return players.filter(player => player.isWinner);
   }
 
   // Message operations
@@ -297,11 +449,28 @@ export class MemStorage implements IStorage {
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
     const id = this.currentTransactionId++;
     const now = new Date();
+    
+    // Set default values for new fields
     const transaction: Transaction = {
       ...insertTransaction,
       id,
-      createdAt: now
+      createdAt: now,
+      
+      // Set default values for new fields if not provided
+      currency: insertTransaction.currency || 'NGN',
+      conversionRate: insertTransaction.conversionRate || null,
+      amountInUSD: insertTransaction.amountInUSD || null,
+      
+      // Payment details
+      paymentMethod: insertTransaction.paymentMethod || null,
+      paymentDetails: insertTransaction.paymentDetails || null,
+      
+      // Withdrawal details
+      withdrawalStatus: insertTransaction.withdrawalStatus || null,
+      withdrawalMethod: insertTransaction.withdrawalMethod || null,
+      bankDetails: insertTransaction.bankDetails || null
     };
+    
     this.transactions.set(id, transaction);
     return transaction;
   }
@@ -312,6 +481,78 @@ export class MemStorage implements IStorage {
       .sort((a, b) => {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
+  }
+  
+  async getTransaction(transactionId: number): Promise<Transaction | undefined> {
+    return this.transactions.get(transactionId);
+  }
+  
+  async updateTransactionStatus(transactionId: number, status: string): Promise<Transaction> {
+    const transaction = await this.getTransaction(transactionId);
+    if (!transaction) {
+      throw new Error(`Transaction with ID ${transactionId} not found`);
+    }
+    
+    const updatedTransaction = { ...transaction, status };
+    this.transactions.set(transactionId, updatedTransaction);
+    return updatedTransaction;
+  }
+  
+  async createWithdrawalRequest(
+    userId: number, 
+    amount: number, 
+    currency: string, 
+    bankDetails: any
+  ): Promise<Transaction> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    const reference = `WIT-${Date.now()}-${userId}-${Math.floor(Math.random() * 1000)}`;
+    
+    return this.createTransaction({
+      userId,
+      amount,
+      type: 'withdrawal',
+      status: 'pending',
+      reference,
+      currency,
+      bankDetails,
+      withdrawalStatus: 'pending',
+      withdrawalMethod: 'bank_transfer'
+    });
+  }
+  
+  async convertCurrency(
+    amount: number, 
+    fromCurrency: string, 
+    toCurrency: string
+  ): Promise<{amount: number, rate: number}> {
+    // Simplified exchange rate table
+    const rates: Record<string, Record<string, number>> = {
+      'NGN': { 'USD': 0.00066, 'EUR': 0.00060, 'GBP': 0.00052 },
+      'USD': { 'NGN': 1515.00, 'EUR': 0.91, 'GBP': 0.79 },
+      'EUR': { 'NGN': 1655.00, 'USD': 1.10, 'GBP': 0.86 },
+      'GBP': { 'NGN': 1925.00, 'USD': 1.27, 'EUR': 1.16 }
+    };
+    
+    // If same currency, no conversion needed
+    if (fromCurrency === toCurrency) {
+      return { amount, rate: 1 };
+    }
+    
+    // Get exchange rate
+    const rate = rates[fromCurrency]?.[toCurrency];
+    if (!rate) {
+      throw new Error(`Exchange rate for ${fromCurrency} to ${toCurrency} not available`);
+    }
+    
+    const convertedAmount = amount * rate;
+    return {
+      amount: convertedAmount,
+      rate
+    };
   }
 }
 
