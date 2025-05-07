@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -13,6 +13,20 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  
+  // Location and internationalization
+  countryCode: text("country_code").default('NG'),
+  preferredCurrency: text("preferred_currency").default('NGN'),
+  language: text("language").default('en'),
+  timeZone: text("time_zone"),
+  
+  // Bank account details for withdrawals
+  bankDetails: jsonb("bank_details"),
+  
+  // KYC verification
+  isVerified: boolean("is_verified").default(false),
+  verificationLevel: integer("verification_level").default(0),
+  
   // Stripe fields for payment integration
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
@@ -37,6 +51,20 @@ export const transactions = pgTable("transactions", {
   status: text("status").notNull(), // 'pending', 'completed', 'failed'
   reference: text("reference").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  
+  // Currency information
+  currency: text("currency").notNull().default('NGN'),
+  conversionRate: doublePrecision("conversion_rate"),
+  amountInUSD: doublePrecision("amount_in_usd"),
+  
+  // Payment details
+  paymentMethod: text("payment_method"),
+  paymentDetails: jsonb("payment_details"),
+  
+  // For withdrawals
+  withdrawalStatus: text("withdrawal_status"),
+  withdrawalMethod: text("withdrawal_method"),
+  bankDetails: jsonb("bank_details"),
 });
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
@@ -54,9 +82,22 @@ export const games = pgTable("games", {
   commissionPercentage: doublePrecision("commission_percentage").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   endedAt: timestamp("ended_at"),
-  winnerId: integer("winner_id").references(() => users.id),
+  
+  // Multi-winner support - storing JSON arrays of winners
+  winnerIds: jsonb("winner_ids"), // Array of user IDs who won
   winningNumber: integer("winning_number"),
+  
+  // Game features
   voiceChatEnabled: boolean("voice_chat_enabled").default(false),
+  textChatEnabled: boolean("text_chat_enabled").default(true),
+  
+  // Currency information
+  currency: text("currency").default('NGN'),
+  stakePot: doublePrecision("stake_pot").notNull(),
+  
+  // For international games
+  region: text("region"),
+  language: text("language").default('en'),
 });
 
 export const insertGameSchema = createInsertSchema(games).omit({
@@ -64,8 +105,9 @@ export const insertGameSchema = createInsertSchema(games).omit({
   status: true,
   createdAt: true,
   endedAt: true,
-  winnerId: true,
+  winnerIds: true,
   winningNumber: true,
+  stakePot: true,
 });
 
 // GamePlayer model
@@ -74,9 +116,30 @@ export const gamePlayers = pgTable("game_players", {
   gameId: integer("game_id").notNull().references(() => games.id),
   userId: integer("user_id").notNull().references(() => users.id),
   turnOrder: integer("turn_order").notNull(),
+  
+  // Rolling information
   rolledNumber: integer("rolled_number"),
   hasRolled: boolean("has_rolled").notNull().default(false),
+  rollTimestamp: timestamp("roll_timestamp"),
+  
+  // Player status
+  isWinner: boolean("is_winner").default(false),
+  winShare: doublePrecision("win_share"), // For multiple winners splitting the pot
+  
+  // Player game info
   joinedAt: timestamp("joined_at").defaultNow(),
+  lastActiveAt: timestamp("last_active_at"),
+  disconnectedAt: timestamp("disconnected_at"),
+  isActive: boolean("is_active").default(true),
+  isReady: boolean("is_ready").default(false),
+  
+  // Player game settings
+  isMuted: boolean("is_muted").default(false),
+  voiceChatEnabled: boolean("voice_chat_enabled"),
+  
+  // Timeout handling
+  hasTimedOut: boolean("has_timed_out").default(false),
+  timeoutCount: integer("timeout_count").default(0),
 });
 
 export const insertGamePlayerSchema = createInsertSchema(gamePlayers).omit({
