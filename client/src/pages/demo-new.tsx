@@ -988,12 +988,21 @@ export default function DemoPage() {
             <h1 className="text-2xl font-bold">Big Boys Game</h1>
             <span className="ml-2 px-2 py-1 bg-secondary text-primary text-xs font-bold rounded-full">DEMO</span>
           </div>
-          <Button 
-            onClick={() => setLocation('/')} 
-            className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
-          >
-            Back to Home
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={() => setLocation('/')} 
+              className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
+            >
+              Back to Home
+            </Button>
+            <Button 
+              onClick={() => setLocation('/auth')} 
+              variant="outline"
+              className="border-white text-white hover:bg-white/10"
+            >
+              Sign In
+            </Button>
+          </div>
         </div>
       </header>
       
@@ -1210,12 +1219,20 @@ export default function DemoPage() {
             {/* Demo info */}
             <div className="text-center mt-8">
               <p className="text-gray-600 text-sm mb-2">This is an interactive demo of the Big Boys Game board layout.</p>
-              <Button 
-                onClick={() => setLocation('/')}
-                className="bg-primary hover:bg-primary-dark text-white"
-              >
-                Return to Home
-              </Button>
+              <div className="flex justify-center space-x-3">
+                <Button 
+                  onClick={() => setLocation('/')}
+                  className="bg-primary hover:bg-primary-dark text-white"
+                >
+                  Return to Home
+                </Button>
+                <Button 
+                  onClick={() => setLocation('/auth')}
+                  variant="outline"
+                >
+                  Sign In / Register
+                </Button>
+              </div>
             </div>
           </div>
         </div>
