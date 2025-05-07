@@ -12,6 +12,7 @@ import LandingPage from "@/pages/landing-page";
 import Wallet from "@/pages/wallet";
 import Checkout from "@/pages/checkout";
 import VoiceChatTest from "@/pages/voice-chat-test";
+import VoiceRecorderTest from "@/pages/voice-recorder-test";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
