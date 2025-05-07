@@ -10,12 +10,16 @@ export default function VoiceChatTest() {
   const [isMuted, setIsMuted] = useState(false);
   const [roomId, setRoomId] = useState("test-room");
   const [peerId, setPeerId] = useState("");
+  const [inputLevel, setInputLevel] = useState(0);
+  const [remoteSoundDetected, setRemoteSoundDetected] = useState(false);
   
   const localStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const localAudioRef = useRef<HTMLAudioElement>(null);
+  const audioAnalyserRef = useRef<AnalyserNode | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
 
   const createPeerConnection = () => {
     // Using free public STUN servers
@@ -61,8 +65,21 @@ export default function VoiceChatTest() {
     };
 
     pc.ontrack = (event) => {
+      console.log("Remote track received!", event.streams);
       if (remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = event.streams[0];
+        
+        // Try to play audio immediately
+        remoteAudioRef.current.play().catch(e => {
+          console.error("Error playing remote audio:", e);
+          
+          // If autoplay failed, show a button to play manually
+          toast({
+            title: "Audio playback issue",
+            description: "Try clicking a button on the page to enable audio playback",
+            variant: "destructive",
+          });
+        });
       }
     };
 
@@ -318,9 +335,36 @@ export default function VoiceChatTest() {
         </CardContent>
       </Card>
       
-      {/* Hidden audio elements for streams */}
-      <audio ref={localAudioRef} autoPlay playsInline muted className="hidden" />
-      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
+      {/* Audio elements for streams (visible for debugging) */}
+      <div className="mt-8 border p-4 rounded-md">
+        <h3 className="text-sm font-medium mb-2">Audio Debugging</h3>
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs mb-1">Your microphone (muted locally to prevent feedback):</p>
+            <audio 
+              ref={localAudioRef} 
+              autoPlay 
+              playsInline 
+              muted 
+              controls 
+              className="w-full h-10" 
+            />
+          </div>
+          <div>
+            <p className="text-xs mb-1">Remote audio (should hear other person here):</p>
+            <audio 
+              ref={remoteAudioRef} 
+              autoPlay 
+              playsInline 
+              controls 
+              className="w-full h-10" 
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              If you see no volume activity when the other person speaks, try clicking the play button above
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
