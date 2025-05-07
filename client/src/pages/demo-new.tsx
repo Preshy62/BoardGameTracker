@@ -903,9 +903,11 @@ export default function DemoPage() {
           
           <div className="p-6">
             {/* Voice Chat */}
-            <div className="mb-4">
-              <DemoVoiceChat stakeAmount={50000} demo={true} />
-            </div>
+            {showVoiceChat && (
+              <div className="mb-4">
+                <DemoVoiceChat stakeAmount={voiceChatStake} demo={true} />
+              </div>
+            )}
           
             {/* Game board with stones */}
             <div 
@@ -1114,7 +1116,53 @@ export default function DemoPage() {
                 </svg>
                 Voice Chat
               </h4>
-              <p className="text-gray-600">Premium games include in-game voice chat for a more immersive and social experience.</p>
+              <p className="text-gray-600 mb-3">Premium games include in-game voice chat for a more immersive and social experience.</p>
+              
+              <div className="mt-2 space-y-2">
+                <div className="flex flex-col space-y-1">
+                  <label className="text-sm font-medium">Try Voice Chat Demo:</label>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => setShowVoiceChat(true)}
+                      variant={showVoiceChat ? "default" : "outline"}
+                      size="sm"
+                      className="w-1/2"
+                    >
+                      Show
+                    </Button>
+                    <Button 
+                      onClick={() => setShowVoiceChat(false)}
+                      variant={!showVoiceChat ? "default" : "outline"}
+                      size="sm"
+                      className="w-1/2"
+                    >
+                      Hide
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col space-y-1">
+                  <label className="text-sm font-medium">Chat Tier:</label>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => setVoiceChatStake(20000)}
+                      variant={voiceChatStake === 20000 ? "default" : "outline"}
+                      size="sm"
+                      className="w-1/2"
+                    >
+                      Basic (₦20,000)
+                    </Button>
+                    <Button 
+                      onClick={() => setVoiceChatStake(50000)}
+                      variant={voiceChatStake === 50000 ? "default" : "outline"}
+                      size="sm"
+                      className="w-1/2"
+                    >
+                      Premium (₦50,000)
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
