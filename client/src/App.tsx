@@ -8,6 +8,7 @@ import CreateGame from "@/pages/create-game";
 import GamePage from "@/pages/game";
 import Dashboard from "@/pages/dashboard";
 import DemoNewPage from "@/pages/demo-new";
+import LandingPage from "@/pages/landing-page";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -19,11 +20,12 @@ function Router() {
   return (
     <Switch>
       {/* Public routes */}
+      <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/demo-new" component={DemoNewPage} />
       
       {/* Protected routes - require login */}
-      <ProtectedRoute path="/" component={Home} />
+      <ProtectedRoute path="/home" component={Home} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/create-game" component={CreateGame} />
       <ProtectedRoute path="/game/:id" component={GamePage} />
