@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Home from "@/pages/home";
+import CreateGame from "@/pages/create-game";
+import GamePage from "@/pages/game";
 import Dashboard from "@/pages/dashboard";
 import DemoPage from "@/pages/demo-new";
 import { useEffect } from "react";
@@ -23,7 +25,8 @@ function Router() {
       {/* Protected routes - require login */}
       <ProtectedRoute path="/" component={Home} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
-      <ProtectedRoute path="/game/:id" component={Home} />
+      <ProtectedRoute path="/create-game" component={CreateGame} />
+      <ProtectedRoute path="/game/:id" component={GamePage} />
       
       {/* Redirects for legacy routes */}
       <Route path="/demo">
