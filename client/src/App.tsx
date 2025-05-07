@@ -11,6 +11,7 @@ import DemoNewPage from "@/pages/demo-new";
 import LandingPage from "@/pages/landing-page";
 import Wallet from "@/pages/wallet";
 import Checkout from "@/pages/checkout";
+import VoiceChatTest from "@/pages/voice-chat-test";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/demo-new" component={DemoNewPage} />
+      <Route path="/voice-chat-test" component={VoiceChatTest} />
       
       {/* Protected routes - require login */}
       <ProtectedRoute path="/home" component={Home} />
