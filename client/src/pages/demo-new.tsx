@@ -272,11 +272,17 @@ export default function DemoPage() {
       }
       
       @keyframes roll-glow {
-        0% { transform: scale(1) rotate(0deg); box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); }
-        25% { transform: scale(1.2) rotate(90deg); box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.8); }
-        50% { transform: scale(1.3) rotate(180deg); box-shadow: 0 0 40px 20px rgba(255, 215, 0, 0.9); }
-        75% { transform: scale(1.2) rotate(270deg); box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.8); }
-        100% { transform: scale(1) rotate(360deg); box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); }
+        0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); border-color: gold; }
+        10% { transform: translate(-50%, -50%) scale(1.05) rotate(36deg); box-shadow: 0 0 22px 11px rgba(255, 180, 0, 0.75); border-color: orange; }
+        20% { transform: translate(-50%, -50%) scale(1.1) rotate(72deg); box-shadow: 0 0 25px 12px rgba(255, 150, 0, 0.8); border-color: darkorange; }
+        30% { transform: translate(-50%, -50%) scale(1.15) rotate(108deg); box-shadow: 0 0 28px 14px rgba(255, 120, 0, 0.82); border-color: orangered; }
+        40% { transform: translate(-50%, -50%) scale(1.2) rotate(144deg); box-shadow: 0 0 32px 16px rgba(255, 100, 0, 0.85); border-color: crimson; }
+        50% { transform: translate(-50%, -50%) scale(1.3) rotate(180deg); box-shadow: 0 0 40px 20px rgba(255, 50, 0, 0.9); border-color: red; }
+        60% { transform: translate(-50%, -50%) scale(1.25) rotate(216deg); box-shadow: 0 0 35px 17px rgba(255, 100, 50, 0.85); border-color: orangered; }
+        70% { transform: translate(-50%, -50%) scale(1.2) rotate(252deg); box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.8); border-color: darkorange; }
+        80% { transform: translate(-50%, -50%) scale(1.15) rotate(288deg); box-shadow: 0 0 27px 13px rgba(255, 160, 0, 0.75); border-color: orange; }
+        90% { transform: translate(-50%, -50%) scale(1.1) rotate(324deg); box-shadow: 0 0 24px 12px rgba(255, 190, 0, 0.73); border-color: gold; }
+        100% { transform: translate(-50%, -50%) scale(1) rotate(360deg); box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); border-color: gold; }
       }
       
       @keyframes shakeBoard {
@@ -301,13 +307,18 @@ export default function DemoPage() {
         background: radial-gradient(circle, white 30%, #FF8800 100%);
         border: 4px solid gold;
         z-index: 9999;
-        transition: top 0.8s ease, left 0.8s ease;
+        transition: top 0.3s ease-out, left 0.3s ease-out;
         box-shadow: 0 0 30px 15px rgba(255, 136, 0, 0.7);
         transform: translate(-50%, -50%); /* This ensures the ball is properly centered */
       }
       
       .roll-animation {
-        animation: roll-glow 0.8s linear infinite;
+        animation: roll-glow 0.8s linear infinite, bounce 0.5s ease-in-out alternate infinite;
+      }
+      
+      @keyframes bounce {
+        0% { transform: translate(-50%, -50%) scale(0.9); }
+        100% { transform: translate(-50%, -50%) scale(1.1); }
       }
       
       .shaking-board {
@@ -1076,6 +1087,17 @@ export default function DemoPage() {
                 </div>
               )}
               
+              {/* Rolling ball animation element */}
+              {showBall && (
+                <div 
+                  className={`ball-element ${isRolling ? 'roll-animation' : ''}`} 
+                  style={{
+                    top: `${ballPosition.top}px`,
+                    left: `${ballPosition.left}px`,
+                  }}
+                />
+              )}
+              
               {/* Arrow pointing to start */}
               <div className="absolute top-8 right-16 text-white">
                 <svg viewBox="0 0 48 48" width="60" height="60" stroke="currentColor" strokeWidth="2" fill="none">
@@ -1135,17 +1157,6 @@ export default function DemoPage() {
               <div className="border-t-2 border-yellow-600 mt-4 pt-2 text-center">
                 <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
               </div>
-              
-              {/* Ball animation moving along the board */}
-              {showBall && (
-                <div 
-                  className={`ball-element ${isRolling ? 'roll-animation' : ''}`}
-                  style={{
-                    top: ballPosition.top,
-                    left: ballPosition.left,
-                  }}
-                ></div>
-              )}
               
               {/* Dice moving along the board path - for backward compatibility */}
               {isRolling && !showBall && (
