@@ -28,6 +28,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/demo-new" component={DemoNewPage} />
       <Route path="/voice-chat-test" component={VoiceChatTest} />
+      <Route path="/voice-recorder-test" component={VoiceRecorderTest} />
       
       {/* Protected routes - require login */}
       <ProtectedRoute path="/home" component={Home} />
