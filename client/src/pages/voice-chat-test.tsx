@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default function VoiceChatTest() {
   const { toast } = useToast();
@@ -12,6 +14,7 @@ export default function VoiceChatTest() {
   const [peerId, setPeerId] = useState("");
   const [inputLevel, setInputLevel] = useState(0);
   const [remoteSoundDetected, setRemoteSoundDetected] = useState(false);
+  const [useDirectMode, setUseDirectMode] = useState(true);
   
   const localStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -69,50 +72,93 @@ export default function VoiceChatTest() {
       if (remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = event.streams[0];
         
-        // Set up audio visualization for remote audio
-        try {
-          const audioContext = new AudioContext();
-          const source = audioContext.createMediaStreamSource(event.streams[0]);
-          const remoteAnalyser = audioContext.createAnalyser();
-          remoteAnalyser.fftSize = 256;
-          source.connect(remoteAnalyser);
+        if (useDirectMode) {
+          // Direct mode - minimal processing, just connect the stream to audio
+          console.log("Using direct mode for audio");
           
-          const bufferLength = remoteAnalyser.frequencyBinCount;
-          const dataArray = new Uint8Array(bufferLength);
+          // Force unmute
+          if (remoteAudioRef.current.muted) {
+            remoteAudioRef.current.muted = false;
+          }
           
-          // Check remote audio levels
-          const checkRemoteAudio = () => {
-            remoteAnalyser.getByteFrequencyData(dataArray);
-            const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+          // Set volume to max
+          remoteAudioRef.current.volume = 1.0;
+          
+          // Try to play audio immediately using multiple methods
+          const playPromise = remoteAudioRef.current.play();
+          
+          if (playPromise !== undefined) {
+            playPromise.catch(e => {
+              console.error("Direct mode: Error playing remote audio:", e);
+              toast({
+                title: "Audio playback blocked",
+                description: "Please click anywhere on the page to enable audio",
+                variant: "destructive",
+              });
+              
+              // Setup listener for user interaction to try playing again
+              const handleUserInteraction = () => {
+                if (remoteAudioRef.current) {
+                  remoteAudioRef.current.play()
+                    .then(() => {
+                      document.removeEventListener('click', handleUserInteraction);
+                      document.removeEventListener('keydown', handleUserInteraction);
+                      console.log("Audio started after user interaction");
+                    })
+                    .catch(err => console.error("Still couldn't play audio:", err));
+                }
+              };
+              
+              document.addEventListener('click', handleUserInteraction);
+              document.addEventListener('keydown', handleUserInteraction);
+            });
+          }
+        } else {
+          // Original mode with audio analysis
+          try {
+            const audioContext = new AudioContext();
+            const source = audioContext.createMediaStreamSource(event.streams[0]);
+            const remoteAnalyser = audioContext.createAnalyser();
+            remoteAnalyser.fftSize = 256;
+            source.connect(remoteAnalyser);
             
-            if (average > 5) {  // Threshold for sound detection
-              setRemoteSoundDetected(true);
-              console.log("Remote sound detected!", average);
-            } else {
-              setRemoteSoundDetected(false);
-            }
+            const bufferLength = remoteAnalyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
             
-            if (isConnected) {
-              requestAnimationFrame(checkRemoteAudio);
-            }
-          };
+            // Check remote audio levels
+            const checkRemoteAudio = () => {
+              remoteAnalyser.getByteFrequencyData(dataArray);
+              const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+              
+              if (average > 5) {  // Threshold for sound detection
+                setRemoteSoundDetected(true);
+                console.log("Remote sound detected!", average);
+              } else {
+                setRemoteSoundDetected(false);
+              }
+              
+              if (isConnected) {
+                requestAnimationFrame(checkRemoteAudio);
+              }
+            };
+            
+            requestAnimationFrame(checkRemoteAudio);
+          } catch (err) {
+            console.error("Error setting up remote audio analysis:", err);
+          }
           
-          requestAnimationFrame(checkRemoteAudio);
-        } catch (err) {
-          console.error("Error setting up remote audio analysis:", err);
-        }
-        
-        // Try to play audio immediately
-        remoteAudioRef.current.play().catch(e => {
-          console.error("Error playing remote audio:", e);
-          
-          // If autoplay failed, show a button to play manually
-          toast({
-            title: "Audio playback issue",
-            description: "Try clicking the Force Play button below the audio player",
-            variant: "destructive",
+          // Try to play audio immediately
+          remoteAudioRef.current.play().catch(e => {
+            console.error("Error playing remote audio:", e);
+            
+            // If autoplay failed, show a button to play manually
+            toast({
+              title: "Audio playback issue",
+              description: "Try clicking the Force Play button below the audio player",
+              variant: "destructive",
+            });
           });
-        });
+        }
       }
     };
 
@@ -402,6 +448,20 @@ export default function VoiceChatTest() {
           <div className="text-xs text-muted-foreground mt-6">
             <p>Connection status: {isConnected ? "Connected" : isConnecting ? "Connecting..." : "Disconnected"}</p>
             <p>Microphone: {isMuted ? "Muted" : "Active"}</p>
+            
+            <div className="flex items-center space-x-2 mt-4 pt-4 border-t">
+              <Switch
+                id="direct-mode"
+                checked={useDirectMode}
+                onCheckedChange={setUseDirectMode}
+              />
+              <Label htmlFor="direct-mode" className="text-sm text-primary">
+                Use Direct Mode
+                <p className="text-xs text-muted-foreground mt-1">
+                  Direct mode bypasses audio analysis for better compatibility
+                </p>
+              </Label>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -453,7 +513,13 @@ export default function VoiceChatTest() {
               onError={(e) => console.error("Remote audio error:", e)}
             />
             <div className="text-xs text-muted-foreground mt-1 space-y-1">
-              <p>If you see no volume activity when the other person speaks, try clicking the play button above</p>
+              <p>
+                {useDirectMode ? 
+                  <span className="text-green-600 font-medium">Direct Mode Active: </span> : 
+                  <span>Direct Mode Inactive: </span>
+                }
+                If you see no volume activity when the other person speaks, try clicking the play button above
+              </p>
               <Button 
                 variant="secondary" 
                 size="sm" 
@@ -479,6 +545,8 @@ export default function VoiceChatTest() {
             <li>• If on mobile, try a desktop browser</li>
             <li>• Check if you have granted microphone permissions</li>
             <li>• Input level should move when you speak if microphone is working</li>
+            <li className="font-medium text-green-700">• Try using Direct Mode (toggle switch above) for better audio compatibility</li>
+            <li className="font-medium">• If Direct Mode still doesn't work, try disconnecting, refreshing the page, and reconnecting</li>
           </ul>
         </div>
       </div>
