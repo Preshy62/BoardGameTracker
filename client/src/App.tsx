@@ -20,13 +20,13 @@ function Router() {
     <Switch>
       {/* Public routes */}
       <Route path="/auth" component={AuthPage} />
+      <Route path="/demo-new" component={DemoNewPage} />
       
       {/* Protected routes - require login */}
       <ProtectedRoute path="/" component={Home} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/create-game" component={CreateGame} />
       <ProtectedRoute path="/game/:id" component={GamePage} />
-      <ProtectedRoute path="/demo-new" component={DemoNewPage} />
       
       {/* Legacy routes - disabled */}
       

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
@@ -137,7 +136,7 @@ const DemoStone = ({
 
 // Demo Board Page
 export default function DemoPage() {
-  const { user, isLoading } = useAuth();
+  // No longer requiring auth
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -971,7 +970,8 @@ export default function DemoPage() {
   }, [rollingStoneIndex, isRolling, setFinalStoneSelected, setSelectedStone]);
 
   // Loading state
-  if (isLoading) {
+  // Demo mode is always ready, no need for loading state
+  if (false) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading" />
@@ -989,10 +989,10 @@ export default function DemoPage() {
             <span className="ml-2 px-2 py-1 bg-secondary text-primary text-xs font-bold rounded-full">DEMO</span>
           </div>
           <Button 
-            onClick={() => setLocation('/auth')} 
+            onClick={() => setLocation('/')} 
             className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
           >
-            Sign In
+            Back to Home
           </Button>
         </div>
       </header>
@@ -1207,14 +1207,14 @@ export default function DemoPage() {
               </div>
             </div>
             
-            {/* Call to action */}
+            {/* Demo info */}
             <div className="text-center mt-8">
               <p className="text-gray-600 text-sm mb-2">This is an interactive demo of the Big Boys Game board layout.</p>
               <Button 
-                onClick={() => setLocation('/auth')}
+                onClick={() => setLocation('/')}
                 className="bg-primary hover:bg-primary-dark text-white"
               >
-                Sign In / Sign Up
+                Return to Home
               </Button>
             </div>
           </div>
