@@ -51,6 +51,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize game manager
   const gameManager = new GameManager(storage);
   
+  // Map to store voice chat rooms (roomId -> Map of peerId -> WebSocket)
+  const voiceRooms = new Map<string, Map<string, WebSocket>>();
+  
   // Initialize WebSocket server
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   
@@ -662,6 +665,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const data = JSON.parse(message.toString());
         
+        // Handle voice chat messages
+        if (data.type === 'join_voice') {
+          const roomId = data.payload.roomId;
+          const peerId = data.payload.peerId;
+          
+          console.log(`Voice chat: User ${peerId} joined room ${roomId}`);
+          
+          // Store these voice connections in a separate map from the game connections
+          if (!voiceRooms.has(roomId)) {
+            voiceRooms.set(roomId, new Map());
+          }
+          
+          // Add this connection to voice room
+          const room = voiceRooms.get(roomId);
+          if (room) {
+            room.set(peerId, ws);
+            
+            // Notify other users in the room about the new join
+            room.forEach((peerWs, peerPeerId) => {
+              if (peerPeerId !== peerId && peerWs.readyState === WebSocket.OPEN) {
+                peerWs.send(JSON.stringify({
+                  type: 'voice_user_joined',
+                  payload: { roomId, peerId }
+                }));
+              }
+            });
+            
+            // Confirm join to the user
+            ws.send(JSON.stringify({
+              type: 'voice_joined',
+              payload: { roomId, peerId }
+            }));
+          }
+          return;
+        }
+        
+        // Handle WebRTC signaling messages for voice chat
+        if (data.type === 'voice_offer' || data.type === 'voice_answer' || data.type === 'voice_ice_candidate') {
+          const { roomId, peerId, targetPeerId } = data.payload;
+          
+          // Find the target peer in the room
+          const room = voiceRooms.get(roomId);
+          if (room && targetPeerId) {
+            const targetWs = room.get(targetPeerId);
+            if (targetWs && targetWs.readyState === WebSocket.OPEN) {
+              // Forward the signaling message to the target peer
+              targetWs.send(JSON.stringify(data));
+              console.log(`Voice chat: Forwarded ${data.type} from ${peerId} to ${targetPeerId}`);
+            }
+          }
+          return;
+        }
+        
+        // Handle voice chat leave
+        if (data.type === 'voice_leave') {
+          const { roomId, peerId } = data.payload;
+          
+          const room = voiceRooms.get(roomId);
+          if (room) {
+            // Remove this connection from the room
+            room.delete(peerId);
+            
+            // Notify others in the room
+            room.forEach((peerWs, peerPeerId) => {
+              if (peerWs.readyState === WebSocket.OPEN) {
+                peerWs.send(JSON.stringify({
+                  type: 'voice_user_left',
+                  payload: { roomId, peerId }
+                }));
+              }
+            });
+            
+            // If room is empty, remove it
+            if (room.size === 0) {
+              voiceRooms.delete(roomId);
+            }
+          }
+          
+          console.log(`Voice chat: User ${peerId} left room ${roomId}`);
+          return;
+        }
+        
+        // Game-related messages
         if (data.type === 'join_game') {
           gameId = data.payload.gameId;
           
