@@ -92,6 +92,17 @@ export default function CreateGame() {
   });
 
   const onSubmit = (data: GameFormValues) => {
+    // If play with bot is selected, redirect to demo-new page
+    if (data.playWithBot) {
+      toast({
+        title: "Demo Mode",
+        description: "Starting a quick demo game with virtual opponent.",
+      });
+      setLocation('/demo-new');
+      return;
+    }
+    
+    // Regular game creation flow
     if (user && user.walletBalance < data.stake) {
       toast({
         title: "Insufficient Balance",
