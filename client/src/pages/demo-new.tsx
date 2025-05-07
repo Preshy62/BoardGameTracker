@@ -176,27 +176,51 @@ export default function DemoPage() {
   
   // Effect to handle speech announcement when winner is selected
   useEffect(() => {
-    if (finalStoneSelected && selectedStone && speechSupported) {
-      // Create the announcement message
-      let message = `Stone ${selectedStone} wins the pot!`;
-      if (selectedStone === 1000 || selectedStone === 500) {
-        message = `Special stone ${selectedStone} wins! Double payout!`;
-      } else if (selectedStone === 3355 || selectedStone === 6624) {
-        message = `Super stone ${selectedStone} wins! Triple payout!`;
+    // Only attempt to speak if we have a winner and speech is supported
+    if (finalStoneSelected && selectedStone) {
+      try {
+        // Create the announcement message based on stone type
+        let message = `Stone ${selectedStone} wins the pot!`;
+        
+        if (selectedStone === 1000 || selectedStone === 500) {
+          message = `Special stone ${selectedStone} wins! Double payout!`;
+        } else if (selectedStone === 3355 || selectedStone === 6624) {
+          message = `Super stone ${selectedStone} wins! Triple payout!`;
+        }
+        
+        console.log('Setting announcement message:', message);
+        
+        // Set the message
+        setAnnounceText(message);
+        
+        // Only try to speak if the browser supports it
+        if (speechSupported) {
+          // Small delay to let the UI update first and avoid overlapping with other audio
+          const timer = setTimeout(() => {
+            try {
+              console.log('Speaking announcement...');
+              speak();
+            } catch (speakError) {
+              console.log('Error in speak call:', speakError);
+            }
+          }, 800);
+          
+          // Cleanup function
+          return () => {
+            clearTimeout(timer);
+            try {
+              if (speechSupported) {
+                console.log('Canceling speech on cleanup');
+                cancel();
+              }
+            } catch (cancelError) {
+              console.log('Error in speech cancel:', cancelError);
+            }
+          };
+        }
+      } catch (error) {
+        console.log('Error in speech announcement effect:', error);
       }
-      
-      // Set the message and speak it with a slight delay
-      setAnnounceText(message);
-      
-      // Small delay to let the UI update first
-      const timer = setTimeout(() => {
-        speak();
-      }, 500);
-      
-      return () => {
-        clearTimeout(timer);
-        cancel();
-      };
     }
   }, [finalStoneSelected, selectedStone, speechSupported, speak, cancel, setAnnounceText]);
   

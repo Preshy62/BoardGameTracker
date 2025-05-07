@@ -31,68 +31,114 @@ export const useSpeechSynthesis = ({
 
   useEffect(() => {
     // Check if speech synthesis is supported
-    if ('speechSynthesis' in window) {
-      setSupported(true);
-      
-      // Initialize voices
-      const voicesChanged = () => {
-        const availableVoices = window.speechSynthesis.getVoices();
-        setVoices(availableVoices);
-      };
-      
-      // Chrome loads voices asynchronously
-      window.speechSynthesis.onvoiceschanged = voicesChanged;
-      voicesChanged();
-      
-      // Cleanup
-      return () => {
-        window.speechSynthesis.cancel();
-      };
+    try {
+      if ('speechSynthesis' in window && 'SpeechSynthesisUtterance' in window) {
+        setSupported(true);
+        
+        // Initialize voices
+        const voicesChanged = () => {
+          try {
+            const availableVoices = window.speechSynthesis.getVoices();
+            if (availableVoices && availableVoices.length > 0) {
+              setVoices(availableVoices);
+            }
+          } catch (error) {
+            console.log('Error getting voices:', error);
+          }
+        };
+        
+        // Try to get voices immediately first
+        voicesChanged();
+        
+        // Chrome and some browsers load voices asynchronously
+        try {
+          window.speechSynthesis.onvoiceschanged = voicesChanged;
+        } catch (error) {
+          console.log('Error setting voices changed handler:', error);
+        }
+        
+        // Cleanup
+        return () => {
+          try {
+            window.speechSynthesis.cancel();
+          } catch (error) {
+            console.log('Error in cleanup:', error);
+          }
+        };
+      } else {
+        console.log('Speech synthesis not fully supported in this browser');
+      }
+    } catch (error) {
+      console.log('Error initializing speech synthesis:', error);
     }
   }, []);
 
   const speak = useCallback(() => {
     if (!supported) return;
     
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-    
-    if (text) {
-      // Create utterance
-      const utterance = new SpeechSynthesisUtterance(text);
+    try {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
       
-      // Set properties
-      utterance.rate = rate;
-      utterance.pitch = pitch;
-      utterance.volume = volume;
-      
-      // Set voice if available
-      if (voices.length > 0) {
-        // Choose a male voice when possible
-        const maleVoices = voices.filter(v => v.name.includes('Male') || v.name.includes('male'));
+      if (text) {
+        // Create utterance
+        const utterance = new SpeechSynthesisUtterance(text);
         
-        // Use a male voice if available, otherwise use the specified voice index
-        if (maleVoices.length > 0) {
-          utterance.voice = maleVoices[0];
-        } else if (voices.length > voice) {
-          utterance.voice = voices[voice];
+        // Set properties
+        utterance.rate = rate;
+        utterance.pitch = pitch;
+        utterance.volume = volume;
+        
+        // Set voice if available (wrapped in try-catch for browser inconsistencies)
+        try {
+          if (voices.length > 0) {
+            // Choose a male voice when possible
+            const maleVoices = voices.filter(v => 
+              v.name.includes('Male') || v.name.includes('male')
+            );
+            
+            // Use a male voice if available, otherwise use the specified voice index
+            if (maleVoices.length > 0) {
+              utterance.voice = maleVoices[0];
+            } else if (voices.length > voice) {
+              utterance.voice = voices[voice];
+            }
+          }
+        } catch (voiceError) {
+          console.log('Voice selection error:', voiceError);
+          // Continue with default voice
+        }
+        
+        // Event handlers with try-catch for browser safety
+        try {
+          utterance.onstart = () => setSpeaking(true);
+          utterance.onend = () => setSpeaking(false);
+          utterance.onerror = (event) => {
+            console.log('Speech synthesis error:', event);
+            setSpeaking(false);
+          };
+          
+          // Speak
+          window.speechSynthesis.speak(utterance);
+        } catch (eventError) {
+          console.log('Speech event handling error:', eventError);
+          setSpeaking(false);
         }
       }
-      
-      // Event handlers
-      utterance.onstart = () => setSpeaking(true);
-      utterance.onend = () => setSpeaking(false);
-      utterance.onerror = () => setSpeaking(false);
-      
-      // Speak
-      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.log('Speech synthesis error:', error);
+      setSpeaking(false);
     }
   }, [supported, text, rate, pitch, volume, voice, voices]);
 
   const cancel = useCallback(() => {
     if (!supported) return;
     setSpeaking(false);
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
+    } catch (error) {
+      console.log('Error canceling speech:', error);
+    }
   }, [supported]);
 
   // Auto-speak when enabled
