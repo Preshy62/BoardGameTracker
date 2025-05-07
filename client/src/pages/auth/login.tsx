@@ -1,17 +1,13 @@
-import { useEffect } from "react";
-import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
 import { 
   Card, 
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle, 
-  CardFooter 
+  CardTitle
 } from "@/components/ui/card";
 import {
   Form,
@@ -23,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Check, Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -36,13 +33,7 @@ interface LoginProps {
 }
 
 export default function Login({ isDemo = false }: LoginProps) {
-  const { user, loginMutation } = useAuth();
-  const [, setLocation] = useLocation();
-
-  const { toast } = useToast();
-  
-  // We don't want to redirect automatically
-  // We'll let the user stay on this page if they choose
+  const { loginMutation } = useAuth();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -53,129 +44,103 @@ export default function Login({ isDemo = false }: LoginProps) {
   });
 
   const onSubmit = (data: LoginFormValues) => {
-    console.log('Login form submitted with data:', data);
-    loginMutation.mutate(data, {
-      onSuccess: (userData) => {
-        console.log('Login successful. User data:', userData);
-      },
-      onError: (error) => {
-        console.error('Login error:', error);
-      }
+    loginMutation.mutate(data);
+  };
+
+  const handleDemoLogin = () => {
+    loginMutation.mutate({
+      username: "demo",
+      password: "demo123"
     });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold font-sans">
-            <span className="text-secondary">BIG BOYS</span> GAME
-          </h1>
-          {isDemo ? (
-            <div>
-              <p className="text-gray-600 mt-2">Creating your demo account</p>
-              <div className="mt-2 inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                <span className="inline-block animate-pulse mr-1">⚡</span> Starting demo game...
+    <Card>
+      <CardHeader>
+        <CardTitle>Welcome back</CardTitle>
+        <CardDescription>
+          Sign in to your account to continue
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isDemo && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="bg-green-100 p-2 rounded-full mr-3">
+                <Check className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-green-800">Demo Mode Active</h3>
+                <p className="text-sm text-green-700">
+                  Creating your demo account with ₦200,000 play money
+                </p>
               </div>
             </div>
-          ) : (
-            <p className="text-gray-600 mt-2">Sign in to your account</p>
-          )}
-        </div>
+          </div>
+        )}
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter your username" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Enter your password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <Button 
-                  type="submit" 
-                  className="w-full bg-secondary hover:bg-secondary-dark text-primary font-bold"
-                  disabled={loginMutation.isPending}
-                >
-                  {loginMutation.isPending ? (
-                    <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full mr-2" />
-                  ) : null}
-                  Sign In
-                </Button>
-                
-                <div className="mt-4 relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-gray-300"></span>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">Or</span>
-                  </div>
-                </div>
-                
-                <Button 
-                  type="button" 
-                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold"
-                  onClick={() => {
-                    // Create and log in with a demo account
-                    console.log('Demo login clicked');
-                    loginMutation.mutate({
-                      username: "demo",
-                      password: "demo123"
-                    }, {
-                      onSuccess: (userData) => {
-                        console.log('Demo login successful. User data:', userData);
-                      },
-                      onError: (error) => {
-                        console.error('Demo login error:', error);
-                      }
-                    });
-                  }}
-                  disabled={loginMutation.isPending}
-                >
-                  Quick Demo Login
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
-              <Link href="/register" className="text-primary font-medium hover:underline">
-                Sign up
-              </Link>
-            </p>
-          </CardFooter>
-        </Card>
-      </div>
-    </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your username" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="Enter your password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-secondary hover:bg-secondary-dark text-primary font-bold"
+              disabled={loginMutation.isPending}
+            >
+              {loginMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Sign In
+            </Button>
+            
+            <div className="mt-4 relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-300"></span>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or</span>
+              </div>
+            </div>
+            
+            <Button 
+              type="button" 
+              variant="outline"
+              className="w-full mt-4 border-green-500 text-green-600 hover:bg-green-50"
+              onClick={handleDemoLogin}
+              disabled={loginMutation.isPending}
+            >
+              Quick Demo Login
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 }

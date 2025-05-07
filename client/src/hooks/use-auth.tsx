@@ -19,7 +19,21 @@ type AuthContextType = {
 };
 
 type LoginData = Pick<SelectUser, "username" | "password">;
-type RegisterData = Pick<SelectUser, "username" | "email" | "password"> & { confirmPassword: string; avatarInitials?: string };
+
+// Enhanced register data type with international fields
+type RegisterData = Pick<
+  SelectUser, 
+  "username" | 
+  "email" | 
+  "password" | 
+  "countryCode" | 
+  "preferredCurrency" | 
+  "language" | 
+  "timeZone"
+> & { 
+  confirmPassword: string; 
+  avatarInitials?: string;
+};
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
