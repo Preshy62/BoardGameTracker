@@ -315,7 +315,7 @@ export default function DemoPage() {
         animation-iteration-count: 3;
       }
       
-      /* Winner stone animation with flashy color cycling */
+      /* Winner stone animation with flashy color cycling and rotation */
       @keyframes winner-stone {
         0% { 
           transform: scale(2.0) rotate(0deg);
@@ -330,7 +330,7 @@ export default function DemoPage() {
           filter: brightness(1.3) contrast(1.2);
         }
         40% { 
-          transform: scale(2.3) rotate(0deg);
+          transform: scale(2.3) rotate(10deg);
           box-shadow: 0 0 100px 50px rgba(65, 105, 225, 0.95);
           border-color: royalblue;
           filter: brightness(1.4) contrast(1.3);
@@ -342,7 +342,7 @@ export default function DemoPage() {
           filter: brightness(1.4) contrast(1.3);
         }
         80% { 
-          transform: scale(2.2) rotate(0deg);
+          transform: scale(2.2) rotate(-10deg);
           box-shadow: 0 0 90px 45px rgba(255, 0, 128, 0.95);
           border-color: deeppink;
           filter: brightness(1.3) contrast(1.2);

@@ -40,12 +40,8 @@ export default function Register() {
   const { user, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      setLocation("/");
-    }
-  }, [user, setLocation]);
+  // No automatic redirection to allow user to stay on this page
+  // We're intentionally disabling the auto-redirect behavior
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),

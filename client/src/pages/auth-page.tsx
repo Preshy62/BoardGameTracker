@@ -61,15 +61,9 @@ export default function AuthPage() {
     }
   }, [isDemo, user, loginMutation, setLocation, toast]);
   
-  // Redirect if already logged in
-  if (user) {
-    // Don't redirect in demo mode as we're handling that separately
-    if (!isDemo) {
-      setLocation("/");
-      return null;
-    }
-    return null; // Return null while we create the game automatically
-  }
+  // Don't redirect if already logged in
+  // We'll keep the user on this page intentionally
+  // so they can see the login/register forms
   
   return <Login isDemo={isDemo} />;
 }

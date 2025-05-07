@@ -41,13 +41,8 @@ export default function Login({ isDemo = false }: LoginProps) {
 
   const { toast } = useToast();
   
-  // Redirect if already logged in, but not if we're in demo mode
-  // (demo mode automatic login is handled in the parent component)
-  useEffect(() => {
-    if (user && !isDemo) {
-      setLocation("/");
-    }
-  }, [user, isDemo, setLocation]);
+  // We don't want to redirect automatically
+  // We'll let the user stay on this page if they choose
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
