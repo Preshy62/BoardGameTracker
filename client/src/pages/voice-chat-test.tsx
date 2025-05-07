@@ -69,6 +69,39 @@ export default function VoiceChatTest() {
       if (remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = event.streams[0];
         
+        // Set up audio visualization for remote audio
+        try {
+          const audioContext = new AudioContext();
+          const source = audioContext.createMediaStreamSource(event.streams[0]);
+          const remoteAnalyser = audioContext.createAnalyser();
+          remoteAnalyser.fftSize = 256;
+          source.connect(remoteAnalyser);
+          
+          const bufferLength = remoteAnalyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+          
+          // Check remote audio levels
+          const checkRemoteAudio = () => {
+            remoteAnalyser.getByteFrequencyData(dataArray);
+            const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+            
+            if (average > 5) {  // Threshold for sound detection
+              setRemoteSoundDetected(true);
+              console.log("Remote sound detected!", average);
+            } else {
+              setRemoteSoundDetected(false);
+            }
+            
+            if (isConnected) {
+              requestAnimationFrame(checkRemoteAudio);
+            }
+          };
+          
+          requestAnimationFrame(checkRemoteAudio);
+        } catch (err) {
+          console.error("Error setting up remote audio analysis:", err);
+        }
+        
         // Try to play audio immediately
         remoteAudioRef.current.play().catch(e => {
           console.error("Error playing remote audio:", e);
@@ -76,7 +109,7 @@ export default function VoiceChatTest() {
           // If autoplay failed, show a button to play manually
           toast({
             title: "Audio playback issue",
-            description: "Try clicking a button on the page to enable audio playback",
+            description: "Try clicking the Force Play button below the audio player",
             variant: "destructive",
           });
         });
@@ -90,13 +123,51 @@ export default function VoiceChatTest() {
     try {
       setIsConnecting(true);
       // Get local audio stream
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }, 
+        video: false 
+      });
       localStreamRef.current = stream;
       
       if (localAudioRef.current) {
         localAudioRef.current.srcObject = stream;
         localAudioRef.current.muted = true; // Mute local audio to prevent feedback
       }
+      
+      // Set up audio analyser to monitor microphone input levels
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      audioAnalyserRef.current = analyser;
+      dataArrayRef.current = dataArray;
+      
+      // Set up animation loop to check audio levels
+      const checkAudioLevel = () => {
+        if (audioAnalyserRef.current && dataArrayRef.current) {
+          audioAnalyserRef.current.getByteFrequencyData(dataArrayRef.current);
+          
+          // Calculate average level
+          const average = dataArrayRef.current.reduce((sum, value) => sum + value, 0) / 
+                          dataArrayRef.current.length;
+          
+          setInputLevel(average);
+          
+          if (isConnected && !isMuted) {
+            requestAnimationFrame(checkAudioLevel);
+          }
+        }
+      };
+      
+      requestAnimationFrame(checkAudioLevel);
 
       // Create a temporary peer ID
       const tempPeerId = `user-${Math.floor(Math.random() * 10000)}`;
@@ -340,7 +411,20 @@ export default function VoiceChatTest() {
         <h3 className="text-sm font-medium mb-2">Audio Debugging</h3>
         <div className="space-y-3">
           <div>
-            <p className="text-xs mb-1">Your microphone (muted locally to prevent feedback):</p>
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-xs">Your microphone (muted locally to prevent feedback):</p>
+              {isConnected && (
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-32 bg-gray-200 rounded overflow-hidden">
+                    <div 
+                      className="h-full bg-green-500 transition-all" 
+                      style={{ width: `${Math.min(100, inputLevel / 2)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs">{Math.round(inputLevel)}</span>
+                </div>
+              )}
+            </div>
             <audio 
               ref={localAudioRef} 
               autoPlay 
@@ -351,18 +435,51 @@ export default function VoiceChatTest() {
             />
           </div>
           <div>
-            <p className="text-xs mb-1">Remote audio (should hear other person here):</p>
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-xs">Remote audio (should hear other person here):</p>
+              {isConnected && (
+                <div className={`px-2 py-0.5 text-xs rounded ${remoteSoundDetected ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  {remoteSoundDetected ? 'Sound detected!' : 'No sound detected'}
+                </div>
+              )}
+            </div>
             <audio 
               ref={remoteAudioRef} 
               autoPlay 
               playsInline 
               controls 
               className="w-full h-10" 
+              onPlaying={() => console.log("Remote audio is playing!")}
+              onError={(e) => console.error("Remote audio error:", e)}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              If you see no volume activity when the other person speaks, try clicking the play button above
-            </p>
+            <div className="text-xs text-muted-foreground mt-1 space-y-1">
+              <p>If you see no volume activity when the other person speaks, try clicking the play button above</p>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => {
+                  if (remoteAudioRef.current) {
+                    remoteAudioRef.current.play()
+                      .then(() => console.log("Remote audio playback started manually"))
+                      .catch(e => console.error("Manual play failed:", e));
+                  }
+                }}
+              >
+                Force Play Remote Audio
+              </Button>
+            </div>
           </div>
+        </div>
+        
+        <div className="mt-4 pt-4 border-t">
+          <h4 className="text-sm font-medium mb-2">Troubleshooting Tips</h4>
+          <ul className="text-xs space-y-1 text-muted-foreground">
+            <li>• Make sure your microphone is working and not muted in system settings</li>
+            <li>• Try a different browser (Chrome or Firefox recommended)</li>
+            <li>• If on mobile, try a desktop browser</li>
+            <li>• Check if you have granted microphone permissions</li>
+            <li>• Input level should move when you speak if microphone is working</li>
+          </ul>
         </div>
       </div>
     </div>
