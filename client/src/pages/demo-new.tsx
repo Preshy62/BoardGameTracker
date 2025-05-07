@@ -167,7 +167,7 @@ export default function DemoPage() {
   
   // Speech synthesis for winner announcements
   const [announceText, setAnnounceText] = useState<string>('');
-  const { speak, supported: speechSupported } = useSpeechSynthesis({
+  const { speak, cancel, supported: speechSupported } = useSpeechSynthesis({
     text: announceText,
     rate: 0.9,
     pitch: 1.1,
@@ -799,9 +799,27 @@ export default function DemoPage() {
             const isSpecial = 'isSpecial' in finalStone && finalStone.isSpecial;
             const isSuper = 'isSuper' in finalStone && finalStone.isSuper;
             
+            // Prepare announcement text based on stone type
+            let winnerMessage = `Stone ${finalStone.number} wins the pot!`;
+            if (isSpecial) {
+              winnerMessage = `Special stone ${finalStone.number} wins! Double payout!`;
+            } else if (isSuper) {
+              winnerMessage = `Super stone ${finalStone.number} wins! Triple payout!`;
+            }
+            
+            // Set the speech announcement
+            setAnnounceText(winnerMessage);
+            
             // Set the winner stone with a slight delay for dramatic effect
             setTimeout(() => {
               setFinalStoneSelected(true);
+              
+              // Announce with voice after visual effects appear
+              setTimeout(() => {
+                if (speechSupported) {
+                  speak();
+                }
+              }, 500);
             }, 500);
             
             toast({
@@ -818,7 +836,7 @@ export default function DemoPage() {
     // Start the animation sequence
     setTimeout(animateStep, 500);
     
-  }, [isRolling, rollingStoneIndex, toast, stones, smallStones, getStonePosition, getAllStoneNumbers, boardPath, setBoardPath, setShowBall, setBallPosition, setIsBoardShaking, setSelectedStone, setFinalStoneSelected]);
+  }, [isRolling, rollingStoneIndex, toast, stones, smallStones, getStonePosition, getAllStoneNumbers, boardPath, setBoardPath, setShowBall, setBallPosition, setIsBoardShaking, setSelectedStone, setFinalStoneSelected, setAnnounceText, speak, speechSupported]);
   
   // Handle individual stone clicks (for testing)
   const handleStoneClick = useCallback((index: number, stoneNumber: number) => {
@@ -850,12 +868,30 @@ export default function DemoPage() {
         console.log('Audio not supported');
       }
       
+      // Prepare the announcement message based on stone type
+      let winnerMessage = `Stone ${stoneNumber} wins the pot!`;
+      if (stoneNumber === 1000 || stoneNumber === 500) {
+        winnerMessage = `Special stone ${stoneNumber} wins! Double payout!`;
+      } else if (stoneNumber === 3355 || stoneNumber === 6624) {
+        winnerMessage = `Super stone ${stoneNumber} wins! Triple payout!`;
+      }
+      
+      // Set the announcement text for speech synthesis
+      setAnnounceText(winnerMessage);
+      
       // Set as winner stone
       setTimeout(() => {
         setFinalStoneSelected(true);
+        
+        // Small delay to let the winner visualization appear first
+        setTimeout(() => {
+          if (speechSupported) {
+            speak();
+          }
+        }, 300);
       }, 500);
     }, 2000);
-  }, [rollingStoneIndex, isRolling, setFinalStoneSelected, setSelectedStone]);
+  }, [rollingStoneIndex, isRolling, setFinalStoneSelected, setSelectedStone, setAnnounceText, speak, speechSupported]);
 
   // Loading state
   if (isLoading) {
@@ -936,12 +972,35 @@ export default function DemoPage() {
                       WINNER!
                     </h2>
                     <p className="text-white text-2xl winner-pulse-animation mb-6">
-                      Stone {selectedStone} wins the pot!
+                      {(() => {
+                        // Determine special message for special stones and announce it
+                        let message = `Stone ${selectedStone} wins the pot!`;
+                        if (selectedStone === 1000 || selectedStone === 500) {
+                          message = `Special stone ${selectedStone} wins! Double payout!`;
+                        } else if (selectedStone === 3355 || selectedStone === 6624) {
+                          message = `Super stone ${selectedStone} wins! Triple payout!`;
+                        }
+                        
+                        // Set the announcement text and speak it
+                        if (speechSupported && finalStoneSelected) {
+                          setAnnounceText(message);
+                          // Small delay to ensure the overlay is visible first
+                          setTimeout(() => {
+                            speak();
+                          }, 300);
+                        }
+                        
+                        return message;
+                      })()}
                     </p>
                     <button 
                       onClick={() => {
                         setFinalStoneSelected(false);
                         setSelectedStone(null);
+                        // Cancel any ongoing speech
+                        if (speechSupported) {
+                          cancel();
+                        }
                       }}
                       className="bg-secondary hover:bg-secondary-dark text-primary font-bold py-2 px-6 rounded-full shadow-lg transform hover:scale-105 transition"
                     >
