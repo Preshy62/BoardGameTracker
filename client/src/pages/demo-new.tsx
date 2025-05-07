@@ -5,6 +5,7 @@ import { useLocation } from "wouter";
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import DemoVoiceChat from "@/components/game/DemoVoiceChat";
+import DemoTextChat from "@/components/game/DemoTextChat";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 
 // Stone Component with React-based animation
@@ -983,12 +984,20 @@ export default function DemoPage() {
           </div>
           
           <div className="p-6">
-            {/* Voice Chat */}
-            {showVoiceChat && (
-              <div className="mb-4">
-                <DemoVoiceChat stakeAmount={voiceChatStake} demo={true} />
+            {/* Game communication features */}
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Voice Chat */}
+              {showVoiceChat && (
+                <div>
+                  <DemoVoiceChat stakeAmount={voiceChatStake} demo={true} />
+                </div>
+              )}
+              
+              {/* Text Chat */}
+              <div>
+                <DemoTextChat stakeAmount={voiceChatStake} demo={true} />
               </div>
-            )}
+            </div>
           
             {/* Game board with stones */}
             <div 

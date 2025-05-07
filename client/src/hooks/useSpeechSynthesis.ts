@@ -92,15 +92,31 @@ export const useSpeechSynthesis = ({
         // Set voice if available (wrapped in try-catch for browser inconsistencies)
         try {
           if (voices.length > 0) {
-            // Choose a male voice when possible
+            // Choose a deep male voice when possible, prioritizing certain voices
+            const deepMaleVoices = voices.filter(v => 
+              (v.name.includes('Male') || v.name.includes('male')) &&
+              (v.name.includes('Deep') || v.name.includes('deep') || 
+               v.name.includes('Bass') || v.name.includes('bass') ||
+               v.name.includes('Low') || v.name.includes('low'))
+            );
+            
+            // Next preference is any male voice
             const maleVoices = voices.filter(v => 
               v.name.includes('Male') || v.name.includes('male')
             );
             
-            // Use a male voice if available, otherwise use the specified voice index
-            if (maleVoices.length > 0) {
+            // For deeper sound, adjust the pitch lower
+            utterance.pitch = 0.7; // Lower pitch for deeper voice (range 0-2)
+            
+            // Use deepest male voice if available, then any male voice, then specified voice index
+            if (deepMaleVoices.length > 0) {
+              console.log('Using deep male voice:', deepMaleVoices[0].name);
+              utterance.voice = deepMaleVoices[0];
+            } else if (maleVoices.length > 0) {
+              console.log('Using male voice:', maleVoices[0].name);
               utterance.voice = maleVoices[0];
             } else if (voices.length > voice) {
+              console.log('Using default voice:', voices[voice].name);
               utterance.voice = voices[voice];
             }
           }
