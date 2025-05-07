@@ -45,12 +45,12 @@ export default function AuthPage() {
               setLocation(`/game/${game.id}`);
             } else {
               // If failed to create game, go to home
-              setLocation('/');
+              setLocation('/home');
             }
           } catch (err) {
             console.error('Error creating demo game:', err);
             // Go to home page if there's an error
-            setLocation('/');
+            setLocation('/home');
           }
         },
         onError: (error) => {
