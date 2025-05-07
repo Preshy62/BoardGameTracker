@@ -100,9 +100,9 @@ const DemoStone = ({
         boxShadow: "0 0 75px 35px rgba(255, 215, 0, 0.95)",
         zIndex: 200,
         position: "relative",
-        transform: "scale(2.0)",
+        transformOrigin: "center center",
         transition: "all 0.15s ease-in-out",
-        animation: "winner-stone 1.5s infinite",
+        animation: "winner-stone 1.5s infinite alternate ease-in-out",
         border: '8px solid gold',
         outline: '5px solid red',
         width: sizeMap.width,
@@ -315,7 +315,7 @@ export default function DemoPage() {
         animation-iteration-count: 3;
       }
       
-      /* Winner stone animation with flashy color cycling and rotation */
+      /* Winner stone animation with dynamic color cycling, rotation and scaling */
       @keyframes winner-stone {
         0% { 
           transform: scale(2.0) rotate(0deg);
@@ -323,11 +323,23 @@ export default function DemoPage() {
           border-color: gold;
           filter: brightness(1.2) contrast(1.1);
         }
+        10% { 
+          transform: scale(2.1) rotate(3deg);
+          box-shadow: 0 0 85px 42px rgba(255, 160, 100, 0.95);
+          border-color: orange;
+          filter: brightness(1.25) contrast(1.15);
+        }
         20% { 
-          transform: scale(2.2) rotate(5deg);
+          transform: scale(2.2) rotate(6deg);
           box-shadow: 0 0 90px 45px rgba(255, 105, 180, 0.95);
           border-color: hotpink;
           filter: brightness(1.3) contrast(1.2);
+        }
+        30% { 
+          transform: scale(2.25) rotate(8deg);
+          box-shadow: 0 0 95px 48px rgba(160, 105, 220, 0.95);
+          border-color: purple;
+          filter: brightness(1.35) contrast(1.25);
         }
         40% { 
           transform: scale(2.3) rotate(10deg);
@@ -335,17 +347,35 @@ export default function DemoPage() {
           border-color: royalblue;
           filter: brightness(1.4) contrast(1.3);
         }
+        50% { 
+          transform: scale(2.3) rotate(5deg);
+          box-shadow: 0 0 100px 50px rgba(0, 150, 200, 0.95);
+          border-color: dodgerblue;
+          filter: brightness(1.4) contrast(1.3);
+        }
         60% { 
-          transform: scale(2.3) rotate(-5deg);
+          transform: scale(2.3) rotate(0deg);
           box-shadow: 0 0 100px 50px rgba(50, 205, 50, 0.95);
           border-color: limegreen;
           filter: brightness(1.4) contrast(1.3);
+        }
+        70% { 
+          transform: scale(2.25) rotate(-5deg);
+          box-shadow: 0 0 95px 48px rgba(150, 205, 50, 0.95);
+          border-color: yellowgreen;
+          filter: brightness(1.35) contrast(1.25);
         }
         80% { 
           transform: scale(2.2) rotate(-10deg);
           box-shadow: 0 0 90px 45px rgba(255, 0, 128, 0.95);
           border-color: deeppink;
           filter: brightness(1.3) contrast(1.2);
+        }
+        90% { 
+          transform: scale(2.1) rotate(-5deg);
+          box-shadow: 0 0 85px 42px rgba(255, 100, 50, 0.95);
+          border-color: coral;
+          filter: brightness(1.25) contrast(1.15);
         }
         100% { 
           transform: scale(2.0) rotate(0deg);
