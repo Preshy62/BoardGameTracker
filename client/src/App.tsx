@@ -9,6 +9,8 @@ import GamePage from "@/pages/game";
 import Dashboard from "@/pages/dashboard";
 import DemoNewPage from "@/pages/demo-new";
 import LandingPage from "@/pages/landing-page";
+import Wallet from "@/pages/wallet";
+import Checkout from "@/pages/checkout";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -29,6 +31,8 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/create-game" component={CreateGame} />
       <ProtectedRoute path="/game/:id" component={GamePage} />
+      <ProtectedRoute path="/wallet" component={Wallet} />
+      <ProtectedRoute path="/checkout/:amount" component={Checkout} />
       
       {/* Legacy routes - disabled */}
       
