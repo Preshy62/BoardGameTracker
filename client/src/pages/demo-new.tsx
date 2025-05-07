@@ -1170,10 +1170,10 @@ export default function DemoPage() {
             <div className="text-center mt-8">
               <p className="text-gray-600 text-sm mb-2">This is an interactive demo of the Big Boys Game board layout.</p>
               <Button 
-                onClick={() => setLocation('/auth?demo=true')}
+                onClick={() => setLocation('/auth')}
                 className="bg-primary hover:bg-primary-dark text-white"
               >
-                Try Full Game Demo
+                Sign In / Sign Up
               </Button>
             </div>
           </div>
