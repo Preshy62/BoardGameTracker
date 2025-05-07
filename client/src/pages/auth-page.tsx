@@ -17,11 +17,6 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const { toast } = useToast();
   
-  // If user is already logged in, redirect to home
-  if (user) {
-    return <Redirect to="/" />;
-  }
-  
   // If in demo mode, automatically log in with demo account
   useEffect(() => {
     if (isDemo && !user && !loginMutation.isPending) {
@@ -69,6 +64,11 @@ export default function AuthPage() {
       });
     }
   }, [isDemo, user, loginMutation, setLocation, toast]);
+  
+  // If user is already logged in, redirect to home
+  if (user) {
+    return <Redirect to="/home" />;
+  }
   
   return (
     <div className="min-h-screen flex flex-col md:flex-row">

@@ -986,7 +986,7 @@ export default function DemoPage() {
         <div className="container mx-auto px-4 flex justify-between items-center">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold">Big Boys Game</h1>
-            <span className="ml-2 px-2 py-1 bg-secondary text-primary text-xs font-bold rounded-full">DEMO</span>
+            <span className="ml-2 px-2 py-1 bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse">DEMO MODE</span>
           </div>
           <div className="flex space-x-2">
             <Button 
@@ -997,10 +997,9 @@ export default function DemoPage() {
             </Button>
             <Button 
               onClick={() => setLocation('/auth')} 
-              variant="outline"
-              className="border-white text-white hover:bg-white/10"
+              className="bg-white text-primary hover:bg-gray-100 font-bold"
             >
-              Sign In
+              Sign In / Register
             </Button>
           </div>
         </div>
@@ -1008,18 +1007,11 @@ export default function DemoPage() {
       
       {/* Main content */}
       <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-6">
           <div>
             <h1 className="text-3xl font-bold">Game Board Demo</h1>
             <p className="text-gray-600">Watch the ball roll through the game numbers</p>
           </div>
-          
-          <Button 
-            onClick={() => setLocation('/')} 
-            variant="outline"
-          >
-            Back to Home
-          </Button>
         </div>
         
         {/* Game board container */}
@@ -1217,8 +1209,10 @@ export default function DemoPage() {
             </div>
             
             {/* Demo info */}
-            <div className="text-center mt-8">
-              <p className="text-gray-600 text-sm mb-2">This is an interactive demo of the Big Boys Game board layout.</p>
+            <div className="text-center mt-8 bg-gray-100 rounded-lg p-6 border border-gray-200 shadow-inner">
+              <div className="inline-block mb-4 px-3 py-1 bg-orange-500 text-white text-xs uppercase tracking-wider font-bold rounded-full">Demo Mode</div>
+              <h3 className="text-xl font-bold mb-2">Experience the Full Game by Creating an Account</h3>
+              <p className="text-gray-600 mb-4">This is just a demo of the Big Boys Game. Sign up to access all features including real stakes, multiplayer mode, and winnings withdrawal.</p>
               <div className="flex justify-center space-x-3">
                 <Button 
                   onClick={() => setLocation('/')}
@@ -1228,7 +1222,8 @@ export default function DemoPage() {
                 </Button>
                 <Button 
                   onClick={() => setLocation('/auth')}
-                  variant="outline"
+                  variant="default"
+                  className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
                 >
                   Sign In / Register
                 </Button>
@@ -1353,9 +1348,18 @@ export default function DemoPage() {
             </div>
           </div>
           
-          <div className="mt-4 pt-4 border-t border-gray-700 text-center text-gray-400 text-sm">
-            <p>&copy; 2025 Big Boys Game. All rights reserved.</p>
-            <p>For entertainment purposes only. 18+ only. Play responsibly.</p>
+          <div className="mt-4 pt-4 border-t border-gray-700 text-center">
+            <div className="flex justify-center mb-4">
+              <Button 
+                onClick={() => setLocation('/auth')}
+                variant="outline"
+                className="border-white text-white hover:bg-white/10"
+              >
+                Sign In / Create Account
+              </Button>
+            </div>
+            <p className="text-gray-400 text-sm">&copy; 2025 Big Boys Game. All rights reserved.</p>
+            <p className="text-gray-400 text-sm">For entertainment purposes only. 18+ only. Play responsibly.</p>
           </div>
         </div>
       </footer>
