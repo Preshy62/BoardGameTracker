@@ -20,17 +20,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: "2023-10-16" as any,
 });
 
-// Initialize session store
-import createMemoryStore from 'memorystore';
-const MemoryStore = createMemoryStore(session);
+// Import the PostgreSQL session store
+import { sessionStore } from "./storage";
 
+// Configure the session middleware
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "bbg-game-secret",
-  resave: true,
-  saveUninitialized: true,
-  store: new MemoryStore({
-    checkPeriod: 86400000 // prune expired entries every 24h
-  }),
+  resave: false,
+  saveUninitialized: false,
+  store: sessionStore,
   cookie: {
     httpOnly: true,
     secure: false, // Set to false for development to work with http

@@ -556,4 +556,478 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// DatabaseStorage implementation
+import { eq, and } from "drizzle-orm";
+import { db } from "./db";
+
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser & { avatarInitials: string }): Promise<User> {
+    const now = new Date();
+    const [user] = await db.insert(users).values({
+      ...insertUser,
+      walletBalance: 0,
+      createdAt: now,
+      isAdmin: false,
+      isActive: true,
+      countryCode: insertUser.countryCode || 'NG',
+      preferredCurrency: insertUser.preferredCurrency || 'NGN',
+      language: insertUser.language || 'en',
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      isVerified: false,
+      verificationLevel: 0,
+      bankDetails: null
+    }).returning();
+    
+    console.log('Created user in database:', user.id, user.username);
+    return user;
+  }
+
+  async updateUserBalance(userId: number, newBalance: number): Promise<User> {
+    const [updatedUser] = await db.update(users)
+      .set({ walletBalance: newBalance })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!updatedUser) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    return updatedUser;
+  }
+
+  async updateUserProfile(userId: number, updates: Partial<User>): Promise<User> {
+    const [updatedUser] = await db.update(users)
+      .set(updates)
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!updatedUser) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    return updatedUser;
+  }
+
+  async updateUserBankDetails(userId: number, bankDetails: any): Promise<User> {
+    const [updatedUser] = await db.update(users)
+      .set({ bankDetails })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!updatedUser) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    return updatedUser;
+  }
+
+  // Game operations
+  async getGame(id: number): Promise<Game | undefined> {
+    const [game] = await db.select().from(games).where(eq(games.id, id));
+    return game;
+  }
+
+  async getGames(): Promise<Game[]> {
+    return await db.select().from(games);
+  }
+
+  async getGamesByStatus(status: GameStatus): Promise<Game[]> {
+    return await db.select().from(games).where(eq(games.status, status));
+  }
+
+  async getAvailableGames(currency?: string, minStake?: number, maxStake?: number): Promise<Game[]> {
+    let query = db.select().from(games).where(eq(games.status, 'waiting'));
+    
+    if (currency) {
+      query = query.where(eq(games.currency, currency));
+    }
+    
+    if (minStake !== undefined && maxStake !== undefined) {
+      // Both min and max defined
+      query = query.where(
+        and(
+          eq(games.stake, minStake), 
+          eq(games.stake, maxStake)
+        )
+      );
+    } else if (minStake !== undefined) {
+      // Only min defined
+      query = query.where(eq(games.stake, minStake));
+    } else if (maxStake !== undefined) {
+      // Only max defined
+      query = query.where(eq(games.stake, maxStake));
+    }
+    
+    return await query;
+  }
+
+  async getUserGames(userId: number): Promise<Game[]> {
+    // First get all game IDs where user is a player
+    const playerGames = await db.select({ gameId: gamePlayers.gameId })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.userId, userId));
+    
+    if (playerGames.length === 0) {
+      return [];
+    }
+    
+    // Get all those games
+    const gameIds = playerGames.map(pg => pg.gameId);
+    return await db.select().from(games).where(
+      // Using SQL in syntax since we need an IN clause
+      games.id in gameIds
+    );
+  }
+
+  async createGame(insertGame: InsertGame): Promise<Game> {
+    const now = new Date();
+    const stakePot = insertGame.stake * insertGame.maxPlayers;
+    
+    const [game] = await db.insert(games).values({
+      ...insertGame,
+      status: "waiting",
+      createdAt: now,
+      endedAt: null,
+      winnerIds: null,
+      winningNumber: null,
+      voiceChatEnabled: insertGame.voiceChatEnabled || false,
+      textChatEnabled: true,
+      currency: insertGame.currency || 'NGN',
+      stakePot,
+      region: insertGame.region || null,
+      language: insertGame.language || 'en'
+    }).returning();
+    
+    return game;
+  }
+
+  async updateGame(gameId: number, updates: Partial<InsertGame>): Promise<Game> {
+    const [updatedGame] = await db.update(games)
+      .set(updates)
+      .where(eq(games.id, gameId))
+      .returning();
+      
+    if (!updatedGame) {
+      throw new Error(`Game with ID ${gameId} not found`);
+    }
+    
+    return updatedGame;
+  }
+
+  async updateGameStatus(gameId: number, status: GameStatus): Promise<Game> {
+    const [updatedGame] = await db.update(games)
+      .set({ status })
+      .where(eq(games.id, gameId))
+      .returning();
+      
+    if (!updatedGame) {
+      throw new Error(`Game with ID ${gameId} not found`);
+    }
+    
+    return updatedGame;
+  }
+
+  async updateGameWinners(gameId: number, winnerIds: number[], winningNumber: number): Promise<Game> {
+    const [updatedGame] = await db.update(games)
+      .set({ 
+        winnerIds, 
+        winningNumber,
+        status: "completed",
+        endedAt: new Date()
+      })
+      .where(eq(games.id, gameId))
+      .returning();
+      
+    if (!updatedGame) {
+      throw new Error(`Game with ID ${gameId} not found`);
+    }
+    
+    return updatedGame;
+  }
+
+  async endGame(gameId: number): Promise<Game> {
+    const [updatedGame] = await db.update(games)
+      .set({ 
+        status: "completed",
+        endedAt: new Date()
+      })
+      .where(eq(games.id, gameId))
+      .returning();
+      
+    if (!updatedGame) {
+      throw new Error(`Game with ID ${gameId} not found`);
+    }
+    
+    return updatedGame;
+  }
+
+  // GamePlayer operations
+  async getGamePlayer(gameId: number, userId: number): Promise<GamePlayer | undefined> {
+    const [gamePlayer] = await db.select()
+      .from(gamePlayers)
+      .where(
+        and(
+          eq(gamePlayers.gameId, gameId),
+          eq(gamePlayers.userId, userId)
+        )
+      );
+      
+    return gamePlayer;
+  }
+
+  async getGamePlayers(gameId: number): Promise<(GamePlayer & { user: User })[]> {
+    // This is more complex in SQL - need a join
+    const players = await db.select({
+      ...gamePlayers,
+      user: users
+    })
+    .from(gamePlayers)
+    .where(eq(gamePlayers.gameId, gameId))
+    .innerJoin(users, eq(gamePlayers.userId, users.id))
+    .orderBy(gamePlayers.turnOrder);
+    
+    return players.map(p => ({
+      ...p,
+      // Restructure to match expected interface
+      user: p.user
+    }));
+  }
+
+  async createGamePlayer(insertGamePlayer: InsertGamePlayer): Promise<GamePlayer> {
+    const now = new Date();
+    
+    const [gamePlayer] = await db.insert(gamePlayers).values({
+      ...insertGamePlayer,
+      rolledNumber: null,
+      hasRolled: false,
+      rollTimestamp: null,
+      isWinner: false,
+      winShare: null,
+      joinedAt: now,
+      lastActiveAt: now,
+      disconnectedAt: null,
+      isActive: true,
+      isReady: false,
+      isMuted: false,
+      voiceChatEnabled: false,
+      hasTimedOut: false,
+      timeoutCount: 0
+    }).returning();
+    
+    return gamePlayer;
+  }
+
+  async updateGamePlayerRoll(gamePlayerId: number, rolledNumber: number): Promise<GamePlayer> {
+    const now = new Date();
+    
+    const [updatedGamePlayer] = await db.update(gamePlayers)
+      .set({ 
+        rolledNumber, 
+        hasRolled: true,
+        rollTimestamp: now,
+        lastActiveAt: now
+      })
+      .where(eq(gamePlayers.id, gamePlayerId))
+      .returning();
+      
+    if (!updatedGamePlayer) {
+      throw new Error(`GamePlayer with ID ${gamePlayerId} not found`);
+    }
+    
+    return updatedGamePlayer;
+  }
+
+  async updateGamePlayerStatus(gamePlayerId: number, updates: Partial<GamePlayer>): Promise<GamePlayer> {
+    const [updatedGamePlayer] = await db.update(gamePlayers)
+      .set({ 
+        ...updates,
+        lastActiveAt: new Date()
+      })
+      .where(eq(gamePlayers.id, gamePlayerId))
+      .returning();
+      
+    if (!updatedGamePlayer) {
+      throw new Error(`GamePlayer with ID ${gamePlayerId} not found`);
+    }
+    
+    return updatedGamePlayer;
+  }
+
+  async markPlayerAsWinner(gameId: number, userId: number, winShare: number): Promise<GamePlayer> {
+    const [gamePlayer] = await db.select()
+      .from(gamePlayers)
+      .where(
+        and(
+          eq(gamePlayers.gameId, gameId),
+          eq(gamePlayers.userId, userId)
+        )
+      );
+      
+    if (!gamePlayer) {
+      throw new Error(`GamePlayer for game ${gameId} and user ${userId} not found`);
+    }
+    
+    const [updatedGamePlayer] = await db.update(gamePlayers)
+      .set({ 
+        isWinner: true,
+        winShare
+      })
+      .where(eq(gamePlayers.id, gamePlayer.id))
+      .returning();
+      
+    return updatedGamePlayer;
+  }
+
+  async getGameWinners(gameId: number): Promise<(GamePlayer & { user: User })[]> {
+    const players = await db.select({
+      ...gamePlayers,
+      user: users
+    })
+    .from(gamePlayers)
+    .where(
+      and(
+        eq(gamePlayers.gameId, gameId),
+        eq(gamePlayers.isWinner, true)
+      )
+    )
+    .innerJoin(users, eq(gamePlayers.userId, users.id));
+    
+    return players.map(p => ({
+      ...p,
+      user: p.user
+    }));
+  }
+
+  // Message operations
+  async getGameMessages(gameId: number): Promise<Message[]> {
+    return await db.select()
+      .from(messages)
+      .where(eq(messages.gameId, gameId))
+      .orderBy(messages.createdAt);
+  }
+
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const [message] = await db.insert(messages).values({
+      ...insertMessage,
+      createdAt: new Date()
+    }).returning();
+    
+    return message;
+  }
+
+  // Transaction operations
+  async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
+    const [transaction] = await db.insert(transactions).values({
+      ...insertTransaction,
+      createdAt: new Date(),
+      currency: insertTransaction.currency || 'NGN',
+      conversionRate: insertTransaction.conversionRate || null,
+      amountInUSD: insertTransaction.amountInUSD || null,
+      paymentMethod: insertTransaction.paymentMethod || null,
+      paymentDetails: insertTransaction.paymentDetails || null,
+      withdrawalStatus: insertTransaction.withdrawalStatus || null,
+      withdrawalMethod: insertTransaction.withdrawalMethod || null,
+      bankDetails: insertTransaction.bankDetails || null
+    }).returning();
+    
+    return transaction;
+  }
+
+  async getUserTransactions(userId: number): Promise<Transaction[]> {
+    return await db.select()
+      .from(transactions)
+      .where(eq(transactions.userId, userId))
+      .orderBy(transactions.createdAt, 'desc');
+  }
+
+  async getTransaction(transactionId: number): Promise<Transaction | undefined> {
+    const [transaction] = await db.select()
+      .from(transactions)
+      .where(eq(transactions.id, transactionId));
+      
+    return transaction;
+  }
+
+  async updateTransactionStatus(transactionId: number, status: string): Promise<Transaction> {
+    const [updatedTransaction] = await db.update(transactions)
+      .set({ status })
+      .where(eq(transactions.id, transactionId))
+      .returning();
+      
+    if (!updatedTransaction) {
+      throw new Error(`Transaction with ID ${transactionId} not found`);
+    }
+    
+    return updatedTransaction;
+  }
+
+  async createWithdrawalRequest(userId: number, amount: number, currency: string, bankDetails: any): Promise<Transaction> {
+    const reference = `WITHDRAWAL-${Date.now()}-${userId}`;
+    
+    const [transaction] = await db.insert(transactions).values({
+      userId,
+      amount,
+      type: "withdrawal",
+      status: "pending",
+      reference,
+      currency,
+      withdrawalStatus: "pending",
+      withdrawalMethod: "bank_transfer",
+      bankDetails
+    }).returning();
+    
+    return transaction;
+  }
+
+  async convertCurrency(amount: number, fromCurrency: string, toCurrency: string): Promise<{ amount: number, rate: number }> {
+    // In a real implementation, this would call an external API
+    // For now, we'll use a simple mapping
+    const rates: Record<string, number> = {
+      'NGN_USD': 0.00066, // 1 NGN = 0.00066 USD (approx)
+      'USD_NGN': 1515.00, // 1 USD = 1515 NGN (approx)
+      'GBP_NGN': 1950.00, // 1 GBP = 1950 NGN (approx)
+      'EUR_NGN': 1640.00, // 1 EUR = 1640 NGN (approx)
+    };
+    
+    const key = `${fromCurrency}_${toCurrency}`;
+    const rate = rates[key] || 1;
+    
+    return {
+      amount: amount * rate,
+      rate
+    };
+  }
+}
+
+// Create a session store for express-session
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
+import session from "express-session";
+
+const PostgresSessionStore = connectPg(session);
+
+// Create a session store instance
+export const sessionStore = new PostgresSessionStore({
+  pool,
+  tableName: 'session', // Default session table name
+  createTableIfMissing: true
+});
+
+// Use the database implementation
+export const storage = new DatabaseStorage();
