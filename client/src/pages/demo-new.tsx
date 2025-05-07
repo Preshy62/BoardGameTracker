@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
+import DemoVoiceChat from "@/components/game/DemoVoiceChat";
 
 // Stone Component with React-based animation
 interface DemoStoneProps {
@@ -158,6 +159,10 @@ export default function DemoPage() {
   
   // State for winner animation
   const [finalStoneSelected, setFinalStoneSelected] = useState<boolean>(false);
+  
+  // State for voice chat demo
+  const [showVoiceChat, setShowVoiceChat] = useState<boolean>(true);
+  const [voiceChatStake, setVoiceChatStake] = useState<number>(50000);
   
   // Refs
   const boardRef = useRef<HTMLDivElement>(null);
@@ -897,6 +902,11 @@ export default function DemoPage() {
           </div>
           
           <div className="p-6">
+            {/* Voice Chat */}
+            <div className="mb-4">
+              <DemoVoiceChat stakeAmount={50000} demo={true} />
+            </div>
+          
             {/* Game board with stones */}
             <div 
               ref={boardRef}
