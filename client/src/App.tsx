@@ -13,6 +13,7 @@ import Wallet from "@/pages/wallet";
 import Checkout from "@/pages/checkout";
 import VoiceChatTest from "@/pages/voice-chat-test";
 import VoiceRecorderTest from "@/pages/voice-recorder-test";
+import SimpleVoiceChat from "@/pages/simple-voice-chat";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/demo-new" component={DemoNewPage} />
       <Route path="/voice-chat-test" component={VoiceChatTest} />
       <Route path="/voice-recorder-test" component={VoiceRecorderTest} />
+      <Route path="/simple-voice-chat" component={SimpleVoiceChat} />
       
       {/* Protected routes - require login */}
       <ProtectedRoute path="/home" component={Home} />

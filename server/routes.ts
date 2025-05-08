@@ -718,6 +718,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
+        // Handle simple voice chat audio data
+        if (data.type === 'voice_data') {
+          const { roomId, peerId } = data.payload;
+          
+          // Find all peers in the room
+          const room = voiceRooms.get(roomId);
+          if (room) {
+            // Broadcast to all other peers in the room
+            room.forEach((peerWs, peerKey) => {
+              if (peerKey !== peerId && peerWs.readyState === WebSocket.OPEN) {
+                // Forward the audio data to other peers
+                peerWs.send(JSON.stringify(data));
+              }
+            });
+            console.log(`Voice chat: Broadcast voice data from ${peerId} to ${room.size - 1} peers`);
+          }
+          return;
+        }
+        
         // Handle voice chat leave
         if (data.type === 'voice_leave') {
           const { roomId, peerId } = data.payload;
