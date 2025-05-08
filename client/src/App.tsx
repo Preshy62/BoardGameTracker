@@ -14,6 +14,7 @@ import Checkout from "@/pages/checkout";
 import VoiceChatTest from "@/pages/voice-chat-test";
 import VoiceRecorderTest from "@/pages/voice-recorder-test";
 import SimpleVoiceChat from "@/pages/simple-voice-chat";
+import SoundTest from "@/pages/sound-test";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
