@@ -1,24 +1,110 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { speakText, useSpeech } from "@/lib/sounds";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SoundTest() {
+  const { toast } = useToast();
   const [volume, setVolume] = useState(1.0);
   const [pitch, setPitch] = useState(0.7);
   const [rate, setRate] = useState(0.9);
   const [text, setText] = useState("");
-  const { speak, announceNumber, announceWinner } = useSpeech();
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>("");
   
   // Game number sounds
   const gameNumbers = [1000, 500, 3355, 6624];
   
+  // Load available voices
+  useEffect(() => {
+    // Check if speech synthesis is available
+    if (!('speechSynthesis' in window)) {
+      toast({
+        title: "Speech Synthesis Not Supported",
+        description: "Your browser does not support speech synthesis",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Function to handle voices changed
+    const handleVoicesChanged = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      setVoices(availableVoices);
+      
+      // Try to find a male voice
+      const maleVoice = availableVoices.find(voice => 
+        voice.name.toLowerCase().includes('male') || 
+        voice.name.toLowerCase().includes('man')
+      );
+      
+      if (maleVoice) {
+        setSelectedVoice(maleVoice.name);
+      } else if (availableVoices.length > 0) {
+        setSelectedVoice(availableVoices[0].name);
+      }
+    };
+    
+    // Firefox loads voices synchronously
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      // Chrome & Safari load voices asynchronously
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+      }
+      
+      // Try to get voices immediately
+      handleVoicesChanged();
+    }
+    
+    // Clean up
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [toast]);
+  
+  // Function to speak text
+  const speak = (textToSpeak: string, options = {}) => {
+    if (!('speechSynthesis' in window)) return;
+    
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    // Create a new speech utterance
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    
+    // Set default options
+    const { volume: vol = volume, pitch: ptch = pitch, rate: rt = rate } = options as any;
+    
+    // Configure utterance
+    utterance.volume = vol;
+    utterance.rate = rt;
+    utterance.pitch = ptch;
+    
+    // Set selected voice if available
+    if (selectedVoice) {
+      const voice = voices.find(v => v.name === selectedVoice);
+      if (voice) {
+        utterance.voice = voice;
+      }
+    }
+    
+    // Speak the text
+    window.speechSynthesis.speak(utterance);
+    
+    toast({
+      title: "Speaking",
+      description: textToSpeak.length > 30 ? textToSpeak.substring(0, 30) + "..." : textToSpeak,
+    });
+  };
+  
   // Function to play system speech synthesis
   const playSpeech = () => {
     if (text.trim() === "") return;
-    speakText(text, { volume, pitch, rate });
+    speak(text, { volume, pitch, rate });
   };
   
   // Game-like announcement examples
@@ -34,11 +120,21 @@ export default function SoundTest() {
         speak("It's your turn to roll! Press the roll button now!", { pitch: 0.7, rate: 0.9 });
         break;
       case "winner":
-        announceWinner("Precious", 25000);
+        speak("Precious wins twenty five thousand Naira!", { pitch: 0.6, rate: 0.8 });
         break;
       default:
         break;
     }
+  };
+  
+  // Function to announce numbers
+  const announceNumber = (number: number) => {
+    let text = number.toString();
+    // For special numbers, add emphasis
+    if ([1000, 500, 3355, 6624].includes(number)) {
+      text = `Big ${text}!`;
+    }
+    speak(text, { pitch: 0.7, rate: 0.9 });
   };
   
   return (
@@ -47,7 +143,7 @@ export default function SoundTest() {
         <CardHeader>
           <CardTitle>Game Sound Test</CardTitle>
           <CardDescription>
-            Test voice announcements and game sound effects
+            Test voice announcements for the game using speech synthesis
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -90,6 +186,24 @@ export default function SoundTest() {
                   placeholder="Enter text to speak..."
                 />
               </div>
+              
+              {voices.length > 0 && (
+                <div>
+                  <Label htmlFor="voice-select">Voice</Label>
+                  <select
+                    id="voice-select"
+                    className="w-full p-2 border rounded-md mt-1"
+                    value={selectedVoice}
+                    onChange={(e) => setSelectedVoice(e.target.value)}
+                  >
+                    {voices.map(voice => (
+                      <option key={voice.name} value={voice.name}>
+                        {voice.name} ({voice.lang})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               
               <div className="space-y-4">
                 <div className="space-y-2">

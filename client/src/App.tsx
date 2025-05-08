@@ -32,6 +32,7 @@ function Router() {
       <Route path="/voice-chat-test" component={VoiceChatTest} />
       <Route path="/voice-recorder-test" component={VoiceRecorderTest} />
       <Route path="/simple-voice-chat" component={SimpleVoiceChat} />
+      <Route path="/sound-test" component={SoundTest} />
       
       {/* Protected routes - require login */}
       <ProtectedRoute path="/home" component={Home} />
