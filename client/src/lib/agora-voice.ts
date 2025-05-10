@@ -6,8 +6,8 @@ import AgoraRTC, {
 } from "agora-rtc-sdk-ng";
 
 // Define the Agora App ID - from environment variables
-// Use import.meta.env for Vite instead of process.env
-const AGORA_APP_ID = import.meta.env.AGORA_APP_ID as string;
+// For Vite, use VITE_ prefix for client-side environment variables
+const AGORA_APP_ID = import.meta.env.VITE_AGORA_APP_ID as string;
 
 // Define voice states
 export type VoiceConnectionState = 
