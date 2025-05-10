@@ -92,6 +92,7 @@ export async function sendVerificationEmail(email: string, token: string) {
   
   if (process.env.NODE_ENV !== 'production') {
     console.log('Verification email sent:', nodemailer.getTestMessageUrl(info));
+    console.log('DIRECT VERIFICATION LINK (for development testing):', verificationUrl);
   }
   
   return info;
@@ -135,6 +136,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   
   if (process.env.NODE_ENV !== 'production') {
     console.log('Password reset email sent:', nodemailer.getTestMessageUrl(info));
+    console.log('DIRECT RESET LINK (for development testing):', resetUrl);
   }
   
   return info;

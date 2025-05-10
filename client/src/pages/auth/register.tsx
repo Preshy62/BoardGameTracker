@@ -164,6 +164,13 @@ export default function Register() {
                 <li>Click the verification link in the email</li>
                 <li>Return to this site to login after verification</li>
               </ol>
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-sm">
+                <p className="font-medium text-amber-800">Development Mode Notice</p>
+                <p className="text-amber-700 mt-1">
+                  In development mode, emails are captured by Ethereal instead of being sent to your actual email.
+                  Check the server console logs to find the verification link.
+                </p>
+              </div>
             </div>
             
             <div className="flex flex-col space-y-3 mt-4">
