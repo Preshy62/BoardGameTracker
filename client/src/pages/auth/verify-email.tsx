@@ -39,6 +39,7 @@ export default function VerifyEmail() {
           setMessage(errorData.message || "Email verification failed. The link may be expired or invalid.");
         }
       } catch (error) {
+        console.error("Verification error:", error);
         setStatus("error");
         setMessage("An error occurred while verifying your email. Please try again later.");
       }

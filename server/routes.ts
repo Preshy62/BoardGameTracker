@@ -283,11 +283,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Email verification route
-  app.get("/api/verify-email/:token", async (req, res) => {
+  // Email verification routes - both GET (for link clicks) and POST (for API calls)
+  const handleEmailVerification = async (token: string, res: any) => {
     try {
-      const { token } = req.params;
-      
       // Find user with this verification token
       const users = await db.select().from(schema.users).where(eq(schema.users.verificationToken, token));
       
@@ -309,8 +307,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         verificationTokenExpires: null
       });
       
+      return user;
+    } catch (error) {
+      console.error("Email verification error:", error);
+      throw error;
+    }
+  };
+  
+  // GET route for email verification (clicked from email)
+  app.get("/api/verify-email/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      await handleEmailVerification(token, res);
       // Redirect to login page with success message
-      res.redirect(`/?verified=true`);
+      res.redirect(`/auth?verified=true`);
+    } catch (error) {
+      console.error("Email verification error:", error);
+      res.status(500).json({ message: "Failed to verify email" });
+    }
+  });
+  
+  // POST route for email verification (called from frontend)
+  app.post("/api/verify-email/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const user = await handleEmailVerification(token, res);
+      
+      if (!user) {
+        return; // Error already handled in the function
+      }
+      
+      res.status(200).json({ 
+        message: "Email verified successfully",
+        verified: true
+      });
     } catch (error) {
       console.error("Email verification error:", error);
       res.status(500).json({ message: "Failed to verify email" });

@@ -78,12 +78,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/register", registerData);
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      setLocation("/home");
+    onSuccess: (response: any) => {
+      // Don't set the user data in query client since they're not logged in yet
+      // Don't redirect to home
       toast({
         title: "Registration successful",
-        description: "Welcome to Big Boys Game!",
+        description: "Please check your email to verify your account.",
       });
     },
     onError: (error: Error) => {

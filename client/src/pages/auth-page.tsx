@@ -13,9 +13,21 @@ export default function AuthPage() {
   const [, setLocation] = useLocation();
   const [searchParams] = useState(new URLSearchParams(window.location.search));
   const isDemo = searchParams.get('demo') === 'true';
+  const isVerified = searchParams.get('verified') === 'true';
   const initialTab = searchParams.get('tab') === 'register' ? 'register' : 'login';
   const [activeTab, setActiveTab] = useState(initialTab);
   const { toast } = useToast();
+  
+  // Show notification when email is verified
+  useEffect(() => {
+    if (isVerified) {
+      toast({
+        title: "Email verified successfully",
+        description: "Your account is now active. You can log in with your credentials.",
+        variant: "default",
+      });
+    }
+  }, [isVerified, toast]);
   
   // If in demo mode, automatically log in with demo account
   useEffect(() => {
