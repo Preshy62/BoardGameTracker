@@ -17,6 +17,7 @@ import { Loader2, ArrowLeft, Users, DollarSign, MessageSquare, Clock } from "luc
 import Header from "@/components/layout/Header";
 import { Game, GamePlayer, Message } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils";
+import VoiceChat from "@/components/game/VoiceChat";
 
 interface GameResponse {
   game: Game;
@@ -174,6 +175,13 @@ export default function GamePage() {
                     </div>
                   )}
                 </div>
+                
+                {/* Voice Chat Component */}
+                <VoiceChat 
+                  game={game} 
+                  players={players} 
+                  currentUserId={user.id} 
+                />
               </CardContent>
             </Card>
           </div>
