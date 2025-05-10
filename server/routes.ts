@@ -11,6 +11,14 @@ import crypto from "crypto";
 import session from "express-session";
 import { paymentProcessing } from "./utils/payment";
 import Stripe from "stripe";
+import { addMinutes, addHours, addDays } from "date-fns";
+import { 
+  generateVerificationToken, 
+  generatePasswordResetToken, 
+  sendVerificationEmail, 
+  sendPasswordResetEmail, 
+  sendTransactionEmail 
+} from "./utils/email";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -130,27 +138,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(validatedData.password, saltRounds);
       
-      // Create user
+      // Generate verification token and expiry date
+      const verificationToken = generateVerificationToken();
+      const tokenExpiry = addDays(new Date(), 3); // Token valid for 3 days
+      
+      // Create user with verification token
       const user = await storage.createUser({
         ...validatedData,
         password: hashedPassword,
-        avatarInitials: validatedData.avatarInitials || validatedData.username.substring(0, 2).toUpperCase()
+        avatarInitials: validatedData.avatarInitials || validatedData.username.substring(0, 2).toUpperCase(),
+        verificationToken,
+        verificationTokenExpiry: tokenExpiry,
+        isVerified: false
       });
       
-      // Set session (login automatically after registration)
-      req.session.userId = user.id;
+      // Send verification email
+      await sendVerificationEmail(user.email, verificationToken);
       
-      // Save session explicitly
-      req.session.save((err) => {
-        if (err) {
-          console.error('Session save error:', err);
-          return res.status(500).json({ message: "Failed to create session" });
-        }
-        
-        // Remove password from response
-        const { password, ...userWithoutPassword } = user;
-        console.log('User registered and logged in:', user.id);
-        res.status(201).json(userWithoutPassword);
+      // Do NOT automatically log in the user until email is verified
+      // Remove password from response
+      const { password, verificationToken: token, ...userWithoutSensitiveInfo } = user;
+      console.log('User registered, verification email sent:', user.id);
+      res.status(201).json({ 
+        ...userWithoutSensitiveInfo,
+        message: "Registration successful. Please check your email to verify your account."
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -183,6 +194,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log('Password match successful');
+      
+      // Check if user has verified their email
+      if (!user.isVerified) {
+        console.log('User email not verified:', user.email);
+        
+        // Generate a new verification token if needed
+        if (!user.verificationToken || new Date() > (user.verificationTokenExpiry || new Date())) {
+          console.log('Generating new verification token');
+          const newVerificationToken = generateVerificationToken();
+          const newTokenExpiry = addDays(new Date(), 3);
+          
+          // Update user with new verification token
+          await storage.updateUserProfile(user.id, {
+            verificationToken: newVerificationToken,
+            verificationTokenExpiry: newTokenExpiry
+          });
+          
+          // Send new verification email
+          await sendVerificationEmail(user.email, newVerificationToken);
+        } else {
+          console.log('Resending existing verification token');
+          // Token is still valid, resend the existing one
+          await sendVerificationEmail(user.email, user.verificationToken as string);
+        }
+        
+        return res.status(403).json({ 
+          message: "Email not verified. A new verification link has been sent to your email."
+        });
+      }
+      
+      console.log('Email verified, proceeding with login');
       
       // Set session
       req.session.userId = user.id;
