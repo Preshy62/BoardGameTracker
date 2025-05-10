@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
 import { useToast } from "@/hooks/use-toast";
 import AdminHeader from "@/components/layout/AdminHeader";
+import VoiceChannelManager from "@/components/admin/VoiceChannelManager";
 import { 
   Card, 
   CardContent, 
@@ -182,6 +183,11 @@ export default function VoiceToolsPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+        
+        {/* Voice Channel Management */}
+        <div className="mt-6">
+          <VoiceChannelManager />
         </div>
       </main>
     </div>

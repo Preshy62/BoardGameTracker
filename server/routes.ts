@@ -262,6 +262,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin-only voice chat management endpoints
+  
+  // Get active voice channels
+  app.get("/api/admin/voice/channels", authenticateAdmin, async (req, res) => {
+    try {
+      // Get a list of active voice rooms
+      const activeRooms = Array.from(voiceRooms.keys()).map(roomId => {
+        const userCount = voiceRooms.get(roomId)?.size || 0;
+        return {
+          roomId,
+          userCount,
+          createdAt: new Date().toISOString() // We would ideally store this when creating the room
+        };
+      });
+      
+      res.json(activeRooms);
+    } catch (error) {
+      console.error('Error getting voice channels:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Close a voice channel
+  app.post("/api/admin/voice/channels/:roomId/close", authenticateAdmin, async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const room = voiceRooms.get(roomId);
+      
+      if (!room) {
+        return res.status(404).json({ message: "Voice channel not found" });
+      }
+      
+      // Notify all users in the room that it's being closed
+      room.forEach(clientWs => {
+        if (clientWs.readyState === WebSocket.OPEN) {
+          clientWs.send(JSON.stringify({
+            type: 'voice_channel_closed',
+            payload: {
+              roomId,
+              reason: 'Closed by administrator'
+            }
+          }));
+        }
+      });
+      
+      // Close all connections
+      room.forEach(clientWs => {
+        if (clientWs.readyState === WebSocket.OPEN) {
+          clientWs.close();
+        }
+      });
+      
+      // Remove the room
+      voiceRooms.delete(roomId);
+      
+      res.json({ message: "Voice channel closed successfully" });
+    } catch (error) {
+      console.error('Error closing voice channel:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
   // Game routes
   app.post("/api/games", authenticate, async (req, res) => {
     try {
