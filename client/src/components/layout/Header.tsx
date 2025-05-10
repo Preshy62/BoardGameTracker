@@ -5,6 +5,7 @@ import ProfileButton from "../ProfileButton";
 import { User } from "@shared/schema";
 import { Home, LayoutDashboard, LogOut, Wallet, User as UserIcon, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useAdmin } from "@/hooks/use-admin";
 
 interface HeaderProps {
   user: User;
@@ -13,6 +14,7 @@ interface HeaderProps {
 const Header = ({ user }: HeaderProps) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { logoutMutation } = useAuth();
+  const { isAdmin } = useAdmin();
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -41,7 +43,7 @@ const Header = ({ user }: HeaderProps) => {
               <Wallet className="h-4 w-4 mr-1" />
               Wallet
             </Link>
-            {user.isAdmin && (
+            {isAdmin && (
               <Link href="/admin" className="flex items-center text-white hover:text-secondary transition-colors">
                 <Shield className="h-4 w-4 mr-1" />
                 Admin
@@ -76,7 +78,7 @@ const Header = ({ user }: HeaderProps) => {
                   Wallet
                 </Link>
                 
-                {user.isAdmin && (
+                {isAdmin && (
                   <Link href="/admin" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                     <Shield className="h-4 w-4 mr-2" />
                     Admin Panel

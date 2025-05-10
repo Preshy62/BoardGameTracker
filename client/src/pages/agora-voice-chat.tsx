@@ -1,17 +1,39 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Mic, MicOff, VolumeX, Volume2 } from "lucide-react";
+import { Mic, MicOff, VolumeX, Volume2, Lock, ShieldAlert } from "lucide-react";
 import { useVoiceChat } from "@/hooks/use-voice-chat";
+import { useAuth } from "@/hooks/use-auth";
+import { useAdmin } from "@/hooks/use-admin";
+import { useToast } from "@/hooks/use-toast";
+
+// Access password - must match the one in voice-tools.tsx
+const ACCESS_PASSWORD = "admin123";
 
 export default function AgoraVoiceChat() {
   const [customChannelName, setCustomChannelName] = useState("test-channel");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [password, setPassword] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const { user } = useAuth();
+  const { isAdmin } = useAdmin();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  
+  // Check for stored authentication
+  useEffect(() => {
+    const storedAuth = localStorage.getItem("voice_tools_authenticated");
+    if (storedAuth === "true") {
+      setIsAuthenticated(true);
+    }
+  }, []);
   
   // For debugging - log available environment variables
   useEffect(() => {
@@ -31,6 +53,47 @@ export default function AgoraVoiceChat() {
       setErrorMessage('Missing Agora App ID. Please check environment variables.');
     }
   }, []);
+  
+  // Add redirect if not authenticated
+  useEffect(() => {
+    // Redirect non-admin, non-authenticated users to admin page
+    if (user && !isAuthenticated && !isAdmin) {
+      toast({
+        title: "Access Restricted",
+        description: "This page requires authentication. Redirecting to admin panel.",
+        variant: "destructive",
+      });
+      setLocation("/admin/voice-tools");
+    } else if (!user) {
+      // If not logged in, redirect to login
+      toast({
+        title: "Login Required",
+        description: "Please log in to access this page",
+        variant: "destructive",
+      });
+      setLocation("/auth");
+    }
+  }, [user, isAuthenticated, isAdmin, setLocation, toast]);
+  
+  // Verify entered password
+  const verifyPassword = () => {
+    if (password === ACCESS_PASSWORD) {
+      setIsAuthenticated(true);
+      setAuthError("");
+      localStorage.setItem("voice_tools_authenticated", "true");
+      toast({
+        title: "Access Granted",
+        description: "You now have access to the voice testing tools",
+      });
+    } else {
+      setAuthError("Incorrect password");
+      toast({
+        title: "Access Denied",
+        description: "The password you entered is incorrect",
+        variant: "destructive",
+      });
+    }
+  };
   
   const {
     isJoined,
