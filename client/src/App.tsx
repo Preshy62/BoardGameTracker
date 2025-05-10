@@ -16,6 +16,8 @@ import VoiceRecorderTest from "@/pages/voice-recorder-test";
 import SimpleVoiceChat from "@/pages/simple-voice-chat";
 import SoundTest from "@/pages/sound-test";
 import AgoraVoiceChat from "@/pages/agora-voice-chat";
+import AdminDashboard from "@/pages/admin/index";
+import AdminVoiceTools from "@/pages/admin/voice-tools";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -43,6 +45,10 @@ function Router() {
       <ProtectedRoute path="/game/:id" component={GamePage} />
       <ProtectedRoute path="/wallet" component={Wallet} />
       <ProtectedRoute path="/checkout/:amount" component={Checkout} />
+      
+      {/* Admin routes - hidden from regular navigation */}
+      <ProtectedRoute path="/admin" component={AdminDashboard} />
+      <ProtectedRoute path="/admin/voice-tools" component={AdminVoiceTools} />
       
       {/* Legacy routes - disabled */}
       
