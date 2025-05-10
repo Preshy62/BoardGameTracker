@@ -15,6 +15,7 @@ import VoiceChatTest from "@/pages/voice-chat-test";
 import VoiceRecorderTest from "@/pages/voice-recorder-test";
 import SimpleVoiceChat from "@/pages/simple-voice-chat";
 import SoundTest from "@/pages/sound-test";
+import AgoraVoiceChat from "@/pages/agora-voice-chat";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/voice-recorder-test" component={VoiceRecorderTest} />
       <Route path="/simple-voice-chat" component={SimpleVoiceChat} />
       <Route path="/sound-test" component={SoundTest} />
+      <Route path="/agora-voice-chat" component={AgoraVoiceChat} />
       
       {/* Protected routes - require login */}
       <ProtectedRoute path="/home" component={Home} />

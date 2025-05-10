@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -6,255 +6,45 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Mic, MicOff, VolumeX, Volume2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import AgoraRTC, { IAgoraRTCClient, IAgoraRTCRemoteUser, ILocalAudioTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
-
-// Define the Agora App ID - coming from environment variables
-const AGORA_APP_ID = process.env.AGORA_APP_ID as string;
+import { useVoiceChat } from "@/hooks/use-voice-chat";
 
 export default function AgoraVoiceChat() {
-  const { toast } = useToast();
-  const [channelName, setChannelName] = useState("test-channel");
-  const [isJoined, setIsJoined] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [users, setUsers] = useState<IAgoraRTCRemoteUser[]>([]);
+  const [customChannelName, setCustomChannelName] = useState("test-channel");
   const [isLoading, setIsLoading] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(0);
-  const [remoteAudioLevels, setRemoteAudioLevels] = useState<{[uid: string]: number}>({});
-  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState<string>("");
-  const [microphoneList, setMicrophoneList] = useState<MediaDeviceInfo[]>([]);
-
-  // References for Agora objects
-  const clientRef = useRef<IAgoraRTCClient | null>(null);
-  const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
-  const uidRef = useRef<string>(Math.random().toString(36).substring(2, 15));
   
-  // Audio level detection interval
-  const audioLevelIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const {
+    isJoined,
+    isMuted,
+    remoteUsers,
+    audioLevel,
+    remoteAudioLevels,
+    channelName,
+    microphoneList,
+    selectedMicrophoneId,
+    setSelectedMicrophoneId,
+    joinChannel,
+    leaveChannel,
+    toggleMute,
+    isSupported,
+  } = useVoiceChat();
 
-  // Initialize Agora client
-  useEffect(() => {
-    if (!AGORA_APP_ID) {
-      toast({
-        title: "Missing Agora App ID",
-        description: "Please provide an Agora App ID to enable voice chat",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Create Agora client
-    clientRef.current = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+  // Handler for joining a channel
+  const handleJoin = async () => {
+    if (!customChannelName) return;
     
-    // Listen for remote users joining
-    clientRef.current.on("user-published", async (user, mediaType) => {
-      await clientRef.current?.subscribe(user, mediaType);
-      
-      if (mediaType === "audio") {
-        // Play remote audio when user publishes
-        user.audioTrack?.play();
-        
-        // Update users list with new remote user
-        setUsers(prevUsers => {
-          if (!prevUsers.find(u => u.uid === user.uid)) {
-            return [...prevUsers, user];
-          }
-          return prevUsers;
-        });
-      }
+    setIsLoading(true);
+    await joinChannel({ 
+      channelName: customChannelName,
+      microphoneId: selectedMicrophoneId
     });
-    
-    // Listen for remote users leaving
-    clientRef.current.on("user-unpublished", (user, mediaType) => {
-      if (mediaType === "audio") {
-        // Remove user from users list when they leave
-        setUsers(prevUsers => prevUsers.filter(u => u.uid !== user.uid));
-      }
-    });
-    
-    return () => {
-      // Clean up when component unmounts
-      leaveChannel();
-    };
-  }, [toast]);
-  
-  // Get available microphones
-  useEffect(() => {
-    const getMicrophones = async () => {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const microphones = devices.filter(device => device.kind === "audioinput");
-        setMicrophoneList(microphones);
-        
-        // Set default microphone
-        if (microphones.length > 0 && !selectedMicrophoneId) {
-          setSelectedMicrophoneId(microphones[0].deviceId);
-        }
-      } catch (error) {
-        console.error("Error getting microphones:", error);
-      }
-    };
-    
-    getMicrophones();
-  }, [selectedMicrophoneId]);
-
-  // Join channel function
-  const joinChannel = async () => {
-    if (!AGORA_APP_ID) {
-      toast({
-        title: "Missing Agora App ID",
-        description: "Please provide an Agora App ID to enable voice chat",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!channelName) {
-      toast({
-        title: "Missing Channel Name",
-        description: "Please enter a channel name to join",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      setIsLoading(true);
-      
-      // Join the channel
-      await clientRef.current?.join(AGORA_APP_ID, channelName, null, uidRef.current);
-      
-      // Create and publish local audio track
-      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
-        microphoneId: selectedMicrophoneId || undefined,
-        encoderConfig: {
-          sampleRate: 48000,
-          stereo: false,
-          bitrate: 128
-        }
-      });
-      
-      localAudioTrackRef.current = audioTrack;
-      await clientRef.current?.publish([audioTrack]);
-      
-      // Set up audio level monitoring
-      startAudioLevelMonitoring();
-      
-      setIsJoined(true);
-      setIsMuted(false);
-      
-      toast({
-        title: "Joined Voice Channel",
-        description: `You have joined the channel: ${channelName}`
-      });
-    } catch (error) {
-      console.error("Error joining channel:", error);
-      toast({
-        title: "Join Failed",
-        description: `Failed to join channel: ${error instanceof Error ? error.message : "Unknown error"}`,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(false);
   };
 
-  // Leave channel function
-  const leaveChannel = async () => {
-    if (!isJoined) return;
-    
-    try {
-      setIsLoading(true);
-      
-      // Stop audio level monitoring
-      if (audioLevelIntervalRef.current) {
-        clearInterval(audioLevelIntervalRef.current);
-        audioLevelIntervalRef.current = null;
-      }
-      
-      // Release audio track and leave channel
-      localAudioTrackRef.current?.close();
-      await clientRef.current?.leave();
-      
-      localAudioTrackRef.current = null;
-      setIsJoined(false);
-      setUsers([]);
-      setAudioLevel(0);
-      setRemoteAudioLevels({});
-      
-      toast({
-        title: "Left Voice Channel",
-        description: `You have left the channel: ${channelName}`
-      });
-    } catch (error) {
-      console.error("Error leaving channel:", error);
-      toast({
-        title: "Leave Failed",
-        description: `Failed to leave channel: ${error instanceof Error ? error.message : "Unknown error"}`,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Toggle mute function
-  const toggleMute = async () => {
-    if (!localAudioTrackRef.current) return;
-    
-    try {
-      if (isMuted) {
-        // Unmute
-        await localAudioTrackRef.current.setEnabled(true);
-        setIsMuted(false);
-        
-        toast({
-          title: "Microphone Unmuted",
-          description: "Others can now hear you"
-        });
-      } else {
-        // Mute
-        await localAudioTrackRef.current.setEnabled(false);
-        setIsMuted(true);
-        
-        toast({
-          title: "Microphone Muted",
-          description: "Others cannot hear you now"
-        });
-      }
-    } catch (error) {
-      console.error("Error toggling mute:", error);
-      toast({
-        title: "Action Failed",
-        description: `Failed to ${isMuted ? "unmute" : "mute"}: ${error instanceof Error ? error.message : "Unknown error"}`,
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Start audio level monitoring
-  const startAudioLevelMonitoring = () => {
-    if (audioLevelIntervalRef.current) {
-      clearInterval(audioLevelIntervalRef.current);
-    }
-    
-    audioLevelIntervalRef.current = setInterval(() => {
-      // Monitor local audio level
-      if (localAudioTrackRef.current) {
-        const level = localAudioTrackRef.current.getVolumeLevel();
-        setAudioLevel(level);
-      }
-      
-      // Monitor remote users' audio levels
-      const newRemoteAudioLevels: {[uid: string]: number} = {};
-      users.forEach(user => {
-        if (user.audioTrack) {
-          const level = user.audioTrack.getVolumeLevel();
-          newRemoteAudioLevels[user.uid as string] = level;
-        }
-      });
-      setRemoteAudioLevels(newRemoteAudioLevels);
-    }, 100);
+  // Handler for leaving a channel
+  const handleLeave = async () => {
+    setIsLoading(true);
+    await leaveChannel();
+    setIsLoading(false);
   };
 
   return (
@@ -267,6 +57,12 @@ export default function AgoraVoiceChat() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {!isSupported() && (
+            <div className="p-4 border border-red-300 bg-red-50 text-red-700 rounded-md mb-4">
+              Your browser doesn't support voice chat features. Please try using Chrome, Firefox, or Edge.
+            </div>
+          )}
+          
           {!isJoined ? (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -274,9 +70,9 @@ export default function AgoraVoiceChat() {
                 <Input
                   id="channel-name"
                   placeholder="Enter channel name"
-                  value={channelName}
-                  onChange={(e) => setChannelName(e.target.value)}
-                  disabled={isLoading}
+                  value={customChannelName}
+                  onChange={(e) => setCustomChannelName(e.target.value)}
+                  disabled={isLoading || !isSupported()}
                 />
               </div>
               
@@ -288,7 +84,7 @@ export default function AgoraVoiceChat() {
                     className="w-full p-2 border rounded-md"
                     value={selectedMicrophoneId}
                     onChange={(e) => setSelectedMicrophoneId(e.target.value)}
-                    disabled={isLoading || isJoined}
+                    disabled={isLoading || isJoined || !isSupported()}
                   >
                     {microphoneList.map((mic) => (
                       <option key={mic.deviceId} value={mic.deviceId}>
@@ -301,8 +97,8 @@ export default function AgoraVoiceChat() {
               
               <Button 
                 className="w-full" 
-                onClick={joinChannel} 
-                disabled={isLoading || !channelName}
+                onClick={handleJoin} 
+                disabled={isLoading || !customChannelName || !isSupported()}
               >
                 {isLoading ? "Joining..." : "Join Voice Channel"}
               </Button>
@@ -313,7 +109,7 @@ export default function AgoraVoiceChat() {
                 <div>
                   <h3 className="text-lg font-medium">Channel: {channelName}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {users.length} other {users.length === 1 ? "player" : "players"} in channel
+                    {remoteUsers.length} other {remoteUsers.length === 1 ? "player" : "players"} in channel
                   </p>
                 </div>
                 <Badge variant={isMuted ? "destructive" : "outline"}>
@@ -348,11 +144,11 @@ export default function AgoraVoiceChat() {
                 </div>
               </div>
               
-              {users.length > 0 && (
+              {remoteUsers.length > 0 && (
                 <div className="space-y-2">
                   <Label>Other Players</Label>
                   <div className="space-y-3">
-                    {users.map((user) => (
+                    {remoteUsers.map((user) => (
                       <div key={user.uid} className="flex items-center gap-4">
                         <Avatar>
                           <AvatarFallback>
@@ -382,7 +178,7 @@ export default function AgoraVoiceChat() {
               <Button 
                 className="w-full" 
                 variant="destructive" 
-                onClick={leaveChannel}
+                onClick={handleLeave}
                 disabled={isLoading}
               >
                 {isLoading ? "Leaving..." : "Leave Voice Channel"}
