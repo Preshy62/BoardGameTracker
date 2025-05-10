@@ -59,7 +59,7 @@ export async function sendVerificationEmail(email: string, token: string) {
   }
   
   const appUrl = process.env.APP_URL || 'http://localhost:5000';
-  const verificationUrl = `${appUrl}/api/verify-email/${token}`;
+  const verificationUrl = `${appUrl}/verify-email/${token}`;
   
   const info = await transporter.sendMail({
     from: '"Big Boys Game" <verification@bigboysgame.com>',
