@@ -31,6 +31,7 @@ export default function GamePage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const [chatMessage, setChatMessage] = useState('');
 
   const {
     data,
@@ -43,6 +44,42 @@ export default function GamePage() {
     retry: 1, // Only retry once to avoid excessive requests if the game doesn't exist
     retryDelay: 1000 // Wait 1 second between retries
   });
+  
+  // Function to send a chat message
+  const sendMessage = async () => {
+    if (!chatMessage.trim() || !user) return;
+    
+    try {
+      const response = await fetch(`/api/games/${gameId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: chatMessage,
+          gameId,
+          userId: user.id,
+          type: 'chat'
+        })
+      });
+      
+      if (response.ok) {
+        setChatMessage('');
+        refetch(); // Refresh game data to show new message
+        
+        // Optional: Add real-time functionality with WebSockets later
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to send message');
+      }
+    } catch (error) {
+      toast({
+        title: 'Failed to Send Message',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        variant: 'destructive'
+      });
+    }
+  };
 
   useEffect(() => {
     if (error) {
@@ -276,10 +313,19 @@ export default function GamePage() {
                     placeholder="Type your message..."
                     className="flex-grow rounded-l-md border border-gray-300 focus:border-primary focus:outline-none px-4 py-2"
                     disabled={game.status === 'completed'}
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
                   />
                   <Button
                     className="rounded-l-none"
-                    disabled={game.status === 'completed'}
+                    disabled={game.status === 'completed' || !chatMessage.trim()}
+                    onClick={sendMessage}
                   >
                     Send
                   </Button>
