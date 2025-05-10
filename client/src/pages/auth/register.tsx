@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { CheckCircle } from "lucide-react";
 import { 
   Card, 
   CardContent, 
@@ -111,6 +112,18 @@ export default function Register() {
       ...data,
       avatarInitials,
       timeZone,
+    }, {
+      onSuccess: () => {
+        setRegistrationSuccess(true);
+        toast({
+          title: "Registration successful",
+          description: "Please check your email to verify your account.",
+        });
+      },
+      onError: (error: Error) => {
+        // Error handling is already in the mutation
+        console.error("Registration error:", error);
+      }
     });
   };
 
@@ -123,6 +136,21 @@ export default function Register() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {registrationSuccess && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-start">
+              <div className="bg-green-100 p-2 rounded-full mr-3 mt-1">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-green-800">Registration successful!</h3>
+                <p className="text-sm text-green-700 mt-1">
+                  A verification email has been sent to your inbox. Please check your email and click the verification link to activate your account.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs 
