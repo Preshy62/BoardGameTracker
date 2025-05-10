@@ -148,8 +148,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
         avatarInitials: validatedData.avatarInitials || validatedData.username.substring(0, 2).toUpperCase(),
         verificationToken,
-        verificationTokenExpiry: tokenExpiry,
-        isVerified: false
+        verificationTokenExpires: tokenExpiry,
+        emailVerified: false
       });
       
       // Send verification email
@@ -196,11 +196,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Password match successful');
       
       // Check if user has verified their email
-      if (!user.isVerified) {
+      if (!user.emailVerified) {
         console.log('User email not verified:', user.email);
         
         // Generate a new verification token if needed
-        if (!user.verificationToken || new Date() > (user.verificationTokenExpiry || new Date())) {
+        if (!user.verificationToken || new Date() > (user.verificationTokenExpires || new Date())) {
           console.log('Generating new verification token');
           const newVerificationToken = generateVerificationToken();
           const newTokenExpiry = addDays(new Date(), 3);
@@ -208,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Update user with new verification token
           await storage.updateUserProfile(user.id, {
             verificationToken: newVerificationToken,
-            verificationTokenExpiry: newTokenExpiry
+            verificationTokenExpires: newTokenExpiry
           });
           
           // Send new verification email
@@ -277,6 +277,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching user:', error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Email verification route
+  app.get("/api/verify-email/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      // Find user with this verification token
+      const users = await db.select().from(schema.users).where(eq(schema.users.verificationToken, token));
+      
+      if (users.length === 0) {
+        return res.status(400).json({ message: "Invalid or expired verification token" });
+      }
+      
+      const user = users[0];
+      
+      // Check if token has expired
+      if (user.verificationTokenExpires && new Date() > user.verificationTokenExpires) {
+        return res.status(400).json({ message: "Verification token has expired" });
+      }
+      
+      // Update user to mark email as verified
+      await storage.updateUserProfile(user.id, {
+        emailVerified: true,
+        verificationToken: null,
+        verificationTokenExpires: null
+      });
+      
+      // Redirect to login page with success message
+      res.redirect(`/?verified=true`);
+    } catch (error) {
+      console.error("Email verification error:", error);
+      res.status(500).json({ message: "Failed to verify email" });
+    }
+  });
+  
+  // Resend verification email
+  app.post("/api/resend-verification", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Don't reveal if email exists for security
+        return res.status(200).json({ message: "If your email is registered, you will receive a verification link" });
+      }
+      
+      // Check if already verified
+      if (user.emailVerified) {
+        return res.status(400).json({ message: "Email is already verified" });
+      }
+      
+      // Generate new verification token
+      const verificationToken = generateVerificationToken();
+      const tokenExpiry = addDays(new Date(), 3);
+      
+      // Update user with new token
+      await storage.updateUserProfile(user.id, {
+        verificationToken,
+        verificationTokenExpires: tokenExpiry
+      });
+      
+      // Send verification email
+      await sendVerificationEmail(user.email, verificationToken);
+      
+      res.status(200).json({ message: "Verification email has been sent" });
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ message: "Failed to resend verification email" });
+    }
+  });
+  
+  // Forgot password - request reset
+  app.post("/api/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Don't reveal if email exists for security
+        return res.status(200).json({ message: "If your email is registered, you will receive a password reset link" });
+      }
+      
+      // Generate password reset token
+      const resetToken = generatePasswordResetToken();
+      const tokenExpiry = addHours(new Date(), 1); // Token valid for 1 hour
+      
+      // Update user with reset token
+      await storage.updateUserProfile(user.id, {
+        resetPasswordToken: resetToken,
+        resetPasswordTokenExpires: tokenExpiry
+      });
+      
+      // Send password reset email
+      await sendPasswordResetEmail(user.email, resetToken);
+      
+      res.status(200).json({ message: "Password reset email has been sent" });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Failed to process password reset request" });
+    }
+  });
+  
+  // Reset password with token
+  app.post("/api/reset-password/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const { password } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({ message: "Password is required" });
+      }
+      
+      // Find user with this reset token
+      const users = await db.select().from(schema.users).where(eq(schema.users.resetPasswordToken, token));
+      
+      if (users.length === 0) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+      
+      const user = users[0];
+      
+      // Check if token has expired
+      if (user.resetPasswordTokenExpires && new Date() > user.resetPasswordTokenExpires) {
+        return res.status(400).json({ message: "Password reset token has expired" });
+      }
+      
+      // Hash new password
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      
+      // Update user password and clear reset token
+      await storage.updateUserProfile(user.id, {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordTokenExpires: null
+      });
+      
+      res.status(200).json({ message: "Password has been reset successfully" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
   
