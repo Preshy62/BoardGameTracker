@@ -147,6 +147,52 @@ export default function AgoraVoiceChat() {
     setIsLoading(false);
   };
 
+  // If user is not authenticated and not an admin, show password form
+  if (user && !isAuthenticated && !isAdmin) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-md">
+        <Card className="border-2 border-primary/20">
+          <CardHeader className="space-y-1">
+            <div className="flex items-center justify-center mb-2 text-primary">
+              <ShieldAlert className="h-12 w-12" />
+            </div>
+            <CardTitle className="text-2xl text-center">Restricted Access</CardTitle>
+            <CardDescription className="text-center">
+              This page contains developer tools for voice chat testing
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">Access Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                {authError && (
+                  <p className="text-sm text-red-500">{authError}</p>
+                )}
+              </div>
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setLocation("/admin/voice-tools")}>
+                  Back to Admin
+                </Button>
+                <Button onClick={verifyPassword}>
+                  <Lock className="h-4 w-4 mr-2" />
+                  Verify
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Normal page content for authenticated users
   return (
     <div className="container mx-auto py-10">
       <Card className="max-w-lg mx-auto">
