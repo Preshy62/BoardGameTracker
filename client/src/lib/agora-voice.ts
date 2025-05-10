@@ -102,19 +102,34 @@ class AgoraVoiceManager {
   
   // Join a voice channel
   public async join(options: VoiceChatOptions): Promise<boolean> {
-    if (!this.client || !AGORA_APP_ID) {
-      this.emitEvent("error", new Error("Client not initialized or missing Agora App ID"));
-      return false;
-    }
-    
-    if (this.connectionState === "connected") {
-      // Already connected, leave current channel first
-      await this.leave();
-    }
-    
     try {
+      // More detailed App ID validation
+      if (!AGORA_APP_ID) {
+        throw new Error("Missing Agora App ID in environment variables");
+      }
+      
+      console.log('Trying to join with App ID of length:', AGORA_APP_ID.length);
+      // Check for whitespace or special characters that could cause issues
+      if (AGORA_APP_ID.trim() !== AGORA_APP_ID || !/^[a-zA-Z0-9]+$/.test(AGORA_APP_ID)) {
+        throw new Error("Invalid Agora App ID format: Contains whitespace or special characters");
+      }
+      
+      if (!this.client) {
+        throw new Error("Agora client not initialized");
+      }
+      
+      if (this.connectionState === "connected") {
+        // Already connected, leave current channel first
+        await this.leave();
+      }
+      
       this.channelName = options.channelName;
       this.uid = options.uid || Math.random().toString(36).substring(2, 15);
+      
+      console.log('Connecting to Agora with:');
+      console.log('- App ID length:', AGORA_APP_ID.length);
+      console.log('- Channel:', this.channelName);
+      console.log('- UID:', this.uid);
       
       // Join the channel
       await this.client.join(AGORA_APP_ID, this.channelName, null, this.uid);
@@ -134,6 +149,7 @@ class AgoraVoiceManager {
       
       return true;
     } catch (error) {
+      console.error('Agora join error:', error);
       this.emitEvent("error", error);
       return false;
     }

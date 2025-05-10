@@ -7,8 +7,12 @@ import {
   IAgoraRTCRemoteUser
 } from '@/lib/agora-voice';
 
-// For debugging - check if the Agora App ID is available
-console.log('Agora App ID available:', !!import.meta.env.VITE_AGORA_APP_ID);
+// For debugging - log more details about the App ID
+const appId = import.meta.env.VITE_AGORA_APP_ID as string;
+console.log('Agora App ID available:', !!appId);
+console.log('Agora App ID length:', appId?.length);
+console.log('Agora App ID first/last char:', appId ? `${appId.charAt(0)}...${appId.charAt(appId.length-1)}` : 'N/A');
+console.log('Agora App ID format valid:', appId ? /^[a-zA-Z0-9]{1,100}$/.test(appId) : false);
 
 export interface VoiceChatOptions {
   channelName: string;
