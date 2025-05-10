@@ -18,6 +18,8 @@ import SoundTest from "@/pages/sound-test";
 import AgoraVoiceChat from "@/pages/agora-voice-chat";
 import AdminDashboard from "@/pages/admin/index";
 import AdminVoiceTools from "@/pages/admin/voice-tools";
+import VerifyEmail from "@/pages/auth/verify-email";
+import ResetPassword from "@/pages/auth/reset-password";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -31,6 +33,8 @@ function Router() {
       {/* Public routes */}
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/verify-email/:token" component={VerifyEmail} />
+      <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/demo-new" component={DemoNewPage} />
       <Route path="/voice-chat-test" component={VoiceChatTest} />
       <Route path="/voice-recorder-test" component={VoiceRecorderTest} />

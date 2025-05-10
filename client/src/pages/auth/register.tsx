@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Card, 
   CardContent, 
@@ -80,7 +81,9 @@ const languages = [
 
 export default function Register() {
   const { registerMutation } = useAuth();
+  const { toast } = useToast();
   const [registrationStep, setRegistrationStep] = useState<"basic" | "international">("basic");
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
