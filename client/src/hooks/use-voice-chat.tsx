@@ -7,6 +7,9 @@ import {
   IAgoraRTCRemoteUser
 } from '@/lib/agora-voice';
 
+// For debugging - check if the Agora App ID is available
+console.log('Agora App ID available:', !!import.meta.env.VITE_AGORA_APP_ID);
+
 export interface VoiceChatOptions {
   channelName: string;
   uid?: string;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,26 @@ import { useVoiceChat } from "@/hooks/use-voice-chat";
 export default function AgoraVoiceChat() {
   const [customChannelName, setCustomChannelName] = useState("test-channel");
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // For debugging - log available environment variables
+  useEffect(() => {
+    console.log('Environment check:');
+    console.log('VITE_AGORA_APP_ID available:', !!import.meta.env.VITE_AGORA_APP_ID);
+    
+    // Check if the App ID seems valid (should be a string of letters and numbers)
+    if (import.meta.env.VITE_AGORA_APP_ID) {
+      const appId = import.meta.env.VITE_AGORA_APP_ID as string;
+      const isValidFormat = /^[a-zA-Z0-9]{1,100}$/.test(appId);
+      console.log('VITE_AGORA_APP_ID format valid:', isValidFormat);
+      
+      if (!isValidFormat) {
+        setErrorMessage(`App ID format appears invalid. It should contain only letters and numbers.`);
+      }
+    } else {
+      setErrorMessage('Missing Agora App ID. Please check environment variables.');
+    }
+  }, []);
   
   const {
     isJoined,
@@ -32,12 +52,29 @@ export default function AgoraVoiceChat() {
   const handleJoin = async () => {
     if (!customChannelName) return;
     
+    // Clear previous errors
+    setErrorMessage(null);
     setIsLoading(true);
-    await joinChannel({ 
-      channelName: customChannelName,
-      microphoneId: selectedMicrophoneId
-    });
-    setIsLoading(false);
+    
+    try {
+      const success = await joinChannel({ 
+        channelName: customChannelName,
+        microphoneId: selectedMicrophoneId,
+        onError: (error) => {
+          console.error('Join error:', error);
+          setErrorMessage(`Failed to join: ${error.message || 'Unknown error'}`);
+        }
+      });
+      
+      if (!success) {
+        setErrorMessage('Failed to join the voice channel. Please check the console for more details.');
+      }
+    } catch (error) {
+      console.error('Join channel error:', error);
+      setErrorMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handler for leaving a channel
@@ -60,6 +97,13 @@ export default function AgoraVoiceChat() {
           {!isSupported() && (
             <div className="p-4 border border-red-300 bg-red-50 text-red-700 rounded-md mb-4">
               Your browser doesn't support voice chat features. Please try using Chrome, Firefox, or Edge.
+            </div>
+          )}
+          
+          {errorMessage && (
+            <div className="p-4 border border-red-300 bg-red-50 text-red-700 rounded-md mb-4">
+              <p className="font-medium">Error:</p>
+              <p>{errorMessage}</p>
             </div>
           )}
           
