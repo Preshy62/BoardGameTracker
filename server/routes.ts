@@ -5,6 +5,7 @@ import WebSocket from "ws";
 import { storage } from "./storage";
 import { GameManager } from "./game/gameManager";
 import { z } from "zod";
+import * as schema from "@shared/schema";
 import { insertUserSchema, insertGameSchema, insertMessageSchema, InsertGame } from "@shared/schema";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
@@ -19,6 +20,8 @@ import {
   sendPasswordResetEmail, 
   sendTransactionEmail 
 } from "./utils/email";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error('Missing required Stripe secret: STRIPE_SECRET_KEY');
