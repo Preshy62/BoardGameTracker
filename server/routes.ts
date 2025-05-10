@@ -78,6 +78,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
   
+  // Admin usernames - must match the ones in the client's useAdmin hook
+  const ADMIN_USERNAMES = ["admin", "precious"];
+  
+  // Admin authentication middleware 
+  const authenticateAdmin = async (req: Request, res: Response, next: Function) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    // Get user by ID
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    // Check if user is admin
+    if (!ADMIN_USERNAMES.includes(user.username)) {
+      return res.status(403).json({ message: "Forbidden - Admin access required" });
+    }
+    
+    // User is admin
+    next();
+  };
+  
   // Type guard to ensure userId exists
   function ensureUserIdExists(userId: number | undefined): asserts userId is number {
     if (userId === undefined) {
@@ -210,6 +234,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(userWithoutPassword);
     } catch (error) {
       console.error('Error fetching user:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Admin check endpoint
+  app.get("/api/admin/check", authenticate, async (req, res) => {
+    try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if user is in the admin list
+      const isAdmin = ADMIN_USERNAMES.includes(user.username);
+      
+      res.json({ 
+        isAdmin,
+        username: user.username 
+      });
+    } catch (error) {
+      console.error('Admin check error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
