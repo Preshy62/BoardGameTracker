@@ -14,6 +14,18 @@ export const users = pgTable("users", {
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   
+  // Email verification fields
+  emailVerified: boolean("email_verified").default(false),
+  verificationToken: text("verification_token"),
+  verificationTokenExpires: timestamp("verification_token_expires"),
+  
+  // Password reset fields
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordTokenExpires: timestamp("reset_password_token_expires"),
+  
+  // Email notification preferences
+  emailNotifications: jsonb("email_notifications").default('{"transactions": true, "marketing": true, "gameUpdates": true}'),
+  
   // Location and internationalization
   countryCode: text("country_code").default('NG'),
   preferredCurrency: text("preferred_currency").default('NGN'),
