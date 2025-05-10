@@ -58,7 +58,9 @@ export async function sendVerificationEmail(email: string, token: string) {
     await initializeEmailTransport();
   }
   
+  // Use frontend route for email verification
   const appUrl = process.env.APP_URL || 'http://localhost:5000';
+  // Frontend route - user clicks this in email
   const verificationUrl = `${appUrl}/verify-email/${token}`;
   
   const info = await transporter.sendMail({
