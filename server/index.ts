@@ -3,6 +3,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
+import { runMigration } from "./utils/migrate-email-fields";
+import { initializeEmailTransport } from "./utils/email";
 
 // Create a demo user function for testing
 async function createDemoUser() {
@@ -76,37 +78,62 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Create demo user for testing
-  await createDemoUser();
-  
-  const server = await registerRoutes(app);
+  let server: any;
+  try {
+    // Run database migrations
+    log("Running database migrations...", "startup");
+    const migrationResult = await runMigration();
+    if (!migrationResult) {
+      log("Database migration failed. Proceeding with caution...", "startup");
+    }
+    
+    // Initialize email transport
+    log("Initializing email transport...", "startup");
+    await initializeEmailTransport();
+    
+    // Create demo user for testing
+    await createDemoUser();
+    
+    server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
-  });
+      res.status(status).json({ message });
+      throw err;
+    });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+    // importantly only setup vite in development and after
+    // setting up all the other routes so the catch-all route
+    // doesn't interfere with the other routes
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+  } catch (error) {
+    log(`Failed to start the server: ${error}`, "startup");
+    console.error("Server startup error:", error);
+    process.exit(1);
+    return;
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  // Start the server
+  if (server) {
+    // ALWAYS serve the app on port 5000
+    // this serves both the API and the client.
+    // It is the only port that is not firewalled.
+    const port = 5000;
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`serving on port ${port}`);
+    });
+  } else {
+    log("Failed to initialize server", "startup");
+    process.exit(1);
+  }
 })();
