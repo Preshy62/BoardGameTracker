@@ -350,6 +350,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Send a message in a game
+  app.post("/api/games/:id/messages", authenticate, async (req, res) => {
+    try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
+      const gameId = parseInt(req.params.id);
+      
+      // Validate game ID
+      if (isNaN(gameId)) {
+        return res.status(400).json({ message: "Invalid game ID" });
+      }
+      
+      // Get game to check if it exists and if user is a player
+      const game = await storage.getGame(gameId);
+      if (!game) {
+        return res.status(404).json({ message: "Game not found" });
+      }
+      
+      // Check if user is a player in this game
+      const gamePlayer = await storage.getGamePlayer(gameId, req.session.userId);
+      if (!gamePlayer) {
+        return res.status(403).json({ message: "You are not a player in this game" });
+      }
+      
+      // Validate message data
+      const messageSchema = z.object({
+        content: z.string().min(1).max(500),
+        type: z.enum(["chat", "system"]).default("chat"),
+      });
+      
+      const validatedData = messageSchema.parse({
+        content: req.body.content,
+        type: req.body.type || "chat",
+      });
+      
+      // Create message
+      const message = await storage.createMessage({
+        gameId,
+        userId: req.session.userId,
+        content: validatedData.content,
+        type: validatedData.type,
+      });
+      
+      // Broadcast message to all game players via WebSocket (if implemented)
+      // This would go here...
+      
+      // Return the created message
+      res.status(201).json(message);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error('Message creation error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
   app.post("/api/games/:id/join", authenticate, async (req, res) => {
     try {
       // Since authenticate middleware ensures userId exists, we can safely use the type guard
