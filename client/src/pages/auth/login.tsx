@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,7 +8,8 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle
+  CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import {
   Form,
@@ -19,7 +21,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, Loader2, Mail } from "lucide-react";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -28,18 +41,56 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+// Additional schema for verification and password reset
+const emailSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+const resetPasswordSchema = z.object({
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type EmailFormValues = z.infer<typeof emailSchema>;
+type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+
 interface LoginProps {
   isDemo?: boolean;
 }
 
 export default function Login({ isDemo = false }: LoginProps) {
-  const { loginMutation } = useAuth();
+  const { loginMutation, resendVerificationMutation, forgotPasswordMutation } = useAuth();
+  const [emailVerificationOpen, setEmailVerificationOpen] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [lastAttemptedEmail, setLastAttemptedEmail] = useState("");
+  const [lastAttemptedUsername, setLastAttemptedUsername] = useState("");
+  const [loginErrorType, setLoginErrorType] = useState<"verification" | "credentials" | null>(null);
 
+  // For login form
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: "",
       password: "",
+    },
+  });
+  
+  // For email verification form
+  const emailVerificationForm = useForm<EmailFormValues>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+  
+  // For forgot password form
+  const forgotPasswordForm = useForm<EmailFormValues>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: {
+      email: "",
     },
   });
 
