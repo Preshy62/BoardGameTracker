@@ -284,21 +284,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Email verification routes - both GET (for link clicks) and POST (for API calls)
-  const handleEmailVerification = async (token: string, res: any) => {
+  const handleEmailVerification = async (token: string, res: Response) => {
     try {
+      console.log("Handling email verification for token:", token);
+      
       // Find user with this verification token
       const users = await db.select().from(schema.users).where(eq(schema.users.verificationToken, token));
       
+      console.log("Users found with token:", users.length);
+      
       if (users.length === 0) {
-        return res.status(400).json({ message: "Invalid or expired verification token" });
+        console.log("No user found with verification token:", token);
+        res.status(400).json({ message: "Invalid or expired verification token" });
+        return null;
       }
       
       const user = users[0];
+      console.log("User found:", user.id, user.username);
       
       // Check if token has expired
       if (user.verificationTokenExpires && new Date() > user.verificationTokenExpires) {
-        return res.status(400).json({ message: "Verification token has expired" });
+        console.log("Token expired at:", user.verificationTokenExpires);
+        res.status(400).json({ message: "Verification token has expired" });
+        return null;
       }
+      
+      console.log("Updating user to mark email as verified");
       
       // Update user to mark email as verified
       await storage.updateUserProfile(user.id, {
@@ -307,6 +318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         verificationTokenExpires: null
       });
       
+      console.log("User successfully verified:", user.id);
       return user;
     } catch (error) {
       console.error("Email verification error:", error);
@@ -317,12 +329,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET route for email verification (clicked from email)
   app.get("/api/verify-email/:token", async (req, res) => {
     try {
+      console.log("GET verification request for token:", req.params.token);
       const { token } = req.params;
-      await handleEmailVerification(token, res);
+      const user = await handleEmailVerification(token, res);
+      
+      if (!user) {
+        console.log("Verification failed in GET route - already handled");
+        return; // Error already handled in the function
+      }
+      
       // Redirect to login page with success message
+      console.log("Redirecting to login page with verified flag");
       res.redirect(`/auth?verified=true`);
     } catch (error) {
-      console.error("Email verification error:", error);
+      console.error("Email verification error in GET route:", error);
       res.status(500).json({ message: "Failed to verify email" });
     }
   });
@@ -330,19 +350,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST route for email verification (called from frontend)
   app.post("/api/verify-email/:token", async (req, res) => {
     try {
+      console.log("POST verification request for token:", req.params.token);
       const { token } = req.params;
       const user = await handleEmailVerification(token, res);
       
       if (!user) {
+        console.log("Verification failed in POST route - already handled");
         return; // Error already handled in the function
       }
       
+      console.log("Sending success response for verified email");
       res.status(200).json({ 
         message: "Email verified successfully",
         verified: true
       });
     } catch (error) {
-      console.error("Email verification error:", error);
+      console.error("Email verification error in POST route:", error);
       res.status(500).json({ message: "Failed to verify email" });
     }
   });

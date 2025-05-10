@@ -21,10 +21,17 @@ export default function VerifyEmail() {
       return;
     }
     
+    // Add debugging
+    console.log("Verification token extracted:", token);
+    
     // Send the token to the server for verification
     const verifyEmail = async () => {
       try {
+        console.log("Sending verification request to:", `/api/verify-email/${token}`);
+        
         const response = await apiRequest("POST", `/api/verify-email/${token}`);
+        console.log("Verification response:", response.status);
+        
         if (response.ok) {
           setStatus("success");
           setMessage("Your email has been successfully verified! You can now log in to your account.");
@@ -35,6 +42,7 @@ export default function VerifyEmail() {
           });
         } else {
           const errorData = await response.json();
+          console.error("Verification error response:", errorData);
           setStatus("error");
           setMessage(errorData.message || "Email verification failed. The link may be expired or invalid.");
         }
