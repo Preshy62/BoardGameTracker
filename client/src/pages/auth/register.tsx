@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, ArrowRight } from "lucide-react";
+import { useLocation } from "wouter";
 import { 
   Card, 
   CardContent, 
@@ -81,10 +82,12 @@ const languages = [
 ];
 
 export default function Register() {
-  const { registerMutation } = useAuth();
+  const { registerMutation, resendVerificationMutation } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [registrationStep, setRegistrationStep] = useState<"basic" | "international">("basic");
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -114,6 +117,8 @@ export default function Register() {
       timeZone,
     }, {
       onSuccess: () => {
+        // Save the email for potential resend verification
+        setRegisteredEmail(data.email);
         setRegistrationSuccess(true);
         toast({
           title: "Registration successful",
@@ -136,22 +141,58 @@ export default function Register() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {registrationSuccess && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-start">
-              <div className="bg-green-100 p-2 rounded-full mr-3 mt-1">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-medium text-green-800">Registration successful!</h3>
-                <p className="text-sm text-green-700 mt-1">
-                  A verification email has been sent to your inbox. Please check your email and click the verification link to activate your account.
-                </p>
+        {registrationSuccess ? (
+          <div className="space-y-6">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-start">
+                <div className="bg-green-100 p-2 rounded-full mr-3 mt-1">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-green-800">Registration successful!</h3>
+                  <p className="text-sm text-green-700 mt-1">
+                    A verification email has been sent to <strong>{registeredEmail}</strong>. Please check your email and click the verification link to activate your account.
+                  </p>
+                </div>
               </div>
             </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h3 className="font-medium mb-2">Next steps:</h3>
+              <ol className="list-decimal pl-5 space-y-2 text-sm">
+                <li>Check your email inbox (and spam folder)</li>
+                <li>Click the verification link in the email</li>
+                <li>Return to this site to login after verification</li>
+              </ol>
+            </div>
+            
+            <div className="flex flex-col space-y-3 mt-4">
+              <Button 
+                type="button"
+                onClick={() => navigate('/auth?tab=login')}
+                className="w-full bg-secondary hover:bg-secondary-dark text-primary font-bold flex items-center justify-center"
+              >
+                Go to Login
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              
+              {/* Add resend verification button */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (registeredEmail) {
+                    resendVerificationMutation.mutate({ email: registeredEmail });
+                  }
+                }}
+              >
+                Resend verification email
+              </Button>
+            </div>
           </div>
-        )}
-        <Form {...form}>
+        ) : (
+          <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs 
               defaultValue={registrationStep} 
@@ -345,6 +386,7 @@ export default function Register() {
             </Tabs>
           </form>
         </Form>
+        )}
       </CardContent>
     </Card>
   );
