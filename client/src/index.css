@@ -132,6 +132,42 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
 }
 
+/* Stone animations for different states */
+.stone-roll-animation {
+  animation: dice-roll 0.35s linear infinite;
+}
+
+.stone-hover-glow {
+  animation: stone-hover-glow 1.5s infinite alternate ease-in-out;
+}
+
+.stone-pulse {
+  animation: stone-pulse 1.5s infinite alternate ease-in-out;
+}
+
+.stone-super-special {
+  position: relative;
+}
+
+.stone-super-special::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, gold, transparent, gold, transparent, gold);
+  background-size: 400% 400%;
+  animation: super-stone-bg 3s ease infinite;
+  z-index: -1;
+}
+
+.stone-your-turn {
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.5);
+  animation: your-turn-pulse 2s infinite alternate;
+}
+
 /* Enhanced Game UI Animations */
 @keyframes winner-stone {
   0% {
@@ -197,6 +233,34 @@
   100% { 
     background-position: 0% 50%;
   }
+}
+
+@keyframes dice-roll {
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  33% { transform: rotateX(120deg) rotateY(40deg); }
+  66% { transform: rotateX(240deg) rotateY(80deg); }
+  100% { transform: rotateX(360deg) rotateY(120deg); }
+}
+
+@keyframes stone-hover-glow {
+  0% { box-shadow: 0 0 5px 2px rgba(255, 215, 0, 0.3); }
+  100% { box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.6); }
+}
+
+@keyframes stone-pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+
+@keyframes super-stone-bg {
+  0% { background-position: 0% 50%; opacity: 0.6; }
+  50% { background-position: 100% 50%; opacity: 0.8; }
+  100% { background-position: 0% 50%; opacity: 0.6; }
+}
+
+@keyframes your-turn-pulse {
+  0% { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3); }
+  100% { box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.7); }
 }
 
 @keyframes confetti-fall {
