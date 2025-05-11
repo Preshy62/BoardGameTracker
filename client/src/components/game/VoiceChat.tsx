@@ -21,6 +21,7 @@ interface VoiceChatProps {
 export default function VoiceChat({ game, players, currentUserId }: VoiceChatProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showVoiceChat, setShowVoiceChat] = useState(false);
+  const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
   
   const {
     isJoined,
@@ -40,28 +41,44 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
   const isVoiceChatEligible = game.stake >= HIGH_STAKES_THRESHOLD || game.voiceChatEnabled === true;
   const isPremiumGame = game.stake >= PREMIUM_STAKES_THRESHOLD;
   
-  // Join voice channel when component mounts if eligible
+  // Auto-join for premium games
   useEffect(() => {
-    // Only enable voice chat for higher stakes
-    if (!isVoiceChatEligible) return;
+    // Only enable voice chat for eligible games and don't retry if already attempted
+    if (!isVoiceChatEligible || autoJoinAttempted) return;
     
     // Generate channel name from game ID
     const channelName = `game-${game.id}`;
     
-    if (game.status === "in_progress" && !isJoined) {
-      joinChannel({ 
-        channelName,
-        uid: currentUserId.toString()
-      });
-    }
+    const attemptAutoJoin = async () => {
+      // Auto-join for premium games
+      if (isPremiumGame && game.status === "in_progress" && !isJoined) {
+        try {
+          setIsLoading(true);
+          await joinChannel({ 
+            channelName,
+            uid: currentUserId.toString()
+          });
+          setShowVoiceChat(true); // Auto-expand voice chat section
+        } catch (error) {
+          console.error("Auto-join voice chat failed:", error);
+        } finally {
+          setIsLoading(false);
+          setAutoJoinAttempted(true);
+        }
+      }
+    };
+    
+    // Attempt to auto-join after a short delay to allow other components to initialize
+    const timer = setTimeout(attemptAutoJoin, 1500);
     
     return () => {
+      clearTimeout(timer);
       // Leave channel when component unmounts
       if (isJoined) {
         leaveChannel();
       }
     };
-  }, [game.id, game.status, isJoined, isVoiceChatEligible]);
+  }, [game.id, game.status, isPremiumGame, isVoiceChatEligible, isJoined, autoJoinAttempted, joinChannel, leaveChannel, currentUserId]);
   
   // For lower stake games, don't show voice chat
   if (!isVoiceChatEligible) {
