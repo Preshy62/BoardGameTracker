@@ -9,7 +9,7 @@ import GamePage from "@/pages/game";
 import Dashboard from "@/pages/dashboard";
 import DemoNewPage from "@/pages/demo-new";
 import LandingPage from "@/pages/landing-page";
-import Wallet from "@/pages/wallet";
+import WalletPage from "@/pages/wallet-page";
 import Checkout from "@/pages/checkout";
 import VoiceChatTest from "@/pages/voice-chat-test";
 import VoiceRecorderTest from "@/pages/voice-recorder-test";
@@ -53,7 +53,7 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/create-game" component={CreateGame} />
       <ProtectedRoute path="/game/:id" component={GamePage} />
-      <ProtectedRoute path="/wallet" component={Wallet} />
+      <ProtectedRoute path="/wallet" component={WalletPage} />
       <ProtectedRoute path="/checkout/:amount" component={Checkout} />
       
       {/* Admin routes - hidden from regular navigation */}
