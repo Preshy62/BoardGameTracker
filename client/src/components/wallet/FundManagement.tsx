@@ -271,25 +271,11 @@ export default function FundManagement({ user }: FundManagementProps) {
                 Pay with Stripe
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
-              
-              <Button 
-                onClick={() => demoDepositMutation.mutate()}
-                disabled={demoDepositMutation.isPending}
-                variant="outline"
-                className="border-green-600 text-green-700 hover:bg-green-50"
-              >
-                {demoDepositMutation.isPending ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CreditCard className="h-4 w-4 mr-2" />
-                )}
-                Add Demo Funds (₦100,000)
-              </Button>
             </div>
             
             <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800 flex items-start">
               <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <p>Choose Quick Deposit for simulated payments, Pay with Stripe for real card processing, or Add Demo Funds for testing.</p>
+              <p>Choose Quick Deposit for simulated payments or Pay with Stripe for real card processing. Demo funds are available on the demo page.</p>
             </div>
           </TabsContent>
           
