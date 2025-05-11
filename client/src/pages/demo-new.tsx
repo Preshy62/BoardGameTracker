@@ -1108,7 +1108,7 @@ export default function DemoPage() {
                     .filter(stone => stone.row === row)
                     .map((stone) => (
                       <div id={`stone-${stone.index}`} key={`stone-${stone.row}-${stone.index}`}>
-                        <DemoStone 
+                        <GameStone 
                           number={stone.number}
                           isSpecial={!!stone.isSpecial}
                           isSuper={!!stone.isSuper}
@@ -1143,9 +1143,12 @@ export default function DemoPage() {
                 </div>
               ))}
               
-              {/* Money in the Bank Label */}
-              <div className="border-t-2 border-yellow-600 mt-4 pt-2 text-center">
-                <h4 className="text-white text-sm uppercase tracking-wider">MONEY IN THE BANK</h4>
+              {/* Enhanced Money in the Bank Label */}
+              <div className="border-t-2 border-yellow-500 mt-4 pt-3 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bank-money-bg-animation opacity-20"></div>
+                <h4 className="text-yellow-400 text-sm uppercase tracking-wider font-bold relative z-10 bank-label-animation">
+                  <span className="mr-1">💰</span> MONEY IN THE BANK <span className="ml-1">💰</span>
+                </h4>
               </div>
               
               {/* Dice moving along the board path - for backward compatibility */}
@@ -1168,9 +1171,49 @@ export default function DemoPage() {
               className="p-3 rounded-lg mb-6" 
               style={{ backgroundColor: '#0F172A', border: '2px solid #FFC107' }}
             >
-              <div className="text-center mb-4">
-                <h4 className="text-white text-sm uppercase tracking-wider mb-1">MONEY IN THE BANK</h4>
-                <p className="font-mono font-bold text-3xl" style={{ color: '#FFC107' }}>₦95,000</p>
+              {/* Enhanced Money in the Bank display */}
+              <div className="mb-6 text-center relative overflow-hidden rounded-xl shadow-2xl border-2 border-yellow-500">
+                {/* Animated background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-900 via-yellow-700 to-yellow-900 bank-money-bg-animation opacity-75"></div>
+                
+                {/* Glow effect */}
+                <div className="absolute inset-0 bank-money-glow-animation opacity-30"></div>
+                
+                {/* Content */}
+                <div className="relative z-10 py-4 px-6">
+                  <div className="flex items-center justify-center mb-1">
+                    <svg className="w-5 h-5 mr-2 text-yellow-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" />
+                      <path d="M12 6v8l4 2" />
+                    </svg>
+                    <h3 className="text-yellow-300 text-sm font-medium uppercase tracking-wider">Money in the Bank</h3>
+                  </div>
+                  
+                  <div className="bank-amount-pulse-animation text-4xl font-bold text-white font-mono tracking-wide mb-2">
+                    ₦95,000
+                  </div>
+                  
+                  <div className="flex items-center justify-center space-x-3 text-xs text-yellow-200 opacity-75">
+                    <div className="flex items-center">
+                      <svg className="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      <span>4 Players</span>
+                    </div>
+                    <div className="flex items-center">
+                      <svg className="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <span>Round 1</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               {/* Game Action Button */}
