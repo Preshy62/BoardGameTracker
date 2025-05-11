@@ -34,8 +34,11 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
     isSupported,
   } = useVoiceChat();
   
-  // Check if voice chat should be enabled based on stake amount
-  const isVoiceChatEligible = game.stake >= 20000;
+  // Check if voice chat should be enabled based on stake amount or explicit flag
+  const HIGH_STAKES_THRESHOLD = 20000;
+  const PREMIUM_STAKES_THRESHOLD = 50000;
+  const isVoiceChatEligible = game.stake >= HIGH_STAKES_THRESHOLD || game.voiceChatEnabled === true;
+  const isPremiumGame = game.stake >= PREMIUM_STAKES_THRESHOLD;
   
   // Join voice channel when component mounts if eligible
   useEffect(() => {

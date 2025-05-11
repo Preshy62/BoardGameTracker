@@ -650,11 +650,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Added playWithBot flag to validatedData');
       }
       
-      // Set voice chat enabled based on stake amount (>=20,000) or explicit request
-      const isHighStakeGame = validatedData.stake >= 20000;
+      // Set voice chat enabled based on stake amount (≥₦20,000) or explicit request
+      const HIGH_STAKES_THRESHOLD = 20000;
+      const isHighStakeGame = validatedData.stake >= HIGH_STAKES_THRESHOLD;
       const voiceChatEnabled = typeof req.body.voiceChatEnabled === 'boolean' 
         ? req.body.voiceChatEnabled 
         : isHighStakeGame; // Enable by default for high-stake games
+        
+      console.log('Voice chat', voiceChatEnabled ? 'enabled' : 'disabled', 'for game:', 
+        isHighStakeGame ? 'high-stakes game' : 'user preference');
       
       // Cast to proper type using intersection to avoid type errors
       const gameData = {
