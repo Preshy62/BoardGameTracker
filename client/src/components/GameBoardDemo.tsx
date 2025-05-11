@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import GameStone from "@/components/game/GameStone";
 import GameBall from "@/components/game/GameBall";
-import CircuitBall from "@/components/game/CircuitBall";
 
 interface GameBoardDemoProps {
   rollingStoneNumber: number | null;
@@ -14,7 +13,6 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
   const [isBoardShaking, setIsBoardShaking] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const [showBall, setShowBall] = useState(false);
-  const [showCircuitBall, setShowCircuitBall] = useState(true);
   const [currentPathIndex, setCurrentPathIndex] = useState(0);
   const [finalStoneSelected, setFinalStoneSelected] = useState<number | null>(null);
   
@@ -42,11 +40,8 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
       // Set rolling flag
       setIsRolling(true);
       
-      // Hide circuit ball during stone rolling
-      setShowCircuitBall(false);
-      
-      // Show the rolling ball IMMEDIATELY - this is critical
-      setShowBall(true);
+      // Set ball visible globally for fallback visibility
+      document.documentElement.style.setProperty('--ball-visible', '1');
       
       // Start a new rolling animation
       const simulateEnhancedRolling = async () => {
@@ -55,6 +50,9 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         // Shake the board briefly when roll begins
         setIsBoardShaking(true);
         setTimeout(() => setIsBoardShaking(false), 1500);
+        
+        // Show the rolling ball
+        setShowBall(true);
         
         // Get all possible stone numbers in a specific order for better visual flow
         const allStoneNumbers = [
@@ -80,7 +78,11 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           
           console.log("Demo: Setting initial ball position to center:", {centerTop, centerLeft});
           
-          // Update ball position directly - critical for visibility
+          // Set variables for initial position
+          document.documentElement.style.setProperty('--ball-top', `${centerTop}px`);
+          document.documentElement.style.setProperty('--ball-left', `${centerLeft}px`);
+          
+          // Update React state as well
           setBallPosition({
             top: centerTop,
             left: centerLeft,
@@ -88,10 +90,8 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         } else {
           console.error("Demo: Board ref not available!");
           // Fallback position
-          setBallPosition({
-            top: 250, // Estimated center
-            left: 400, // Estimated center
-          });
+          document.documentElement.style.setProperty('--ball-top', '50%');
+          document.documentElement.style.setProperty('--ball-left', '50%');
         }
         
         // Wait a moment for the ball to appear at center
@@ -142,7 +142,11 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
             
             console.log(`Demo: Ball moving to stone ${currentStone} at position: `, {newTop, newLeft});
             
-            // Update ball position directly - crucial for visibility
+            // Set variables for ball position
+            document.documentElement.style.setProperty('--ball-top', `${newTop}px`);
+            document.documentElement.style.setProperty('--ball-left', `${newLeft}px`);
+            
+            // Update React state as well - this is crucial for directly styled elements
             setBallPosition({
               top: newTop,
               left: newLeft,
@@ -187,7 +191,10 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           console.log(`Demo: Ball final landing on stone ${rollingStoneNumber} at:`, {finalTop, finalLeft});
           
           // Make a more dramatic movement to the final position (slightly above target)
-          // Update ball position with slight elevation for dramatic effect
+          document.documentElement.style.setProperty('--ball-top', `${finalTop - 10}px`);
+          document.documentElement.style.setProperty('--ball-left', `${finalLeft}px`);
+          
+          // Update React state as well
           setBallPosition({
             top: finalTop - 10, // Slightly higher for dramatic effect
             left: finalLeft,
@@ -195,6 +202,10 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           
           // After a very short delay, settle into the final position
           setTimeout(() => {
+            document.documentElement.style.setProperty('--ball-top', `${finalTop}px`);
+            document.documentElement.style.setProperty('--ball-left', `${finalLeft}px`);
+            
+            // Update React state as well
             setBallPosition({
               top: finalTop,
               left: finalLeft,
@@ -228,8 +239,7 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         // Keep ball visible for a moment after landing
         setTimeout(() => {
           setShowBall(false);
-          // Show circuit ball again after rolling animation completes
-          setShowCircuitBall(true);
+          document.documentElement.style.setProperty('--ball-visible', '0');
         }, 3000);
       };
       
@@ -275,15 +285,6 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           showTrails={true}
         />
         
-        {/* CircuitBall that continuously moves around the board perimeter */}
-        <CircuitBall
-          visible={showCircuitBall && !isRolling}
-          boardRef={boardRef}
-          color="gold"
-          size="sm"
-          speed="medium"
-        />
-        
         {/* Game Stone Layout - Top Row */}
         <div className="flex justify-between mb-6">
           <GameStone id="demo-stone-29" number={29} isRolling={isStoneRolling(29)} isWinner={isWinningStone(29)} size="sm" />
@@ -295,182 +296,34 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         
         {/* Game Stone Layout - Second Row */}
         <div className="flex justify-between mb-6">
-          <GameStone 
-            id="demo-stone-13" 
-            number={13} 
-            isRolling={isStoneRolling(13)} 
-            isWinner={isWinningStone(13)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-64" 
-            number={64} 
-            isRolling={isStoneRolling(64)} 
-            isWinner={isWinningStone(64)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-1000" 
-            number={1000} 
-            isRolling={isStoneRolling(1000)} 
-            isWinner={isWinningStone(1000)} 
-            isSpecial 
-            size="md" 
-            isYourTurn={!isRolling}
-            animationType="pulse"
-          />
-          <GameStone 
-            id="demo-stone-101" 
-            number={101} 
-            isRolling={isStoneRolling(101)} 
-            isWinner={isWinningStone(101)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-4" 
-            number={4} 
-            isRolling={isStoneRolling(4)} 
-            isWinner={isWinningStone(4)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
+          <GameStone id="demo-stone-13" number={13} isRolling={isStoneRolling(13)} isWinner={isWinningStone(13)} size="sm" />
+          <GameStone id="demo-stone-64" number={64} isRolling={isStoneRolling(64)} isWinner={isWinningStone(64)} size="sm" />
+          <GameStone id="demo-stone-1000" number={1000} isRolling={isStoneRolling(1000)} isWinner={isWinningStone(1000)} isSpecial size="md" />
+          <GameStone id="demo-stone-101" number={101} isRolling={isStoneRolling(101)} isWinner={isWinningStone(101)} size="sm" />
+          <GameStone id="demo-stone-4" number={4} isRolling={isStoneRolling(4)} isWinner={isWinningStone(4)} size="sm" />
         </div>
         
         {/* Game Stone Layout - Third Row (with super stones) */}
         <div className="flex justify-between items-center mb-6">
-          <GameStone 
-            id="demo-stone-3355" 
-            number={3355} 
-            isRolling={isStoneRolling(3355)} 
-            isWinner={isWinningStone(3355)} 
-            isSuper 
-            size="md" 
-            isYourTurn={!isRolling}
-            animationType="bounce"
-          />
-          <GameStone 
-            id="demo-stone-65" 
-            number={65} 
-            isRolling={isStoneRolling(65)} 
-            isWinner={isWinningStone(65)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-12" 
-            number={12} 
-            isRolling={isStoneRolling(12)} 
-            isWinner={isWinningStone(12)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-22" 
-            number={22} 
-            isRolling={isStoneRolling(22)} 
-            isWinner={isWinningStone(22)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-9" 
-            number={9} 
-            isRolling={isStoneRolling(9)} 
-            isWinner={isWinningStone(9)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-6624" 
-            number={6624} 
-            isRolling={isStoneRolling(6624)} 
-            isWinner={isWinningStone(6624)} 
-            isSuper 
-            size="md" 
-            isYourTurn={!isRolling}
-            animationType="spin"
-          />
-          <GameStone 
-            id="demo-stone-44" 
-            number={44} 
-            isRolling={isStoneRolling(44)} 
-            isWinner={isWinningStone(44)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
+          <GameStone id="demo-stone-3355" number={3355} isRolling={isStoneRolling(3355)} isWinner={isWinningStone(3355)} isSuper size="md" />
+          <GameStone id="demo-stone-65" number={65} isRolling={isStoneRolling(65)} isWinner={isWinningStone(65)} size="sm" />
+          <GameStone id="demo-stone-12" number={12} isRolling={isStoneRolling(12)} isWinner={isWinningStone(12)} size="sm" />
+          <GameStone id="demo-stone-22" number={22} isRolling={isStoneRolling(22)} isWinner={isWinningStone(22)} size="sm" />
+          <GameStone id="demo-stone-9" number={9} isRolling={isStoneRolling(9)} isWinner={isWinningStone(9)} size="sm" />
+          <GameStone id="demo-stone-6624" number={6624} isRolling={isStoneRolling(6624)} isWinner={isWinningStone(6624)} isSuper size="md" />
+          <GameStone id="demo-stone-44" number={44} isRolling={isStoneRolling(44)} isWinner={isWinningStone(44)} size="sm" />
         </div>
         
         {/* Game Stone Layout - Fourth Row (with 500 special stone) */}
         <div className="flex justify-between mb-6">
-          <GameStone 
-            id="demo-stone-28" 
-            number={28} 
-            isRolling={isStoneRolling(28)} 
-            isWinner={isWinningStone(28)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-21" 
-            number={21} 
-            isRolling={isStoneRolling(21)} 
-            isWinner={isWinningStone(21)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-105" 
-            number={105} 
-            isRolling={isStoneRolling(105)} 
-            isWinner={isWinningStone(105)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-500" 
-            number={500} 
-            isRolling={isStoneRolling(500)} 
-            isWinner={isWinningStone(500)} 
-            isSpecial 
-            size="md" 
-            isYourTurn={!isRolling}
-            animationType="glow"
-          />
-          <GameStone 
-            id="demo-stone-99" 
-            number={99} 
-            isRolling={isStoneRolling(99)} 
-            isWinner={isWinningStone(99)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-20" 
-            number={20} 
-            isRolling={isStoneRolling(20)} 
-            isWinner={isWinningStone(20)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-82" 
-            number={82} 
-            isRolling={isStoneRolling(82)} 
-            isWinner={isWinningStone(82)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
-          <GameStone 
-            id="demo-stone-3" 
-            number={3} 
-            isRolling={isStoneRolling(3)} 
-            isWinner={isWinningStone(3)} 
-            size="sm" 
-            isYourTurn={!isRolling}
-          />
+          <GameStone id="demo-stone-28" number={28} isRolling={isStoneRolling(28)} isWinner={isWinningStone(28)} size="sm" />
+          <GameStone id="demo-stone-21" number={21} isRolling={isStoneRolling(21)} isWinner={isWinningStone(21)} size="sm" />
+          <GameStone id="demo-stone-105" number={105} isRolling={isStoneRolling(105)} isWinner={isWinningStone(105)} size="sm" />
+          <GameStone id="demo-stone-500" number={500} isRolling={isStoneRolling(500)} isWinner={isWinningStone(500)} isSpecial size="md" />
+          <GameStone id="demo-stone-99" number={99} isRolling={isStoneRolling(99)} isWinner={isWinningStone(99)} size="sm" />
+          <GameStone id="demo-stone-20" number={20} isRolling={isStoneRolling(20)} isWinner={isWinningStone(20)} size="sm" />
+          <GameStone id="demo-stone-82" number={82} isRolling={isStoneRolling(82)} isWinner={isWinningStone(82)} size="sm" />
+          <GameStone id="demo-stone-3" number={3} isRolling={isStoneRolling(3)} isWinner={isWinningStone(3)} size="sm" />
         </div>
         
         {/* Game Stone Layout - Fifth Row */}

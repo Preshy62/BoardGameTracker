@@ -42,6 +42,7 @@ const TurnIndicator = ({
       <div className="flex items-center space-x-3">
         {currentPlayer && (
           <Avatar className={cn("h-8 w-8 border-2", isYourTurn ? "border-green-500" : "border-gray-300")}>
+            <AvatarImage src={currentPlayer.avatarUrl} alt={currentPlayer.username} />
             <AvatarFallback className="bg-primary text-white text-xs">
               {currentPlayer.avatarInitials || currentPlayer.username.slice(0, 2).toUpperCase()}
             </AvatarFallback>
