@@ -81,13 +81,29 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
   
   return (
     <div className="mt-4 relative">
-      <div className="bg-slate-50 rounded-lg p-4 border">
+      <div className={`${
+        isPremiumGame 
+          ? "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 shadow-md" 
+          : "bg-slate-50"
+        } rounded-lg p-4 border`}>
+        {isPremiumGame && (
+          <div className="absolute -top-2 -right-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-200 text-amber-800 border border-amber-300">
+              Premium
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center">
-            <Users className="h-4 w-4 mr-2 text-primary" />
-            <h3 className="font-medium text-sm">Voice Chat</h3>
+            <Users className={`h-4 w-4 mr-2 ${isPremiumGame ? "text-amber-500" : "text-primary"}`} />
+            <h3 className={`font-medium text-sm ${isPremiumGame ? "text-amber-700" : ""}`}>
+              {isPremiumGame ? "Premium Voice Chat" : "Voice Chat"}
+            </h3>
             {isJoined && (
-              <Badge variant="outline" className="ml-2 text-xs">
+              <Badge 
+                variant={isPremiumGame ? "default" : "outline"} 
+                className={`ml-2 text-xs ${isPremiumGame ? "bg-amber-200 text-amber-800 hover:bg-amber-300" : ""}`}
+              >
                 Connected
               </Badge>
             )}
@@ -99,15 +115,19 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="outline"
+                      variant={isPremiumGame ? "default" : "outline"}
                       size="icon"
-                      className="h-8 w-8"
+                      className={`h-8 w-8 ${isPremiumGame 
+                        ? (isMuted 
+                          ? "bg-red-100 text-red-500 hover:bg-red-200 hover:text-red-600" 
+                          : "bg-amber-100 text-amber-700 hover:bg-amber-200") 
+                        : ""}`}
                       onClick={toggleMute}
                     >
                       {isMuted ? (
-                        <MicOff className="h-4 w-4 text-red-500" />
+                        <MicOff className={`h-4 w-4 ${isPremiumGame ? "text-red-500" : "text-red-500"}`} />
                       ) : (
-                        <Mic className="h-4 w-4" />
+                        <Mic className={`h-4 w-4 ${isPremiumGame ? "text-amber-700" : ""}`} />
                       )}
                     </Button>
                   </TooltipTrigger>
@@ -119,9 +139,11 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
             )}
             
             <Button
-              variant="outline"
+              variant={isPremiumGame ? "default" : "outline"}
               size="sm"
-              className="text-xs h-8"
+              className={`text-xs h-8 ${isPremiumGame 
+                ? "bg-amber-100 text-amber-700 hover:bg-amber-200" 
+                : ""}`}
               onClick={() => setShowVoiceChat(!showVoiceChat)}
             >
               {showVoiceChat ? "Hide" : "Show"} Details
@@ -133,8 +155,11 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
           <div className="space-y-3 pt-2 border-t">
             {/* Your voice indicator */}
             <div className="flex items-center gap-2 mt-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-white text-xs">
+              <Avatar className={`h-8 w-8 ${isPremiumGame ? "ring-2 ring-amber-300 ring-offset-1" : ""}`}>
+                <AvatarFallback className={`text-xs ${isPremiumGame 
+                  ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white" 
+                  : "bg-primary text-white"}`}
+                >
                   YOU
                 </AvatarFallback>
               </Avatar>
@@ -143,9 +168,15 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-xs font-medium">You {isMuted ? "(Muted)" : ""}</span>
                 </div>
-                <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                <div className={`h-1.5 w-full ${isPremiumGame ? "bg-amber-100" : "bg-gray-200"} rounded-full overflow-hidden`}>
                   <div
-                    className={`h-full rounded-full transition-all duration-100 ${isMuted ? "bg-gray-400" : "bg-primary"}`}
+                    className={`h-full rounded-full transition-all duration-100 ${
+                      isMuted 
+                        ? "bg-gray-400" 
+                        : isPremiumGame
+                          ? "bg-gradient-to-r from-amber-400 to-amber-500"
+                          : "bg-primary"
+                    }`}
                     style={{ width: `${Math.min(audioLevel * 100, 100)}%` }}
                   />
                 </div>
