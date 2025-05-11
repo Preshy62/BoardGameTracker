@@ -78,7 +78,7 @@ export default function LandingPage() {
               </div>
               
               <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                The Ultimate <span className="text-yellow-400">Nigerian</span> Gambling Experience (Updated)
+                The Ultimate <span className="text-yellow-400">Nigerian</span> Gambling Experience (Redesigned)
               </h1>
               
               <p className="text-xl mb-8 text-blue-100 max-w-lg">

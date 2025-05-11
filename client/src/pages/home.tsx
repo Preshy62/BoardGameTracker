@@ -27,6 +27,11 @@ export default function Home() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
+  // Function to view the landing page for testing
+  const viewLandingPage = () => {
+    setLocation('/landing');
+  };
+  
   // Demo deposit mutation (for testing)
   const demoDepositMutation = useMutation({
     mutationFn: async () => {
@@ -111,6 +116,15 @@ export default function Home() {
               >
                 <Gamepad2 className="h-4 w-4 mr-2" />
                 Quick Demo
+              </Button>
+              
+              <Button 
+                onClick={viewLandingPage}
+                variant="outline"
+                className="border-blue-500 text-blue-600"
+              >
+                <Globe2 className="h-4 w-4 mr-2" />
+                View Landing Page
               </Button>
               
               <Button 

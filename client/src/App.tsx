@@ -24,14 +24,20 @@ import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import AuthProvider from "./hooks/use-auth";
+import AuthProvider, { useAuth } from "./hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+
+function HomeOrLanding() {
+  const { user } = useAuth();
+  return user ? <Home /> : <LandingPage />;
+}
 
 function Router() {
   return (
     <Switch>
       {/* Public routes */}
-      <Route path="/" component={LandingPage} />
+      <Route path="/landing" component={LandingPage} />
+      <Route path="/" component={HomeOrLanding} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/verify-email/:token" component={VerifyEmail} />
       <Route path="/reset-password/:token" component={ResetPassword} />
