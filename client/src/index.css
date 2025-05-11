@@ -404,44 +404,83 @@
   }
 }
 
-/* Extra bright pulsing animation for GameStones */
+/* Enhanced pulsing animation for GameStones with glow effect */
 @keyframes stone-pulse {
   0% {
     transform: scale(1.6);
     box-shadow: 0 0 40px 20px rgba(255, 215, 0, 0.85);
+    filter: brightness(1.1) contrast(1.05);
   }
   50% {
     transform: scale(1.9);
     box-shadow: 0 0 70px 35px rgba(255, 136, 0, 0.95);
+    filter: brightness(1.4) contrast(1.2);
   }
   100% {
     transform: scale(1.7);
     box-shadow: 0 0 55px 28px rgba(255, 215, 0, 0.9);
+    filter: brightness(1.2) contrast(1.1);
   }
 }
 
-/* This is a duplicate animation, we're using the one at the top of the file */
-
-/* Additional animation for dice elements */
+/* Enhanced dice roll animation with smoother timing and 3D effect */
 @keyframes dice-roll {
-  0% { transform: rotate(0deg) scale(1.1); }
-  25% { transform: rotate(90deg) scale(1.15); }
-  50% { transform: rotate(180deg) scale(1.2); }
-  75% { transform: rotate(270deg) scale(1.15); }
-  100% { transform: rotate(360deg) scale(1.1); }
+  0% { transform: rotate(0deg) scale(1.1) perspective(600px) rotateX(0deg); }
+  25% { transform: rotate(90deg) scale(1.15) perspective(600px) rotateX(10deg); }
+  50% { transform: rotate(180deg) scale(1.2) perspective(600px) rotateX(0deg); }
+  75% { transform: rotate(270deg) scale(1.15) perspective(600px) rotateX(-10deg); }
+  100% { transform: rotate(360deg) scale(1.1) perspective(600px) rotateX(0deg); }
 }
 
-/* Add pulse animation for dice element */
+/* Smooth pulse animation for dice element with shadow effects */
 @keyframes pulse {
-  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.9; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  0% { 
+    transform: translate(-50%, -50%) scale(1); 
+    opacity: 1; 
+    filter: drop-shadow(0px 0px 8px rgba(255, 205, 43, 0.6));
+  }
+  50% { 
+    transform: translate(-50%, -50%) scale(1.1); 
+    opacity: 0.9; 
+    filter: drop-shadow(0px 0px 15px rgba(255, 205, 43, 0.8));
+  }
+  100% { 
+    transform: translate(-50%, -50%) scale(1); 
+    opacity: 1; 
+    filter: drop-shadow(0px 0px 8px rgba(255, 205, 43, 0.6));
+  }
 }
 
-/* Add spin animation for dice element */
+/* Improved spin animation for dice element with easing */
 @keyframes spin {
   0% { transform: translate(-50%, -50%) rotate(0deg); }
   100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Accessibility animation for focus state */
+@keyframes focus-pulse {
+  0% { box-shadow: 0 0 0 2px rgba(255, 205, 43, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(255, 205, 43, 0.7); }
+  100% { box-shadow: 0 0 0 2px rgba(255, 205, 43, 0.4); }
+}
+
+/* Hover effect for interactive stones */
+.game-stone.interactive:hover {
+  filter: brightness(1.2);
+  transform: translateY(-2px);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Active state for stones - when pressed */
+.game-stone.interactive:active {
+  transform: scale(0.95);
+  transition: all 0.1s ease-in-out;
+}
+
+/* Focus state for keyboard navigation */
+.game-stone:focus-visible {
+  outline: none;
+  animation: focus-pulse 1.5s infinite;
 }
 
 /* Dice element styling */
