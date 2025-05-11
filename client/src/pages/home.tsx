@@ -320,7 +320,7 @@ export default function Home() {
         {/* CSS for dashed lines is in index.css */}
         
         {/* International Features */}
-        <Card className="mb-12 overflow-hidden border-none shadow-xl rounded-2xl group animate-[slideInUp_0.9s_ease-out]">
+        <Card className="mb-12 overflow-hidden border-none shadow-xl rounded-2xl group hover:shadow-2xl transition-all duration-500">
           <div className="grid grid-cols-1 md:grid-cols-2">
             <div className="p-10 bg-gradient-to-br from-gray-50 to-white relative overflow-hidden">
               <div className="absolute -bottom-16 -left-16 w-32 h-32 bg-blue-50 rounded-full opacity-70"></div>
