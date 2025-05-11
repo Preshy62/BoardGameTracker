@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import GameStone from "@/components/game/GameStone";
+import GameBall from "@/components/game/GameBall";
 
 interface GameBoardDemoProps {
   rollingStoneNumber: number | null;
@@ -274,17 +275,15 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         {/* Game Title */}
         <h3 className="text-center text-white text-2xl font-sans font-bold mb-4">BIG BOYS GAME</h3>
         
-        {/* Ball element that will move across the board */}
-        {showBall && (
-          <div 
-            className="ball-element"
-            style={{
-              position: 'absolute',
-              top: `${ballPosition.top}px`,
-              left: `${ballPosition.left}px`,
-            }}
-          />
-        )}
+        {/* Enhanced GameBall component with trail effects */}
+        <GameBall 
+          visible={showBall}
+          top={ballPosition.top}
+          left={ballPosition.left}
+          color="gold"
+          size="md"
+          showTrails={true}
+        />
         
         {/* Game Stone Layout - Top Row */}
         <div className="flex justify-between mb-6">
