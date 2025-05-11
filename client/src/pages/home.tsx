@@ -79,7 +79,7 @@ export default function Home() {
       <main className="flex-grow container mx-auto px-4 py-10 md:py-16">
         {/* Welcome Header with User Info */}
         <div className="flex flex-col md:flex-row justify-between items-start mb-12 relative">
-          <div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-2xl backdrop-blur-sm border border-primary/10 shadow-sm w-full md:w-auto animate-[fadeIn_0.6s_ease-out]">
+          <div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-2xl backdrop-blur-sm border border-primary/10 shadow-sm w-full md:w-auto animate-pulse">
             <h1 className="text-4xl font-bold text-primary/90 mb-3">Welcome back, {user.username}</h1>
             <div className="flex flex-wrap items-center gap-3 text-gray-600">
               <div className="flex items-center bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
@@ -94,7 +94,7 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="mt-6 md:mt-0 flex flex-wrap gap-3 md:gap-4 animate-[slideInRight_0.5s_ease-out]">
+          <div className="mt-6 md:mt-0 flex flex-wrap gap-3 md:gap-4 transition-all duration-500 hover:translate-x-1">
             <Button 
               onClick={() => demoDepositMutation.mutate()}
               variant="outline"
@@ -125,7 +125,7 @@ export default function Home() {
         </div>
         
         {/* Quick Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-[fadeIn_0.8s_ease-out]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white overflow-hidden group relative border-none shadow-xl rounded-2xl hover:translate-y-[-5px] transition-all duration-300">
             <div className="absolute top-0 right-0 h-40 w-40 bg-white opacity-5 rounded-full translate-x-10 -translate-y-20 group-hover:translate-x-5 transition-transform duration-700"></div>
             <CardContent className="p-6 z-10 relative">
@@ -188,7 +188,7 @@ export default function Home() {
         </div>
         
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-[slideInUp_0.7s_ease-out]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <Card className="hover:shadow-xl transition-all duration-300 hover:translate-y-[-5px] rounded-xl overflow-hidden border border-blue-100 group">
             <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 transition-all duration-500 group-hover:h-2"></div>
             <CardContent className="p-8 flex flex-col items-center text-center">
@@ -252,7 +252,7 @@ export default function Home() {
         <Separator className="my-12 opacity-30" />
         
         {/* How to Play */}
-        <div className="bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-lg p-10 mb-12 border border-gray-100 animate-[fadeIn_1s_ease-out]">
+        <div className="bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-lg p-10 mb-12 border border-gray-100">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">How to Play Big Boys Game</h2>
             <p className="text-gray-500 max-w-2xl mx-auto">Follow these simple steps to join the excitement and win big</p>
