@@ -155,10 +155,10 @@ const GameBoard = ({
         6, 80, 3, 26, 100, 19, 14, 43, 16, 71, 10
       ];
       
-      // Simplified animation that focuses on highlighting stones in sequence
+      // Enhanced animation with ball movement and stone highlighting
       const simulateRolling = async () => {
         // Number of stones to highlight before landing on the final one
-        const rollSteps = 8 + Math.floor(Math.random() * 7); // 8-14 steps
+        const rollSteps = 10 + Math.floor(Math.random() * 8); // 10-17 steps
         const stoneIndices: number[] = [];
         
         // Create a sequence of random indices that don't repeat consecutively
@@ -175,20 +175,42 @@ const GameBoard = ({
         const speeds: number[] = [];
         for (let i = 0; i < rollSteps; i++) {
           if (i < rollSteps / 3) {
-            speeds.push(200 - i * 10); // Speed up at start
+            speeds.push(180 - i * 8); // Speed up at start
           } else if (i > (rollSteps * 2) / 3) {
-            speeds.push(150 + (i - (rollSteps * 2) / 3) * 50); // Slow down at end
+            speeds.push(130 + (i - (rollSteps * 2) / 3) * 40); // Slow down at end
           } else {
-            speeds.push(150); // Consistent in middle
+            speeds.push(130); // Consistent in middle
           }
         }
         
-        // Highlight stones in sequence
+        // Get stone positions for ball movement
+        const getStonePosition = (stoneId: number): { top: number, left: number } => {
+          const stoneElement = document.getElementById(`stone-${stoneId}`);
+          if (!stoneElement || !boardElement) {
+            // Default centered position if element not found
+            return { top: boardElement?.clientHeight ? boardElement.clientHeight / 2 : 250, 
+                    left: boardElement?.clientWidth ? boardElement.clientWidth / 2 : 300 };
+          }
+          
+          const boardRect = boardElement.getBoundingClientRect();
+          const stoneRect = stoneElement.getBoundingClientRect();
+          
+          return {
+            top: stoneRect.top - boardRect.top + stoneRect.height / 2,
+            left: stoneRect.left - boardRect.left + stoneRect.width / 2
+          };
+        };
+        
+        // Highlight stones in sequence with enhanced ball movement
         for (let i = 0; i < rollSteps; i++) {
           const stoneNumber = allStoneNumbers[stoneIndices[i]];
           
           // Update the active stone
           setRollingStones({ [stoneNumber]: true });
+          
+          // Move ball to the current stone position
+          const position = getStonePosition(stoneNumber);
+          setBallPosition(position);
           
           // Play click sound for every other stone
           if (i % 2 === 0) {
@@ -209,8 +231,7 @@ const GameBoard = ({
           setRollingStones({});
         }
         
-        // Finally, highlight the actual winning stone with a winning animation style
-        // Apply winner-stone animation class to the final stone
+        // Finally, move to and highlight the actual winning stone with enhanced animations
         if (rollingStoneNumber !== null) {
           // Clear any previous winner selection to ensure we get a fresh animation
           setFinalStoneSelected(null);
@@ -218,16 +239,43 @@ const GameBoard = ({
           // Small delay to ensure state update has processed before setting the new winner
           await new Promise(resolve => setTimeout(resolve, 50));
           
+          // Move ball to the winning stone position with a slight bounce effect
+          const winningPosition = getStonePosition(rollingStoneNumber);
+          // Add a slight bounce effect by setting position slightly above the final position
+          setBallPosition({ 
+            top: winningPosition.top - 20, 
+            left: winningPosition.left 
+          });
+          
+          // Wait for the ball to move
+          await new Promise(resolve => setTimeout(resolve, 150));
+          
+          // Final position
+          setBallPosition(winningPosition);
+          
           // Now set the winner stone
           setFinalStoneSelected(rollingStoneNumber);
           
           console.log("🏆 WINNER ANIMATION: Stone", rollingStoneNumber);
           
+          // Play landing sound with enhanced volume
           try {
             const landingAudio = new Audio();
             landingAudio.src = '/dice-landing.mp3';
-            landingAudio.volume = 0.4;
+            landingAudio.volume = 0.5;
             landingAudio.play().catch(e => console.log('Landing audio failed:', e));
+            
+            // Add a victory sound after a short delay
+            setTimeout(() => {
+              try {
+                const victoryAudio = new Audio();
+                victoryAudio.src = '/winner.mp3';  // Make sure this file exists
+                victoryAudio.volume = 0.4;
+                victoryAudio.play().catch(e => console.log('Victory audio failed:', e));
+              } catch (e) {
+                // Optional sound - fail silently
+              }
+            }, 500);
           } catch (e) {
             // Optional sound - fail silently
           }
@@ -401,7 +449,15 @@ const GameBoard = ({
                 </svg>
               </div>
               
-              {/* We've removed the GameBall components to focus purely on stone highlighting */}
+              {/* Enhanced GameBall with trail effects */}
+              <GameBall 
+                visible={showBall} 
+                top={ballPosition.top} 
+                left={ballPosition.left}
+                color="gold"
+                size="md"
+                showTrails={true}
+              />
               
               {/* START label - positioned on the right side like the physical board */}
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-transparent text-white p-1 font-bold text-lg rotate-90">

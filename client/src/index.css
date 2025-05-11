@@ -752,6 +752,17 @@
   }
 }
 
+/* Ball trail styles */
+.ball-trail {
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4) 5%, rgba(255, 193, 7, 0.3) 30%, rgba(255, 136, 0, 0.2) 70%, rgba(255, 193, 7, 0.1) 100%);
+  box-shadow: 0 0 20px 10px rgba(255, 193, 7, 0.3);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: trail-effect 0.5s ease-out forwards;
+  filter: blur(2px);
+  will-change: transform, opacity;
+}
+
 /* Improved spin animation for dice element with easing */
 @keyframes spin {
   0% { transform: translate(-50%, -50%) rotate(0deg); }
