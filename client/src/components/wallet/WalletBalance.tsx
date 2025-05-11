@@ -40,7 +40,7 @@ export default function WalletBalance({ user, totalEarnings = 0, className }: Wa
           <div className="relative text-white">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <Wallet className="h-6 w-6 mr-2" />
+                <WalletIcon className="h-6 w-6 mr-2" />
                 <h2 className="text-lg font-medium">Wallet Balance</h2>
               </div>
               <Button 

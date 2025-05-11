@@ -27,7 +27,7 @@ import {
   ArrowDownCircle, 
   CreditCard, 
   Info, 
-  Wallet,
+  Wallet as WalletIcon,
   RefreshCw,
   Banknote,
   ChevronRight,
@@ -171,7 +171,7 @@ export default function FundManagement({ user }: FundManagementProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Wallet className="h-5 w-5 mr-2 text-primary" />
+          <WalletIcon className="h-5 w-5 mr-2 text-primary" />
           <span>Fund Management</span>
         </CardTitle>
         <CardDescription>
@@ -323,7 +323,7 @@ export default function FundManagement({ user }: FundManagementProps) {
                 />
               </div>
               <p className="text-sm text-gray-500 flex items-center">
-                <Wallet className="h-3.5 w-3.5 mr-1" />
+                <WalletIcon className="h-3.5 w-3.5 mr-1" />
                 Available: {formatCurrency(user.walletBalance)}
               </p>
             </div>
