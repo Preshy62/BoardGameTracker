@@ -40,8 +40,8 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
       // Set rolling flag
       setIsRolling(true);
       
-      // Set ball visible globally for fallback visibility
-      document.documentElement.style.setProperty('--ball-visible', '1');
+      // Show the rolling ball IMMEDIATELY - this is critical
+      setShowBall(true);
       
       // Start a new rolling animation
       const simulateEnhancedRolling = async () => {
@@ -50,9 +50,6 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         // Shake the board briefly when roll begins
         setIsBoardShaking(true);
         setTimeout(() => setIsBoardShaking(false), 1500);
-        
-        // Show the rolling ball
-        setShowBall(true);
         
         // Get all possible stone numbers in a specific order for better visual flow
         const allStoneNumbers = [
@@ -78,11 +75,7 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           
           console.log("Demo: Setting initial ball position to center:", {centerTop, centerLeft});
           
-          // Set variables for initial position
-          document.documentElement.style.setProperty('--ball-top', `${centerTop}px`);
-          document.documentElement.style.setProperty('--ball-left', `${centerLeft}px`);
-          
-          // Update React state as well
+          // Update ball position directly - critical for visibility
           setBallPosition({
             top: centerTop,
             left: centerLeft,
@@ -90,8 +83,10 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         } else {
           console.error("Demo: Board ref not available!");
           // Fallback position
-          document.documentElement.style.setProperty('--ball-top', '50%');
-          document.documentElement.style.setProperty('--ball-left', '50%');
+          setBallPosition({
+            top: 250, // Estimated center
+            left: 400, // Estimated center
+          });
         }
         
         // Wait a moment for the ball to appear at center
@@ -142,11 +137,7 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
             
             console.log(`Demo: Ball moving to stone ${currentStone} at position: `, {newTop, newLeft});
             
-            // Set variables for ball position
-            document.documentElement.style.setProperty('--ball-top', `${newTop}px`);
-            document.documentElement.style.setProperty('--ball-left', `${newLeft}px`);
-            
-            // Update React state as well - this is crucial for directly styled elements
+            // Update ball position directly - crucial for visibility
             setBallPosition({
               top: newTop,
               left: newLeft,
@@ -191,10 +182,7 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           console.log(`Demo: Ball final landing on stone ${rollingStoneNumber} at:`, {finalTop, finalLeft});
           
           // Make a more dramatic movement to the final position (slightly above target)
-          document.documentElement.style.setProperty('--ball-top', `${finalTop - 10}px`);
-          document.documentElement.style.setProperty('--ball-left', `${finalLeft}px`);
-          
-          // Update React state as well
+          // Update ball position with slight elevation for dramatic effect
           setBallPosition({
             top: finalTop - 10, // Slightly higher for dramatic effect
             left: finalLeft,
@@ -202,10 +190,6 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           
           // After a very short delay, settle into the final position
           setTimeout(() => {
-            document.documentElement.style.setProperty('--ball-top', `${finalTop}px`);
-            document.documentElement.style.setProperty('--ball-left', `${finalLeft}px`);
-            
-            // Update React state as well
             setBallPosition({
               top: finalTop,
               left: finalLeft,
@@ -239,7 +223,6 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         // Keep ball visible for a moment after landing
         setTimeout(() => {
           setShowBall(false);
-          document.documentElement.style.setProperty('--ball-visible', '0');
         }, 3000);
       };
       
