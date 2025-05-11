@@ -1130,7 +1130,7 @@ export default function DemoPage() {
                     .filter(stone => stone.row === row)
                     .map((stone) => (
                       <div id={`small-stone-${stone.index}`} key={`small-stone-${stone.row}-${stone.index}`}>
-                        <DemoStone 
+                        <GameStone 
                           number={stone.number}
                           size="sm"
                           isRolling={rollingStoneIndex === 100 + stone.index}

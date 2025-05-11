@@ -72,6 +72,195 @@
   transform: translateY(-5px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
 }
+
+/* Enhanced Game UI Animations */
+@keyframes winner-stone {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.7);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 25px 10px rgba(255, 215, 0, 0.9);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.7);
+  }
+}
+
+@keyframes winner-text {
+  0% {
+    color: #FFD700;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+  }
+  50% {
+    color: #FFF;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.9), 0 0 25px rgba(255, 215, 0, 0.7);
+  }
+  100% {
+    color: #FFD700;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+  }
+}
+
+@keyframes winner-pulse {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes shaking {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-2px) rotate(-0.5deg); }
+  40% { transform: translateX(2px) rotate(0.5deg); }
+  60% { transform: translateX(-2px) rotate(-0.5deg); }
+  80% { transform: translateX(2px) rotate(0.5deg); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes progress-animation {
+  0% { 
+    background-position: 0% 50%;
+  }
+  50% { 
+    background-position: 100% 50%;
+  }
+  100% { 
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-10%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes bank-bg-animation {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes bank-glow-animation {
+  0% { box-shadow: 0 0 10px 2px rgba(255, 215, 0, 0.3) inset; }
+  50% { box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.6) inset; }
+  100% { box-shadow: 0 0 10px 2px rgba(255, 215, 0, 0.3) inset; }
+}
+
+@keyframes bank-amount-pulse {
+  0% { text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+  50% { text-shadow: 0 0 15px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 215, 0, 0.8); }
+  100% { text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+}
+
+@keyframes winner-appear {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes trophy-spin {
+  0% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(-5deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-5px) rotate(5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+@keyframes label-animation {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+/* Enhanced Game UI Classes */
+.winner-stone-animation {
+  animation: winner-stone 2s infinite alternate ease-in-out;
+}
+
+.winner-text-animation {
+  animation: winner-text 2s infinite alternate ease-in-out;
+}
+
+.winner-pulse-animation {
+  animation: winner-pulse 1.5s infinite alternate ease-in-out;
+}
+
+.shaking-board {
+  animation: shaking 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+.progress-animation {
+  background: linear-gradient(45deg, 
+    rgba(255, 255, 255, 0.1) 25%, 
+    rgba(255, 255, 255, 0.2) 25%, 
+    rgba(255, 255, 255, 0.2) 50%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    rgba(255, 255, 255, 0.1) 75%, 
+    rgba(255, 255, 255, 0.2) 75%, 
+    rgba(255, 255, 255, 0.2)
+  );
+  background-size: 30px 30px;
+  animation: progress-animation 3s linear infinite;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  animation: confetti-fall 5s ease-in-out forwards;
+}
+
+.bank-money-bg-animation {
+  background: linear-gradient(45deg, #8B4513, #DAA520, #8B4513);
+  background-size: 200% 200%;
+  animation: bank-bg-animation 5s ease infinite;
+}
+
+.bank-money-glow-animation {
+  animation: bank-glow-animation 3s ease-in-out infinite;
+}
+
+.bank-amount-pulse-animation {
+  animation: bank-amount-pulse 2s ease-in-out infinite;
+}
+
+.animate-winner-appear {
+  animation: winner-appear 0.5s ease-out forwards;
+}
+
+.winner-trophy-animation {
+  animation: trophy-spin 3s ease-in-out infinite;
+}
+
+.winner-text-glow {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+}
+
+.winner-card-glow {
+  box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.2) inset;
+  border-radius: inherit;
+}
+
+.bank-label-animation {
+  animation: label-animation 2s ease-in-out infinite;
+}
 .stone-roll-animation {
   animation: rollStone 0.8s ease-in-out infinite;
   box-shadow: 0 0 15px 5px rgba(248, 181, 0, 0.7);
