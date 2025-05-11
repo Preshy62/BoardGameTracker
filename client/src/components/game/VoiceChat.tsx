@@ -229,7 +229,7 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
             
             {!isJoined && (
               <Button
-                variant={isPremiumGame ? "default" : "default"}
+                variant="default"
                 size="sm"
                 onClick={async () => {
                   setIsLoading(true);

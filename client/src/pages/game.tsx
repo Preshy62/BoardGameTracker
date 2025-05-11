@@ -32,6 +32,7 @@ export default function GamePage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [chatMessage, setChatMessage] = useState('');
+  const [hasShownVoiceChatNotice, setHasShownVoiceChatNotice] = useState(false);
 
   const {
     data,
@@ -90,6 +91,25 @@ export default function GamePage() {
       });
     }
   }, [error, toast]);
+  
+  // Show voice chat notification for high-stakes games
+  useEffect(() => {
+    if (data?.game && !hasShownVoiceChatNotice) {
+      const game = data.game;
+      if (game.voiceChatEnabled || game.stake >= 20000) {
+        const isPremiumGame = game.stake >= 50000;
+        toast({
+          title: isPremiumGame ? "Premium Voice Chat Available!" : "Voice Chat Available",
+          description: isPremiumGame 
+            ? "This is a premium high-stakes game with voice chat. Connect with other players for a premium experience!" 
+            : "This game has voice chat enabled. Join the voice channel to talk with other players!",
+          variant: "default",
+          duration: 6000,
+        });
+        setHasShownVoiceChatNotice(true);
+      }
+    }
+  }, [data?.game, hasShownVoiceChatNotice, toast]);
 
   if (isLoading) {
     return (
@@ -213,12 +233,14 @@ export default function GamePage() {
                   )}
                 </div>
                 
-                {/* Voice Chat Component */}
-                <VoiceChat 
-                  game={game} 
-                  players={players} 
-                  currentUserId={user.id} 
-                />
+                {/* Voice Chat Component - Only show for games with voiceChatEnabled or high stakes */}
+                {(game.voiceChatEnabled || game.stake >= 20000) && (
+                  <VoiceChat 
+                    game={game} 
+                    players={players} 
+                    currentUserId={user.id} 
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
