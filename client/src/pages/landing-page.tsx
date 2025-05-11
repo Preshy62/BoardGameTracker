@@ -11,7 +11,8 @@ import {
   Clock, 
   CreditCard,
   Gamepad2,
-  Globe2
+  Globe2,
+  Radio
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -205,6 +206,13 @@ export default function LandingPage() {
             >
               <Gamepad2 className="h-4 w-4 mr-2" />
               Try Demo
+            </Button>
+            <Button 
+              onClick={() => setLocation("/voice-chat-demo")}
+              className="bg-amber-500 hover:bg-amber-600 text-white mr-4"
+            >
+              <Radio className="h-4 w-4 mr-2" />
+              Voice Chat Demo
             </Button>
             <Button 
               onClick={handleSignIn}
