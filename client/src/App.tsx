@@ -16,7 +16,6 @@ import VoiceRecorderTest from "@/pages/voice-recorder-test";
 import SimpleVoiceChat from "@/pages/simple-voice-chat";
 import SoundTest from "@/pages/sound-test";
 import AgoraVoiceChat from "@/pages/agora-voice-chat";
-import VoiceChatDemoPage from "@/pages/voice-chat-demo";
 import AdminDashboard from "@/pages/admin/index";
 import AdminVoiceTools from "@/pages/admin/voice-tools";
 import VerifyEmail from "@/pages/auth/verify-email";
@@ -37,7 +36,6 @@ function Router() {
       <Route path="/verify-email/:token" component={VerifyEmail} />
       <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/demo-new" component={DemoNewPage} />
-      <Route path="/voice-chat-demo" component={VoiceChatDemoPage} />
       <Route path="/voice-chat-test" component={VoiceChatTest} />
       <Route path="/voice-recorder-test" component={VoiceRecorderTest} />
       <Route path="/simple-voice-chat" component={SimpleVoiceChat} />
