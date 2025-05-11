@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +52,8 @@ export default function CreateGame() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const [stakeAmount, setStakeAmount] = useState(5000);
+  const HIGH_STAKES_THRESHOLD = 20000; // Threshold for high-stakes games
   
   const form = useForm<GameFormValues>({
     resolver: zodResolver(gameSchema),
@@ -65,6 +67,20 @@ export default function CreateGame() {
   });
 
   // Game creation mutation
+  // Watch stake amount changes
+  useEffect(() => {
+    // Get current stake value
+    const currentStake = form.getValues('stake');
+    
+    // Update local state
+    setStakeAmount(currentStake);
+    
+    // Auto-enable voice chat for high-stakes games
+    if (currentStake >= HIGH_STAKES_THRESHOLD) {
+      form.setValue('voiceChatEnabled', true);
+    }
+  }, [form.watch('stake'), form]);
+  
   const createGameMutation = useMutation({
     mutationFn: async (gameData: GameFormValues) => {
       const response = await apiRequest("POST", "/api/games", gameData);
@@ -171,7 +187,18 @@ export default function CreateGame() {
                     name="stake"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Stake Amount (₦)</FormLabel>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Stake Amount (₦)</FormLabel>
+                          {stakeAmount >= HIGH_STAKES_THRESHOLD ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Voice Chat Enabled
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-500">
+                              ₦{HIGH_STAKES_THRESHOLD}+ for voice chat
+                            </span>
+                          )}
+                        </div>
                         <FormControl>
                           <Input
                             type="number"
@@ -183,6 +210,11 @@ export default function CreateGame() {
                         </FormControl>
                         <FormDescription>
                           Each player contributes this amount to the pot
+                          {stakeAmount >= HIGH_STAKES_THRESHOLD && (
+                            <span className="block mt-1 text-green-600">
+                              High-stakes games (₦20,000+) automatically enable voice chat for all players
+                            </span>
+                          )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -214,17 +246,27 @@ export default function CreateGame() {
                     control={form.control}
                     name="voiceChatEnabled"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <FormItem className={`flex flex-row items-center justify-between rounded-lg border p-4 ${stakeAmount >= HIGH_STAKES_THRESHOLD ? 'bg-amber-50 border-amber-200' : ''}`}>
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">Enable Voice Chat</FormLabel>
+                          <div className="flex items-center gap-2">
+                            <FormLabel className="text-base">Enable Voice Chat</FormLabel>
+                            {stakeAmount >= HIGH_STAKES_THRESHOLD && (
+                              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-800">
+                                Auto-enabled
+                              </span>
+                            )}
+                          </div>
                           <FormDescription>
-                            Allow players to communicate via voice
+                            {stakeAmount >= HIGH_STAKES_THRESHOLD 
+                              ? "Voice chat is automatically enabled for high-stakes games (₦20,000+)"
+                              : "Allow players to communicate via voice"}
                           </FormDescription>
                         </div>
                         <FormControl>
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            disabled={stakeAmount >= HIGH_STAKES_THRESHOLD}
                           />
                         </FormControl>
                       </FormItem>
