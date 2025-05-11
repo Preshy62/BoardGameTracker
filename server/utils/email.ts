@@ -122,13 +122,14 @@ export async function sendVerificationEmail(email: string, token: string) {
   
   // Send email using the appropriate provider
   if (emailProvider === 'sendgrid') {
-    // Use SendGrid
+    // Use SendGrid with proper category for analytics
     const sent = await sendGridEmail(
       email,
       subject,
       text,
       html,
-      process.env.EMAIL_FROM || 'verification@bigboysgame.com'
+      process.env.EMAIL_FROM || 'verification@bigboysgame.com',
+      EmailCategory.VERIFICATION
     );
     
     if (!sent) {
