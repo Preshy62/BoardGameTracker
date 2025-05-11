@@ -17,8 +17,6 @@ export const EmailCategory = {
   NOTIFICATION: 'notification'
 } as const;
 
-export type EmailCategory = typeof EmailCategory[keyof typeof EmailCategory];
-
 /**
  * Initialize the SendGrid mail service
  * @returns The initialized MailService instance or null if initialization fails
@@ -69,7 +67,7 @@ export async function sendEmail(
   text: string,
   html: string,
   from: string = process.env.EMAIL_FROM || 'noreply@bigboysgame.com',
-  category?: EmailCategory,
+  category?: string,
   templateId?: string,
   dynamicTemplateData?: Record<string, any>
 ): Promise<boolean> {
@@ -98,8 +96,9 @@ export async function sendEmail(
 
     // Add category if provided
     if (category) {
-      // Cast is needed here since the type definition expects string
-      msg.category = [category as string];
+      // Here we use any to bypass the type check since SendGrid's type definitions 
+      // aren't perfectly aligned with their API
+      (msg as any).categories = [category];
     }
 
     // Add template if provided
