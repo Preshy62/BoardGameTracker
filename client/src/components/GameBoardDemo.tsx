@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import GameStone from "@/components/game/GameStone";
 import GameBall from "@/components/game/GameBall";
+import CircuitBall from "@/components/game/CircuitBall";
 
 interface GameBoardDemoProps {
   rollingStoneNumber: number | null;
@@ -13,6 +14,7 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
   const [isBoardShaking, setIsBoardShaking] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const [showBall, setShowBall] = useState(false);
+  const [showCircuitBall, setShowCircuitBall] = useState(true);
   const [currentPathIndex, setCurrentPathIndex] = useState(0);
   const [finalStoneSelected, setFinalStoneSelected] = useState<number | null>(null);
   
@@ -39,6 +41,9 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
       
       // Set rolling flag
       setIsRolling(true);
+      
+      // Hide circuit ball during stone rolling
+      setShowCircuitBall(false);
       
       // Show the rolling ball IMMEDIATELY - this is critical
       setShowBall(true);
@@ -223,6 +228,8 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
         // Keep ball visible for a moment after landing
         setTimeout(() => {
           setShowBall(false);
+          // Show circuit ball again after rolling animation completes
+          setShowCircuitBall(true);
         }, 3000);
       };
       
@@ -266,6 +273,15 @@ const GameBoardDemo = ({ rollingStoneNumber }: GameBoardDemoProps) => {
           color="gold"
           size="md"
           showTrails={true}
+        />
+        
+        {/* CircuitBall that continuously moves around the board perimeter */}
+        <CircuitBall
+          visible={showCircuitBall && !isRolling}
+          boardRef={boardRef}
+          color="gold"
+          size="sm"
+          speed="medium"
         />
         
         {/* Game Stone Layout - Top Row */}

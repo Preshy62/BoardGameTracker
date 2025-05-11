@@ -132,6 +132,25 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
 }
 
+/* Game ball animations */
+@keyframes rolling-ball {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes spin-ball {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
 /* Stone animations for different states */
 .stone-roll-animation {
   animation: stone-roll-animation 0.35s linear infinite;
