@@ -5,8 +5,39 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency: string = '₦'): string {
-  return `${currency}${amount.toLocaleString()}`;
+/**
+ * Format a number as currency with the specified currency symbol
+ * @param amount The amount to format
+ * @param currency The currency symbol (default: ₦)
+ * @param minimumFractionDigits Minimum fraction digits (default: 0)
+ * @returns Formatted currency string
+ */
+export function formatCurrency(
+  amount: number, 
+  currency: string = '₦', 
+  minimumFractionDigits: number = 0
+): string {
+  // Use different formatting based on currency
+  if (currency === '$' || currency === '€' || currency === '£') {
+    return `${currency}${amount.toLocaleString('en-US', { 
+      minimumFractionDigits, 
+      maximumFractionDigits: 2 
+    })}`;
+  }
+  
+  // For currencies where symbol comes after the amount
+  if (currency === '₽') {
+    return `${amount.toLocaleString('ru-RU', { 
+      minimumFractionDigits, 
+      maximumFractionDigits: 2 
+    })} ${currency}`;
+  }
+  
+  // Default format (symbol first)
+  return `${currency}${amount.toLocaleString('en-NG', { 
+    minimumFractionDigits, 
+    maximumFractionDigits: 2 
+  })}`;
 }
 
 export function calculateCommission(stake: number): number {

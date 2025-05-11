@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import GameStone from "./GameStone";
 import GameBall from "./GameBall";
+import TurnIndicator from "./TurnIndicator";
+import WinCelebration from "./WinCelebration";
 import { cn, formatCurrency } from "@/lib/utils";
-import { Timer, Award } from "lucide-react";
+import { Timer, Award, Users } from "lucide-react";
 import { GameStatus, Game, User, GamePlayer } from "@shared/schema";
 
 interface GameBoardProps {
