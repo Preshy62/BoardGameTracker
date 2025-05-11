@@ -483,6 +483,42 @@
   animation: focus-pulse 1.5s infinite;
 }
 
+/* Pulsing animation for "your turn" button */
+.your-turn-pulse {
+  animation: button-pulse 2s infinite;
+  box-shadow: 0 0 0 0 rgba(255, 213, 79, 0.6);
+}
+
+@keyframes button-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 213, 79, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 213, 79, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 213, 79, 0);
+  }
+}
+
+/* Gold shine animation for active buttons */
+.gold-shine-animation {
+  animation: gold-shine 3s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+@keyframes gold-shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
 /* Dice element styling */
 .dice-element {
   position: absolute !important;
@@ -516,7 +552,7 @@
   transition: top 0.25s ease-out, left 0.25s ease-out !important;
 }
 
-/* Winner overlay animation */
+/* Enhanced winner overlay animation */
 .winner-overlay {
   animation: fade-in 0.5s forwards;
 }
@@ -526,18 +562,247 @@
   to { opacity: 1; }
 }
 
+/* Enhanced winner text animation */
 .winner-text-animation {
-  animation: winner-text 0.8s infinite alternate;
+  animation: winner-text 1.2s infinite alternate ease-in-out;
   text-shadow: 0 0 15px gold, 0 0 25px orange;
 }
 
 @keyframes winner-text {
-  0% { transform: scale(1); text-shadow: 0 0 10px gold, 0 0 20px gold; }
-  100% { transform: scale(1.2); text-shadow: 0 0 20px gold, 0 0 30px orange, 0 0 40px red; }
+  0% { 
+    transform: scale(1); 
+    text-shadow: 0 0 10px gold, 0 0 20px gold; 
+    filter: brightness(1);
+  }
+  100% { 
+    transform: scale(1.05); 
+    text-shadow: 0 0 20px gold, 0 0 30px orange, 0 0 40px red;
+    filter: brightness(1.2);
+  }
+}
+
+/* Winner bounce animation for the WINNER! label */
+.winner-bounce-animation {
+  animation: winner-bounce 0.8s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes winner-bounce {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(-10px) scale(1.05); }
+}
+
+/* Scale-in animation for the winner modal */
+.scale-in-animation {
+  animation: scale-in 0.4s forwards cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scale-in {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Rotating animation for the circle */
+.rotate-animation {
+  animation: rotate 12s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Pulse animation for the center circle */
+.pulse-animation {
+  animation: circle-pulse 2s infinite alternate ease-in-out;
+  transform-origin: center;
+}
+
+@keyframes circle-pulse {
+  from { r: 40; opacity: 0.3; }
+  to { r: 50; opacity: 0.6; }
+}
+
+/* Drop shadow glow effect */
+.drop-shadow-glow {
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.7));
+}
+
+/* Confetti animation */
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 20px;
+  background: #ffd700;
+  top: 0;
+  opacity: 0;
+}
+
+.confetti-piece:nth-child(1) {
+  left: 7%;
+  transform: rotate(-40deg);
+  animation: makeItRain 1000ms infinite ease-out;
+  animation-delay: 182ms;
+  animation-duration: 1116ms;
+}
+
+.confetti-piece:nth-child(2) {
+  left: 14%;
+  transform: rotate(4deg);
+  animation: makeItRain 1000ms infinite ease-out;
+  animation-delay: 161ms;
+  animation-duration: 1076ms;
+}
+
+.confetti-piece:nth-child(3) {
+  left: 21%;
+  transform: rotate(-51deg);
+  animation: makeItRain 1000ms infinite ease-out;
+  animation-delay: 481ms;
+  animation-duration: 1103ms;
+}
+
+.confetti-piece:nth-child(4) {
+  left: 28%;
+  transform: rotate(61deg);
+  animation: makeItRain 1000ms infinite ease-out;
+  animation-delay: 334ms;
+  animation-duration: 708ms;
+}
+
+.confetti-piece:nth-child(5) {
+  left: 35%;
+  transform: rotate(-52deg);
+  animation: makeItRain 1000ms infinite ease-out;
+  animation-delay: 302ms;
+  animation-duration: 776ms;
+}
+
+.confetti-piece:nth-child(6) {
+  left: 42%;
+  transform: rotate(38deg);
+  animation: makeItRain 1000ms infinite ease-out;
+  animation-delay: 180ms;
+  animation-duration: 1168ms;
+}
+
+@keyframes makeItRain {
+  from {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(350px);
+  }
 }
 
 .winner-pulse-animation {
   animation: winner-pulse 0.5s infinite alternate;
+}
+
+/* Money in the bank display animations */
+.bank-amount-pulse {
+  animation: bank-amount-pulse 2s infinite alternate ease-in-out;
+  box-shadow: 0 0 15px 0 rgba(255, 215, 0, 0.4);
+}
+
+@keyframes bank-amount-pulse {
+  0% {
+    box-shadow: 0 0 15px 0 rgba(255, 215, 0, 0.4);
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 25px 5px rgba(255, 215, 0, 0.6);
+    transform: scale(1.03);
+  }
+}
+
+.money-value-animation {
+  position: relative;
+  background-image: linear-gradient(45deg, #ffd700 25%, #ffeb3b 50%, #ffc107 75%, #ff9800);
+  background-size: 200% auto;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: money-gradient 3s linear infinite;
+  text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes money-gradient {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Game status animations */
+.waiting-animation {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 204, 0, 0.1),
+    rgba(255, 204, 0, 0.1) 10px,
+    rgba(255, 204, 0, 0.3) 10px,
+    rgba(255, 204, 0, 0.3) 20px
+  );
+  background-size: 28px 28px;
+  animation: slide-waiting 20s linear infinite;
+}
+
+.progress-animation {
+  background: linear-gradient(
+    90deg,
+    rgba(220, 38, 38, 0.1) 0%,
+    rgba(220, 38, 38, 0.3) 25%,
+    rgba(220, 38, 38, 0.1) 50%,
+    rgba(220, 38, 38, 0.3) 75%,
+    rgba(220, 38, 38, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-slide 3s linear infinite;
+}
+
+.completed-animation {
+  background: radial-gradient(
+    circle at center,
+    rgba(16, 185, 129, 0.4) 0%,
+    rgba(16, 185, 129, 0.1) 50%,
+    rgba(16, 185, 129, 0.4) 100%
+  );
+  background-size: 120% 120%;
+  animation: pulse-completed 3s ease-in-out infinite;
+}
+
+@keyframes slide-waiting {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 56px 0;
+  }
+}
+
+@keyframes progress-slide {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes pulse-completed {
+  0%, 100% {
+    background-size: 100% 100%;
+    background-position: center center;
+  }
+  50% {
+    background-size: 140% 140%;
+    background-position: center center;
+  }
 }
 
 @keyframes winner-pulse {

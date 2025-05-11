@@ -271,34 +271,112 @@ const GameBoard = ({
   return (
     <div className="flex-grow p-4">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-4xl mx-auto">
-        {/* Game Status Bar */}
-        <div className="bg-primary p-4 text-white flex justify-between items-center">
-          <div>
-            <h2 className="font-sans font-bold text-lg">Game #{game.id}</h2>
-            <p className="text-sm opacity-75">
-              Stake: <span className="text-secondary font-semibold">{formatCurrency(game.stake)}</span> • {players.length} Players
-            </p>
-          </div>
+        {/* Enhanced Game Status Bar */}
+        <div className="bg-gradient-to-r from-primary to-primary-light p-4 text-white flex flex-wrap justify-between items-center border-b-2 border-gray-700 relative">
+          {/* Left side - Game info */}
           <div className="flex items-center">
-            {timeRemaining !== undefined && (
-              <div className="bg-primary-light px-3 py-1 rounded-full text-sm mr-2 flex items-center">
-                <Timer className="w-4 h-4 mr-1" />
-                <span>{timeRemaining}</span>
+            <div className="bg-primary-light p-2 rounded-lg mr-3 border border-gray-600 shadow-inner">
+              <div className="text-xs uppercase text-gray-400 mb-0.5">Game ID</div>
+              <div className="font-mono text-lg font-bold text-secondary">{game.id}</div>
+            </div>
+            
+            <div>
+              <h2 className="font-sans font-bold text-lg">Big Boys Game</h2>
+              <div className="flex items-center space-x-3 mt-1">
+                <div className="flex items-center text-sm">
+                  <svg className="w-4 h-4 mr-1 text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                  </svg>
+                  <span className="text-secondary font-semibold">
+                    {formatCurrency(game.stake)}
+                  </span>
+                  <span className="ml-1 text-gray-300">stake</span>
+                </div>
+                
+                <div className="flex items-center text-sm">
+                  <svg className="w-4 h-4 mr-1 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  <span className="font-semibold text-gray-300">{players.length}</span>
+                  <span className="ml-1 text-gray-400">players</span>
+                </div>
               </div>
-            )}
-            <div className={cn(
-              "px-3 py-1 rounded-full text-white text-sm font-medium",
-              game.status === "waiting" ? "bg-secondary" : 
-              game.status === "in_progress" ? "bg-accent" : 
-              "bg-success"
-            )}>
-              <span>{
-                game.status === "waiting" ? "Waiting" : 
-                game.status === "in_progress" ? "In Progress" :
-                "Completed"
-              }</span>
             </div>
           </div>
+          
+          {/* Right side - Game status */}
+          <div className="flex items-center">
+            {timeRemaining !== undefined && (
+              <div className="bg-primary-light/70 px-3 py-2 rounded-lg text-sm mr-3 flex items-center shadow-inner border border-gray-700">
+                <Timer className="w-4 h-4 mr-2 text-secondary" />
+                <div>
+                  <div className="text-xs text-gray-400">Time Left</div>
+                  <div className="font-mono font-bold">{timeRemaining}</div>
+                </div>
+              </div>
+            )}
+            
+            <div className={cn(
+              "px-4 py-2 rounded-lg text-white text-sm font-medium relative overflow-hidden shadow-lg border border-gray-700",
+              game.status === "waiting" 
+                ? "bg-yellow-600" 
+                : game.status === "in_progress" 
+                  ? "bg-accent" 
+                  : "bg-green-600"
+            )}>
+              {/* Status animation background */}
+              <div className={cn(
+                "absolute inset-0 opacity-30",
+                game.status === "waiting" 
+                  ? "waiting-animation" 
+                  : game.status === "in_progress" 
+                    ? "progress-animation" 
+                    : "completed-animation"
+              )}></div>
+              
+              {/* Status icon and text */}
+              <div className="flex items-center relative z-10">
+                <div className="mr-2">
+                  {game.status === "waiting" ? (
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  ) : game.status === "in_progress" ? (
+                    <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path d="M12 8v4l3 3" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                      <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs text-white/70">Status</div>
+                  <div className="font-semibold">{
+                    game.status === "waiting" ? "Waiting" : 
+                    game.status === "in_progress" ? "In Progress" :
+                    "Completed"
+                  }</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Status indicator line */}
+          <div className={cn(
+            "absolute bottom-0 left-0 h-1 transition-all duration-700",
+            game.status === "waiting" ? "bg-yellow-500 w-1/3" : 
+            game.status === "in_progress" ? "bg-accent w-2/3" : 
+            "bg-green-500 w-full"
+          )}></div>
         </div>
         
         {/* Game Board */}
@@ -408,54 +486,141 @@ const GameBoard = ({
               
               {/* We've removed all GameBall components to focus purely on stone highlighting */}
               
-              {/* Winner announcement overlay */}
+              {/* Enhanced winner announcement overlay */}
               {showWinnerOverlay && (
-                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 winner-overlay">
-                  <div className="text-center">
-                    <h2 className="text-4xl font-bold text-yellow-400 mb-2 winner-text-animation">
-                      {finalStoneSelected}
-                    </h2>
-                    <p className="text-2xl font-bold text-white winner-pulse-animation">WINNER!</p>
+                <div className="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50 winner-overlay backdrop-blur-sm">
+                  <div className="relative p-8 rounded-lg bg-primary-light/70 border-4 border-yellow-500 shadow-2xl transform scale-in-animation">
+                    <div className="absolute -top-12 left-1/2 transform -translate-x-1/2">
+                      <svg width="120" height="120" viewBox="0 0 120 120" className="drop-shadow-glow">
+                        <circle cx="60" cy="60" r="55" fill="none" stroke="#FFC700" strokeWidth="2" strokeDasharray="8 4" className="rotate-animation"/>
+                        <circle cx="60" cy="60" r="40" fill="#FFC700" className="pulse-animation" fillOpacity="0.3"/>
+                      </svg>
+                    </div>
+                    
+                    <div className="absolute inset-0 bg-gradient-radial from-yellow-400/20 to-transparent rounded-lg"></div>
+                    
+                    <div className="text-center relative z-10">
+                      <h3 className="text-white text-2xl mb-2 opacity-90">WINNING NUMBER</h3>
+                      <h2 className="text-6xl font-bold text-yellow-400 mb-4 winner-text-animation drop-shadow-glow">
+                        {finalStoneSelected}
+                      </h2>
+                      <div className="bg-yellow-500 text-primary py-2 px-6 rounded-full inline-block transform winner-bounce-animation">
+                        <p className="text-3xl font-bold tracking-wider">WINNER!</p>
+                      </div>
+                      
+                      <div className="mt-6 text-white/90">
+                        Get ready for the next round...
+                      </div>
+                    </div>
+                    
+                    {/* Celebration particles */}
+                    <div className="absolute -top-10 left-0 w-full h-full pointer-events-none overflow-hidden">
+                      <div className="confetti-piece"></div>
+                      <div className="confetti-piece"></div>
+                      <div className="confetti-piece"></div>
+                      <div className="confetti-piece"></div>
+                      <div className="confetti-piece"></div>
+                      <div className="confetti-piece"></div>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
             
-            {/* Total Pool */}
-            <div className="bg-primary-light p-3 rounded-lg text-center mb-6">
-              <h4 className="text-white text-sm uppercase tracking-wider mb-1">MONEY IN THE BANK</h4>
-              <p className="text-secondary font-mono font-bold text-3xl">{formatCurrency(winnerAmount)}</p>
+            {/* Enhanced Money in the Bank Display */}
+            <div className="bg-gradient-to-b from-primary-light to-primary p-4 rounded-lg text-center mb-6 border-2 border-yellow-600 shadow-lg relative overflow-hidden">
+              {/* Background decorative elements */}
+              <div className="absolute inset-0 overflow-hidden">
+                <svg width="100%" height="100%" className="absolute opacity-10">
+                  <pattern id="money-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <circle cx="10" cy="10" r="4" fill="gold" />
+                  </pattern>
+                  <rect width="100%" height="100%" fill="url(#money-pattern)" />
+                </svg>
+              </div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-center mb-1">
+                  <svg className="w-5 h-5 mr-2 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                    <path d="M12 6c-1.1 0-2 .9-2 2h4c0-1.1-.9-2-2-2z" />
+                    <path d="M12 16c-1.1 0-2 .9-2 2h4c0-1.1-.9-2-2-2z" />
+                    <path d="M10 9h4v6h-4z" />
+                  </svg>
+                  <h4 className="text-white text-sm uppercase tracking-wider font-bold">MONEY IN THE BANK</h4>
+                </div>
+                
+                <div className="bank-amount-pulse py-2 px-3 bg-black/30 rounded-lg inline-block">
+                  <p className="text-secondary font-mono font-bold text-3xl money-value-animation">
+                    {formatCurrency(winnerAmount)}
+                  </p>
+                </div>
+                
+                <div className="mt-2 text-xs text-white/70">Winner takes all minus {game.commissionPercentage * 100}% commission</div>
+              </div>
             </div>
             
             {/* Game Action Button */}
             <div className="text-center">
+              {/* Enhanced button with pulsing animation when it's your turn */}
               <button
                 onClick={onRollStone}
-                disabled={!isCurrentPlayerTurn || game.status !== "in_progress"}
+                disabled={!isCurrentPlayerTurn || game.status !== "in_progress" || isRolling}
                 className={cn(
-                  "text-primary text-lg font-sans font-bold py-3 px-8 rounded-lg shadow-lg transform transition",
-                  isCurrentPlayerTurn && game.status === "in_progress"
-                    ? "bg-secondary hover:bg-secondary-dark hover:scale-105"
-                    : "bg-gray-400 cursor-not-allowed"
+                  "text-primary text-lg font-sans font-bold py-3 px-8 rounded-lg shadow-lg transform transition duration-300 relative",
+                  isCurrentPlayerTurn && game.status === "in_progress" && !isRolling
+                    ? "bg-secondary hover:bg-secondary-dark hover:scale-105 hover:shadow-xl active:scale-95"
+                    : "bg-gray-400 cursor-not-allowed opacity-80",
+                  isCurrentPlayerTurn && game.status === "in_progress" && !isRolling && "your-turn-pulse"
                 )}
+                aria-label={isCurrentPlayerTurn ? "Roll the stone" : "Waiting for your turn"}
               >
-                {isCurrentPlayerTurn ? "ROLL STONE" : "WAITING FOR YOUR TURN"}
+                {isRolling 
+                  ? "ROLLING..." 
+                  : isCurrentPlayerTurn 
+                    ? "ROLL STONE" 
+                    : "WAITING FOR YOUR TURN"}
+                
+                {/* Add subtle gold shine effect on active button */}
+                {isCurrentPlayerTurn && game.status === "in_progress" && !isRolling && (
+                  <span className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
+                    <span className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-yellow-300/30 to-transparent gold-shine-animation"></span>
+                  </span>
+                )}
               </button>
-              <div className="mt-2 text-xs text-white">
-                {game.status === "in_progress" 
-                  ? (isCurrentPlayerTurn 
-                     ? "It's your turn! Click to roll!" 
-                     : "Waiting for another player to roll...") 
-                  : "Game is not in progress"}               
+              
+              {/* Status message with improved styling */}
+              <div className={cn(
+                "mt-3 text-sm transition-all duration-300",
+                isCurrentPlayerTurn && game.status === "in_progress" && !isRolling
+                  ? "text-secondary font-medium"
+                  : "text-white/70"
+              )}>
+                {isRolling 
+                  ? "Stone is rolling..." 
+                  : game.status === "in_progress" 
+                    ? (isCurrentPlayerTurn 
+                       ? "It's your turn! Click to roll!" 
+                       : "Waiting for another player to roll...") 
+                    : "Game is not in progress"}               
               </div>
               
-              {/* Show bot game indicator */}
+              {/* Show bot game indicator with improved styling */}
               {players.some(p => p.userId === 9999) && (
-                <div className="mt-1 text-xs text-yellow-300">
-                  Demo mode: Playing against computer
-                  {players.find(p => p.userId === 9999 && !p.hasRolled) && (
-                    <span className="ml-1">(Computer's turn - you can roll for it)</span>
-                  )}
+                <div className="mt-2 text-sm text-yellow-300 font-medium bg-primary-light/50 py-1 px-3 rounded-full inline-block">
+                  <span className="flex items-center">
+                    <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
+                      <path d="M12 8v4" />
+                      <path d="M3.3 10a8.67 8.67 0 0 0 2.7 6.33" />
+                      <path d="M20.7 10a8.67 8.67 0 0 1-2.7 6.33" />
+                      <path d="M15 18H9a2 2 0 0 0-2 2 1 1 0 0 0 1 1h8a1 1 0 0 0 1-1 2 2 0 0 0-2-2z" />
+                    </svg>
+                    Demo mode: Playing against computer
+                    {players.find(p => p.userId === 9999 && !p.hasRolled) && (
+                      <span className="ml-1 text-white/80">(Computer's turn - you can roll for it)</span>
+                    )}
+                  </span>
                 </div>
               )}
             </div>
