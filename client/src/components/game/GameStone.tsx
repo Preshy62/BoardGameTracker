@@ -51,14 +51,16 @@ const GameStone = ({
     "cursor-pointer hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 focus:ring-offset-primary" : 
     "";
     
-  // Main style for the stone
+  // Main style for the stone with enhanced visual effects
   const stoneStyle = isRolling || isWinner || isHovering ? {
     boxShadow: isWinner 
       ? "0 0 75px 35px rgba(255, 215, 0, 0.95)"
       : isHovering && !isRolling && onClick && !disabled
         ? "0 0 30px 15px rgba(255, 215, 0, 0.6)"
-        : "0 0 60px 30px rgba(255, 215, 0, 0.95)",
-    zIndex: isWinner ? 200 : isHovering ? 50 : 100,
+        : isRolling
+          ? "0 0 60px 30px rgba(255, 255, 0, 0.8), inset 0 0 15px 5px rgba(255, 255, 255, 0.6)"
+          : "0 0 5px 2px rgba(255, 215, 0, 0.3)",
+    zIndex: isWinner ? 200 : isRolling ? 120 : isHovering ? 50 : 10,
     position: "relative" as const,
     transform: isWinner 
       ? "scale(2.0)" 
@@ -71,7 +73,7 @@ const GameStone = ({
     animation: isWinner 
       ? "winner-stone 1.5s infinite alternate ease-in-out" 
       : isRolling
-        ? "dice-roll 0.5s linear infinite, stone-pulse 0.6s infinite alternate"
+        ? "dice-roll 0.35s linear infinite, stone-pulse 0.8s infinite alternate"
         : "",
     border: isWinner 
       ? '8px solid gold' 
@@ -83,14 +85,20 @@ const GameStone = ({
     outline: isWinner 
       ? '5px solid red' 
       : isRolling 
-        ? '4px solid red'
+        ? '4px solid #ff9500'
         : undefined,
     background: isSpecial 
       ? 'radial-gradient(circle, #FFD700 30%, #f59e0b 100%)' 
       : isSuper 
         ? 'radial-gradient(circle, #f87171 30%, #b91c1c 100%)'
-        : 'radial-gradient(circle, #1e3a8a 30%, #172554 100%)',
-    filter: disabled ? "grayscale(0.7) opacity(0.7)" : undefined,
+        : isRolling
+          ? 'radial-gradient(circle at 30% 30%, #1e40af 20%, #1e3a8a 50%, #172554 100%)' 
+          : 'radial-gradient(circle, #1e3a8a 30%, #172554 100%)',
+    filter: isRolling 
+      ? "brightness(1.4) contrast(1.2)" 
+      : disabled 
+        ? "grayscale(0.7) opacity(0.7)" 
+        : undefined,
   } : disabled ? {
     filter: "grayscale(0.7) opacity(0.7)",
   } : undefined;

@@ -536,11 +536,31 @@ export default function DemoPage() {
       
       console.log(`Moving to stone idx ${stoneIdx}, position: ${relativeTop}, ${relativeLeft}`);
       
-      // Update the dice position with absolute coordinates - better centering for smaller ball
+      // Update the dice position with absolute coordinates - center on stone
       setDicePosition({
-        top: relativeTop + (rect.height / 2) - 20, // Center on stone
-        left: relativeLeft + (rect.width / 2) - 20,
+        top: relativeTop + (rect.height / 2), // Center on stone
+        left: relativeLeft + (rect.width / 2),
       });
+      
+      // Add visual highlight to the current stone
+      stoneElement.classList.add('stone-highlight');
+      
+      // Remove the highlight class after animation completes
+      setTimeout(() => {
+        stoneElement.classList.remove('stone-highlight');
+      }, 800);
+      
+      // Play a subtle click sound as the ball hits the stone
+      if (currentIdx % 2 === 0) { // Play on every other stone to avoid too many sounds
+        try {
+          const clickAudio = new Audio();
+          clickAudio.src = '/dice-click.mp3';
+          clickAudio.volume = 0.15;
+          clickAudio.play().catch(e => console.log('Click audio failed:', e));
+        } catch (e) {
+          console.log('Audio not supported');
+        }
+      }
     } else {
       console.error(`Could not find stone element for index ${stoneIdx}`);
     }
@@ -1077,15 +1097,33 @@ export default function DemoPage() {
                 </div>
               )}
               
-              {/* Rolling ball animation element */}
+              {/* Enhanced Rolling ball animation element with trail effect */}
               {showBall && (
-                <div 
-                  className={`ball-element ${isRolling ? 'roll-animation' : ''}`} 
-                  style={{
-                    top: `${ballPosition.top}px`,
-                    left: `${ballPosition.left}px`,
-                  }}
-                />
+                <>
+                  {/* Animated ball with enhanced visuals */}
+                  <div 
+                    className="rolling-ball" 
+                    style={{
+                      top: `${ballPosition.top}px`,
+                      left: `${ballPosition.left}px`
+                    }}
+                  />
+                  
+                  {/* Multiple trail elements for a more dynamic effect */}
+                  {[...Array(3)].map((_, i) => (
+                    <div 
+                      key={`trail-${i}`}
+                      className="ball-trail" 
+                      style={{
+                        top: `${ballPosition.top}px`,
+                        left: `${ballPosition.left}px`,
+                        opacity: 0.7 - (i * 0.2),
+                        animationDelay: `${i * 0.1}s`,
+                        transform: `translate(-50%, -50%) scale(${0.9 + (i * 0.3)})`,
+                      }}
+                    />
+                  ))}
+                </>
               )}
               
               {/* Arrow pointing to start */}
