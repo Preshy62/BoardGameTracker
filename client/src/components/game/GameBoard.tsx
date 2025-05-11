@@ -41,6 +41,8 @@ const GameBoard = ({
   
   // Track the final selected stone with winning animation
   const [finalStoneSelected, setFinalStoneSelected] = useState<number | null>(null);
+  const [winnerInfo, setWinnerInfo] = useState<{name: string, amount: number} | null>(null);
+  const [showWinCelebration, setShowWinCelebration] = useState(false);
   
   // State for the enhanced rolling ball animation
   const [ballPosition, setBallPosition] = useState({ top: 50, left: 50 });
@@ -255,10 +257,21 @@ const GameBoard = ({
           // Final position
           setBallPosition(winningPosition);
           
-          // Now set the winner stone
+          // Now set the winner stone with enhanced animation sequence
           setFinalStoneSelected(rollingStoneNumber);
           
           console.log("🏆 WINNER ANIMATION: Stone", rollingStoneNumber);
+          
+          // Find the current player for win celebration
+          const currentPlayer = players.find(p => p.userId === currentPlayerId)?.user;
+          
+          // Set winner info for the celebration component
+          if (currentPlayer) {
+            setWinnerInfo({
+              name: isCurrentPlayerTurn ? 'You' : currentPlayer.username,
+              amount: winnerAmount
+            });
+          }
           
           // Play landing sound with enhanced volume
           try {
@@ -282,11 +295,23 @@ const GameBoard = ({
             // Optional sound - fail silently
           }
           
-          // Keep the final stone highlighted for a longer moment with the special animation
-          await new Promise(resolve => setTimeout(resolve, 2500));
+          // Keep the final stone highlighted for a moment
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // End the animation
-          setFinalStoneSelected(null);
+          // Show the win celebration overlay
+          setShowWinCelebration(true);
+          
+          // Keep the celebration visible for a longer moment
+          await new Promise(resolve => setTimeout(resolve, 6000));
+          
+          // Hide the celebration
+          setShowWinCelebration(false);
+          
+          // End the animation after a short delay to allow for transitions
+          setTimeout(() => {
+            setFinalStoneSelected(null);
+            setWinnerInfo(null);
+          }, 500);
         }
         setRollingStones({});
         setIsRolling(false);
@@ -316,8 +341,9 @@ const GameBoard = ({
   // Determine if we should show the winner overlay
   const showWinnerOverlay = finalStoneSelected !== null;
   
-  // We don't need this effect anymore as the logic is incorporated in the enhanced effect above
-
+  // Find the current player
+  const currentPlayer = players.find(p => p.userId === currentPlayerId)?.user;
+  
   return (
     <div className="flex-grow p-4">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-4xl mx-auto">
@@ -345,12 +371,7 @@ const GameBoard = ({
                 </div>
                 
                 <div className="flex items-center text-sm">
-                  <svg className="w-4 h-4 mr-1 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
+                  <Users className="w-4 h-4 mr-1 text-gray-300" />
                   <span className="font-semibold text-gray-300">{players.length}</span>
                   <span className="ml-1 text-gray-400">players</span>
                 </div>
@@ -358,10 +379,21 @@ const GameBoard = ({
             </div>
           </div>
           
-          {/* Right side - Game status */}
-          <div className="flex items-center">
+          {/* Right side - Game status and turn indicator */}
+          <div className="flex items-center gap-3">
+            {/* Turn indicator */}
+            {game.status === "in_progress" && (
+              <TurnIndicator 
+                currentPlayer={currentPlayer}
+                isYourTurn={isCurrentPlayerTurn}
+                timeLeft={timeRemaining}
+                className="hidden md:flex"
+              />
+            )}
+            
+            {/* Game status */}
             {timeRemaining !== undefined && (
-              <div className="bg-primary-light/70 px-3 py-2 rounded-lg text-sm mr-3 flex items-center shadow-inner border border-gray-700">
+              <div className="bg-primary-light/70 px-3 py-2 rounded-lg text-sm mr-3 flex items-center shadow-inner border border-gray-700 md:hidden">
                 <Timer className="w-4 h-4 mr-2 text-secondary" />
                 <div>
                   <div className="text-xs text-gray-400">Time Left</div>
@@ -468,20 +500,88 @@ const GameBoard = ({
 
               {/* Top row stones */}
               <div className="flex justify-between mb-4">
-                <GameStone id="stone-29" number={29} isRolling={isStoneRolling(29)} isWinner={isWinningStone(29)} />
-                <GameStone id="stone-40" number={40} isRolling={isStoneRolling(40)} isWinner={isWinningStone(40)} />
-                <GameStone id="stone-32" number={32} isRolling={isStoneRolling(32)} isWinner={isWinningStone(32)} />
-                <GameStone id="stone-81" number={81} isRolling={isStoneRolling(81)} isWinner={isWinningStone(81)} />
-                <GameStone id="stone-7" number={7} isRolling={isStoneRolling(7)} isWinner={isWinningStone(7)} />
+                <GameStone 
+                  id="stone-29" 
+                  number={29} 
+                  isRolling={isStoneRolling(29)} 
+                  isWinner={isWinningStone(29)} 
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                  animationType={game.status === "in_progress" ? "pulse" : "none"}
+                />
+                <GameStone 
+                  id="stone-40" 
+                  number={40} 
+                  isRolling={isStoneRolling(40)} 
+                  isWinner={isWinningStone(40)} 
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                  animationType={game.status === "in_progress" ? "glow" : "none"}
+                />
+                <GameStone 
+                  id="stone-32" 
+                  number={32} 
+                  isRolling={isStoneRolling(32)} 
+                  isWinner={isWinningStone(32)} 
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                  animationType={game.status === "in_progress" ? "pulse" : "none"}
+                />
+                <GameStone 
+                  id="stone-81" 
+                  number={81} 
+                  isRolling={isStoneRolling(81)} 
+                  isWinner={isWinningStone(81)} 
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                  animationType={game.status === "in_progress" ? "pulse" : "none"}
+                />
+                <GameStone 
+                  id="stone-7" 
+                  number={7} 
+                  isRolling={isStoneRolling(7)} 
+                  isWinner={isWinningStone(7)} 
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                  animationType={game.status === "in_progress" ? "pulse" : "none"}
+                />
               </div>
               
               {/* Second row with 1000 as special */}
               <div className="flex justify-between mb-4">
-                <GameStone id="stone-13" number={13} isRolling={isStoneRolling(13)} isWinner={isWinningStone(13)} />
-                <GameStone id="stone-64" number={64} isRolling={isStoneRolling(64)} isWinner={isWinningStone(64)} />
-                <GameStone id="stone-1000" number={1000} isRolling={isStoneRolling(1000)} isWinner={isWinningStone(1000)} isSpecial={true} size="lg" />
-                <GameStone id="stone-101" number={101} isRolling={isStoneRolling(101)} isWinner={isWinningStone(101)} />
-                <GameStone id="stone-4" number={4} isRolling={isStoneRolling(4)} isWinner={isWinningStone(4)} />
+                <GameStone 
+                  id="stone-13" 
+                  number={13} 
+                  isRolling={isStoneRolling(13)} 
+                  isWinner={isWinningStone(13)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-64" 
+                  number={64} 
+                  isRolling={isStoneRolling(64)} 
+                  isWinner={isWinningStone(64)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-1000" 
+                  number={1000} 
+                  isRolling={isStoneRolling(1000)} 
+                  isWinner={isWinningStone(1000)} 
+                  isSpecial={true} 
+                  size="lg"
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                  animationType="glow"
+                />
+                <GameStone 
+                  id="stone-101" 
+                  number={101} 
+                  isRolling={isStoneRolling(101)} 
+                  isWinner={isWinningStone(101)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-4" 
+                  number={4} 
+                  isRolling={isStoneRolling(4)} 
+                  isWinner={isWinningStone(4)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
               </div>
               
               {/* Third row with 3355 and 6624 */}
@@ -685,6 +785,18 @@ const GameBoard = ({
           </div>
         </div>
       </div>
+      
+      {/* Enhanced animation components */}
+      {showWinCelebration && winnerInfo && (
+        <WinCelebration 
+          isVisible={showWinCelebration}
+          winnerName={winnerInfo.name}
+          winAmount={winnerInfo.amount}
+          currency={game.currency || '₦'}
+          onClose={() => setShowWinCelebration(false)}
+          autoHideDuration={7000}
+        />
+      )}
     </div>
   );
 };
