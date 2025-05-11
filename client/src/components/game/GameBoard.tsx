@@ -586,25 +586,122 @@ const GameBoard = ({
               
               {/* Third row with 3355 and 6624 */}
               <div className="flex justify-between mb-4">
-                <GameStone id="stone-3355" number={3355} isRolling={isStoneRolling(3355)} isWinner={isWinningStone(3355)} isSuper={true} />
-                <GameStone id="stone-65" number={65} isRolling={isStoneRolling(65)} isWinner={isWinningStone(65)} />
-                <GameStone id="stone-12" number={12} isRolling={isStoneRolling(12)} isWinner={isWinningStone(12)} />
-                <GameStone id="stone-22" number={22} isRolling={isStoneRolling(22)} isWinner={isWinningStone(22)} />
-                <GameStone id="stone-9" number={9} isRolling={isStoneRolling(9)} isWinner={isWinningStone(9)} />
-                <GameStone id="stone-6624" number={6624} isRolling={isStoneRolling(6624)} isWinner={isWinningStone(6624)} isSuper={true} />
-                <GameStone id="stone-44" number={44} isRolling={isStoneRolling(44)} isWinner={isWinningStone(44)} />
+                <GameStone 
+                  id="stone-3355" 
+                  number={3355} 
+                  isRolling={isStoneRolling(3355)} 
+                  isWinner={isWinningStone(3355)} 
+                  isSuper={true}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                  animationType="bounce"
+                />
+                <GameStone 
+                  id="stone-65" 
+                  number={65} 
+                  isRolling={isStoneRolling(65)} 
+                  isWinner={isWinningStone(65)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-12" 
+                  number={12} 
+                  isRolling={isStoneRolling(12)} 
+                  isWinner={isWinningStone(12)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-22" 
+                  number={22} 
+                  isRolling={isStoneRolling(22)} 
+                  isWinner={isWinningStone(22)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-9" 
+                  number={9} 
+                  isRolling={isStoneRolling(9)} 
+                  isWinner={isWinningStone(9)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-6624" 
+                  number={6624} 
+                  isRolling={isStoneRolling(6624)} 
+                  isWinner={isWinningStone(6624)} 
+                  isSuper={true}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                  animationType="spin"
+                />
+                <GameStone 
+                  id="stone-44" 
+                  number={44} 
+                  isRolling={isStoneRolling(44)} 
+                  isWinner={isWinningStone(44)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
               </div>
               
               {/* Fourth row with 500 as special */}
               <div className="flex justify-between mb-4">
-                <GameStone id="stone-28" number={28} isRolling={isStoneRolling(28)} isWinner={isWinningStone(28)} />
-                <GameStone id="stone-21" number={21} isRolling={isStoneRolling(21)} isWinner={isWinningStone(21)} />
-                <GameStone id="stone-105" number={105} isRolling={isStoneRolling(105)} isWinner={isWinningStone(105)} />
-                <GameStone id="stone-500" number={500} isRolling={isStoneRolling(500)} isWinner={isWinningStone(500)} isSpecial={true} size="lg" />
-                <GameStone id="stone-99" number={99} isRolling={isStoneRolling(99)} isWinner={isWinningStone(99)} />
-                <GameStone id="stone-20" number={20} isRolling={isStoneRolling(20)} isWinner={isWinningStone(20)} />
-                <GameStone id="stone-82" number={82} isRolling={isStoneRolling(82)} isWinner={isWinningStone(82)} />
-                <GameStone id="stone-3" number={3} isRolling={isStoneRolling(3)} isWinner={isWinningStone(3)} />
+                <GameStone 
+                  id="stone-28" 
+                  number={28} 
+                  isRolling={isStoneRolling(28)} 
+                  isWinner={isWinningStone(28)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-21" 
+                  number={21} 
+                  isRolling={isStoneRolling(21)} 
+                  isWinner={isWinningStone(21)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-105" 
+                  number={105} 
+                  isRolling={isStoneRolling(105)} 
+                  isWinner={isWinningStone(105)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-500" 
+                  number={500} 
+                  isRolling={isStoneRolling(500)} 
+                  isWinner={isWinningStone(500)} 
+                  isSpecial={true} 
+                  size="lg"
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                  animationType="glow"
+                />
+                <GameStone 
+                  id="stone-99" 
+                  number={99} 
+                  isRolling={isStoneRolling(99)} 
+                  isWinner={isWinningStone(99)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-20" 
+                  number={20} 
+                  isRolling={isStoneRolling(20)} 
+                  isWinner={isWinningStone(20)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-82" 
+                  number={82} 
+                  isRolling={isStoneRolling(82)} 
+                  isWinner={isWinningStone(82)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
+                <GameStone 
+                  id="stone-3" 
+                  number={3} 
+                  isRolling={isStoneRolling(3)} 
+                  isWinner={isWinningStone(3)}
+                  isYourTurn={isCurrentPlayerTurn && game.status === "in_progress" && !isRolling}
+                />
               </div>
               
               {/* Fifth row */}
