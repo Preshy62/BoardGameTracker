@@ -10,12 +10,14 @@ import { MailDataRequired } from '@sendgrid/helpers/classes/mail';
 let mailService: MailService | null = null;
 
 // Email categories for analytics in SendGrid dashboard
-export enum EmailCategory {
-  VERIFICATION = 'verification',
-  PASSWORD_RESET = 'password_reset',
-  TRANSACTION = 'transaction',
-  NOTIFICATION = 'notification'
-}
+export const EmailCategory = {
+  VERIFICATION: 'verification',
+  PASSWORD_RESET: 'password_reset',
+  TRANSACTION: 'transaction', 
+  NOTIFICATION: 'notification'
+} as const;
+
+export type EmailCategory = typeof EmailCategory[keyof typeof EmailCategory];
 
 /**
  * Initialize the SendGrid mail service
@@ -96,7 +98,8 @@ export async function sendEmail(
 
     // Add category if provided
     if (category) {
-      msg.categories = [category];
+      // Cast is needed here since the type definition expects string
+      msg.category = [category as string];
     }
 
     // Add template if provided

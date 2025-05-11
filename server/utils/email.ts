@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
-import { initializeSendGrid, sendEmail as sendGridEmail } from './sendgrid';
+import { initializeSendGrid, sendEmail as sendGridEmail, EmailCategory } from './sendgrid';
 
 // Create a test account for development
 // In production, you'd replace this with actual SMTP credentials
@@ -203,13 +203,14 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   
   // Send email using the appropriate provider
   if (emailProvider === 'sendgrid') {
-    // Use SendGrid
+    // Use SendGrid with proper category for analytics
     const sent = await sendGridEmail(
       email,
       subject,
       text,
       html,
-      process.env.EMAIL_FROM || 'support@bigboysgame.com'
+      process.env.EMAIL_FROM || 'support@bigboysgame.com',
+      EmailCategory.PASSWORD_RESET
     );
     
     if (!sent) {
@@ -301,13 +302,14 @@ export async function sendTransactionEmail(email: string, transactionType: 'depo
   
   // Send email using the appropriate provider
   if (emailProvider === 'sendgrid') {
-    // Use SendGrid
+    // Use SendGrid with proper category for analytics
     const sent = await sendGridEmail(
       email,
       subject,
       text,
       html,
-      process.env.EMAIL_FROM || 'transactions@bigboysgame.com'
+      process.env.EMAIL_FROM || 'transactions@bigboysgame.com',
+      EmailCategory.TRANSACTION
     );
     
     if (!sent) {
