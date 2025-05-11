@@ -141,31 +141,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(validatedData.password, saltRounds);
       
-      // Generate verification token and expiry date
-      const verificationToken = generateVerificationToken();
-      const tokenExpiry = addDays(new Date(), 3); // Token valid for 3 days
+      // Check if email verification should be skipped
+      // This can be controlled by environment variable or specific test email domains
+      const skipEmailVerification = process.env.SKIP_EMAIL_VERIFICATION === 'true';
+      const testDomains = ['test.com', 'example.com', 'gmail.com']; // Add common test domains
+      const isTestEmail = testDomains.some(domain => validatedData.email.endsWith(domain));
       
-      // Create user with verification token
+      // For development, we'll skip verification by default
+      const shouldSkipVerification = 
+        skipEmailVerification || 
+        isTestEmail || 
+        process.env.NODE_ENV === 'development';
+      
+      let verificationToken = null;
+      let tokenExpiry = null;
+      
+      // Only generate token if we're not skipping verification
+      if (!shouldSkipVerification) {
+        verificationToken = generateVerificationToken();
+        tokenExpiry = addDays(new Date(), 3); // Token valid for 3 days
+      }
+      
+      // Create user with verification token (or verified status if skipping)
       const user = await storage.createUser({
         ...validatedData,
         password: hashedPassword,
         avatarInitials: validatedData.avatarInitials || validatedData.username.substring(0, 2).toUpperCase(),
         verificationToken,
         verificationTokenExpires: tokenExpiry,
-        emailVerified: false
+        emailVerified: shouldSkipVerification // Auto-verify if skipping verification
       });
       
-      // Send verification email
-      await sendVerificationEmail(user.email, verificationToken);
+      // Only send verification email if not skipping verification
+      if (!shouldSkipVerification) {
+        await sendVerificationEmail(user.email, verificationToken as string);
+        console.log('User registered, verification email sent:', user.id);
+      } else {
+        console.log('User registered with auto-verification (skipped email):', user.id);
+      }
       
-      // Do NOT automatically log in the user until email is verified
-      // Remove password from response
+      // Remove sensitive data from response
       const { password, verificationToken: token, ...userWithoutSensitiveInfo } = user;
-      console.log('User registered, verification email sent:', user.id);
-      res.status(201).json({ 
-        ...userWithoutSensitiveInfo,
-        message: "Registration successful. Please check your email to verify your account."
-      });
+      
+      // If verification is skipped, log the user in immediately by setting the session
+      if (shouldSkipVerification) {
+        req.session.userId = user.id;
+        console.log(`Auto-login for verified user ${user.id}, session ID: ${req.session.id}`);
+        
+        res.status(201).json({ 
+          ...userWithoutSensitiveInfo,
+          message: "Registration successful. Email verification skipped for development."
+        });
+      } else {
+        // Otherwise, don't log in and show verification message
+        res.status(201).json({ 
+          ...userWithoutSensitiveInfo,
+          message: "Registration successful. Please check your email to verify your account."
+        });
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors[0].message });
