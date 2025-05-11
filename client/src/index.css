@@ -614,11 +614,26 @@
 
 /* Enhanced dice roll animation with smoother timing and 3D effect */
 @keyframes dice-roll {
-  0% { transform: rotate(0deg) scale(1.1) perspective(600px) rotateX(0deg); }
-  25% { transform: rotate(90deg) scale(1.15) perspective(600px) rotateX(10deg); }
-  50% { transform: rotate(180deg) scale(1.2) perspective(600px) rotateX(0deg); }
-  75% { transform: rotate(270deg) scale(1.15) perspective(600px) rotateX(-10deg); }
-  100% { transform: rotate(360deg) scale(1.1) perspective(600px) rotateX(0deg); }
+  0% { 
+    transform: rotate(0deg) scale(1.1) perspective(600px) rotateX(0deg) rotateY(0deg);
+    filter: brightness(1.1);
+  }
+  25% { 
+    transform: rotate(90deg) scale(1.15) perspective(600px) rotateX(10deg) rotateY(5deg);
+    filter: brightness(1.2) contrast(1.1);
+  }
+  50% { 
+    transform: rotate(180deg) scale(1.2) perspective(600px) rotateX(0deg) rotateY(-5deg);
+    filter: brightness(1.3) contrast(1.2);
+  }
+  75% { 
+    transform: rotate(270deg) scale(1.15) perspective(600px) rotateX(-10deg) rotateY(5deg);
+    filter: brightness(1.2) contrast(1.1);
+  }
+  100% { 
+    transform: rotate(360deg) scale(1.1) perspective(600px) rotateX(0deg) rotateY(0deg);
+    filter: brightness(1.1);
+  }
 }
 
 /* Smooth pulse animation for dice element with shadow effects */
@@ -637,6 +652,47 @@
     transform: translate(-50%, -50%) scale(1); 
     opacity: 1; 
     filter: drop-shadow(0px 0px 8px rgba(255, 205, 43, 0.6));
+  }
+}
+
+/* Enhanced rolling ball animation */
+@keyframes rolling-ball {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+    box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.5), 
+                inset 0 0 8px 3px rgba(255, 255, 255, 0.6);
+  }
+  25% {
+    transform: translate(-52%, -48%) rotate(90deg);
+    box-shadow: 0 0 25px 8px rgba(255, 215, 0, 0.6), 
+                inset 0 0 10px 4px rgba(255, 255, 255, 0.7);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(180deg);
+    box-shadow: 0 0 30px 10px rgba(255, 215, 0, 0.7), 
+                inset 0 0 12px 5px rgba(255, 255, 255, 0.8);
+  }
+  75% {
+    transform: translate(-48%, -52%) rotate(270deg);
+    box-shadow: 0 0 25px 8px rgba(255, 215, 0, 0.6), 
+                inset 0 0 10px 4px rgba(255, 255, 255, 0.7);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+    box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.5), 
+                inset 0 0 8px 3px rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* Trail effect for the rolling ball */
+@keyframes trail-effect {
+  0% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2);
   }
 }
 
