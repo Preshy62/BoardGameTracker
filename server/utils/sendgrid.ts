@@ -1,62 +1,51 @@
 import { MailService } from '@sendgrid/mail';
 
-let sendgridClient: MailService | null = null;
+// This is a placeholder for SendGrid integration
+// We're not actually using this since we're focused on SMTP
 
-/**
- * Initialize the SendGrid client with the API key
- */
+let mailService: MailService | null = null;
+
 export function initializeSendGrid(): MailService | null {
   if (!process.env.SENDGRID_API_KEY) {
-    console.warn('SendGrid API key is not set. Email functionality will be limited.');
+    console.log('SendGrid API key not found, skipping SendGrid initialization');
     return null;
   }
 
   try {
-    const mailService = new MailService();
-    mailService.setApiKey(process.env.SENDGRID_API_KEY);
-    sendgridClient = mailService;
-    console.log('SendGrid client initialized successfully');
-    return mailService;
+    const service = new MailService();
+    service.setApiKey(process.env.SENDGRID_API_KEY);
+    console.log('SendGrid initialized successfully');
+    mailService = service;
+    return service;
   } catch (error) {
-    console.error('Error initializing SendGrid:', error);
+    console.error('Failed to initialize SendGrid:', error);
     return null;
   }
 }
 
-/**
- * Send an email using SendGrid
- */
 export async function sendEmail(
   to: string,
   subject: string,
   text: string,
   html: string,
-  from = process.env.EMAIL_FROM || 'verification@bigboysgame.com'
+  from: string = 'noreply@bigboysgame.com'
 ): Promise<boolean> {
-  if (!sendgridClient) {
-    console.error('SendGrid client not initialized');
+  if (!mailService) {
+    console.error('SendGrid mail service not initialized');
     return false;
   }
 
   try {
-    await sendgridClient.send({
+    await mailService.send({
       to,
       from,
       subject,
       text,
-      html
+      html,
     });
-    console.log(`Email sent to ${to} using SendGrid`);
     return true;
   } catch (error) {
     console.error('SendGrid email error:', error);
     return false;
   }
-}
-
-/**
- * Get the SendGrid client instance
- */
-export function getSendGridClient(): MailService | null {
-  return sendgridClient;
 }
