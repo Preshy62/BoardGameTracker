@@ -7,132 +7,8 @@ import DemoVoiceChat from "@/components/game/DemoVoiceChat";
 import DemoTextChat from "@/components/game/DemoTextChat";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 
-// Stone Component with React-based animation
-interface DemoStoneProps {
-  number: number;
-  isSpecial?: boolean;
-  isSuper?: boolean;
-  size?: 'sm' | 'md' | 'lg';
-  isRolling?: boolean;
-  isWinner?: boolean; // Add winner prop for enhanced winner animation
-  onClick?: () => void;
-}
-
-const DemoStone = ({ 
-  number, 
-  isSpecial = false,
-  isSuper = false,
-  size = 'md',
-  isRolling = false,
-  isWinner = false, // New prop for winner animation
-  onClick,
-}: DemoStoneProps) => {
-  // Determine size values based on the size prop
-  const sizeMap = {
-    'sm': { width: '2.5rem', height: '2.5rem', fontSize: '0.875rem' },
-    'md': { width: '4rem', height: '4rem', fontSize: '1.125rem' },
-    'lg': { width: '5rem', height: '5rem', fontSize: '1.25rem' },
-  }[size];
-  
-  // State for animation control
-  const [rotation, setRotation] = useState(0);
-  const [scale, setScale] = useState(1);
-  const [glow, setGlow] = useState(0);
-  const animationRef = useRef<number | null>(null);
-  
-  // Animation function using requestAnimationFrame
-  useEffect(() => {
-    if (isRolling) {
-      let frameCount = 0;
-      const totalFrames = 50; // animation duration
-      
-      const animate = () => {
-        frameCount++;
-        
-        // Calculate animation values
-        const progress = frameCount / totalFrames;
-        const newRotation = progress * 720; // two full rotations
-        const newScale = 1 + Math.sin(progress * Math.PI) * 0.3; // sin wave for scaling
-        const newGlow = Math.sin(progress * Math.PI) * 20; // glow intensity
-        
-        setRotation(newRotation);
-        setScale(newScale);
-        setGlow(newGlow);
-        
-        if (frameCount < totalFrames) {
-          animationRef.current = requestAnimationFrame(animate);
-        }
-      };
-      
-      // Start the animation
-      animationRef.current = requestAnimationFrame(animate);
-      
-      // Cleanup function
-      return () => {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-      };
-    } else {
-      // Reset animation values when not rolling
-      setRotation(0);
-      setScale(1);
-      setGlow(0);
-    }
-  }, [isRolling]);
-  
-  // Determine stone class based on type
-  const stoneClass = cn(
-    'rounded-lg shadow-lg flex items-center justify-center font-bold cursor-pointer transition-transform hover:scale-105',
-    {
-      'bg-yellow-500 text-primary': isSpecial,
-      'bg-red-600 text-white border-2 border-yellow-400': isSuper,
-      'bg-gray-800 text-white': !isSpecial && !isSuper,
-    }
-  );
-  
-  return (
-    <div 
-      className={cn("board-stone", isWinner && "winner-stone-animation")}
-      onClick={onClick}
-      style={isWinner ? {
-        boxShadow: "0 0 75px 35px rgba(255, 215, 0, 0.95)",
-        zIndex: 200,
-        position: "relative",
-        transformOrigin: "center center",
-        transition: "all 0.15s ease-in-out",
-        animation: "winner-stone 1.5s infinite alternate ease-in-out",
-        border: '8px solid gold',
-        outline: '5px solid red',
-        width: sizeMap.width,
-        height: sizeMap.height,
-        background: isSpecial 
-          ? 'radial-gradient(circle, #FFD700 30%, #f59e0b 100%)' 
-          : isSuper 
-            ? 'radial-gradient(circle, #f87171 30%, #b91c1c 100%)'
-            : 'radial-gradient(circle, #1e3a8a 30%, #172554 100%)'
-      } : {
-        transform: `rotate(${rotation}deg) scale(${scale})`,
-        boxShadow: `0 0 ${glow}px ${isSpecial ? '#FFD700' : isSuper ? '#FF0000' : '#FFFFFF'}`,
-        width: sizeMap.width,
-        height: sizeMap.height,
-      }}
-    >
-      <div 
-        className={stoneClass} 
-        style={{ 
-          width: '100%', 
-          height: '100%', 
-          fontSize: sizeMap.fontSize,
-          position: 'relative',
-          zIndex: 1
-        }}
-      >
-        {number}
-      </div>
-    </div>
-  );
-};
+// Import the enhanced GameStone component instead of creating a separate demo version
+import GameStone from "@/components/game/GameStone";
 
 // Demo Board Page
 export default function DemoPage() {
@@ -1016,13 +892,86 @@ export default function DemoPage() {
         
         {/* Game board container */}
         <div className="w-full max-w-3xl mx-auto my-8 bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="bg-primary p-4 text-white">
-            <h2 className="text-xl font-bold text-center">Big Boys Game Board Demo</h2>
-            {selectedStone && (
-              <p className="text-center mt-2 text-sm bg-secondary text-primary p-1 px-3 rounded-full inline-block mx-auto">
-                You rolled: <span className="font-bold">{selectedStone}</span>
-              </p>
-            )}
+          {/* Enhanced Game Status Bar */}
+          <div className="bg-gradient-to-r from-primary to-primary-light p-4 text-white border-b-2 border-gray-700 relative">
+            <div className="flex flex-wrap justify-between items-center">
+              {/* Left side - Game info */}
+              <div className="flex items-center">
+                <div className="bg-primary-light p-2 rounded-lg mr-3 border border-gray-600 shadow-inner">
+                  <div className="text-xs uppercase text-gray-400 mb-0.5">Demo</div>
+                  <div className="font-mono text-lg font-bold text-secondary">MODE</div>
+                </div>
+                
+                <div>
+                  <h2 className="font-sans font-bold text-lg">Big Boys Game</h2>
+                  <div className="flex items-center space-x-3 mt-1">
+                    <div className="flex items-center text-sm">
+                      <svg className="w-4 h-4 mr-1 text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 6v6l4 2" />
+                      </svg>
+                      <span className="text-secondary font-semibold">
+                        ₦50,000
+                      </span>
+                      <span className="ml-1 text-gray-300">stake</span>
+                    </div>
+                    
+                    <div className="flex items-center text-sm">
+                      <svg className="w-4 h-4 mr-1 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      <span className="font-semibold text-gray-300">4</span>
+                      <span className="ml-1 text-gray-400">players</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right side - Game status */}
+              <div className="flex items-center mt-2 sm:mt-0">
+                {selectedStone && (
+                  <div className="bg-primary-light/70 px-3 py-2 rounded-lg text-sm mr-3 flex items-center shadow-inner border border-gray-700">
+                    <svg className="w-5 h-5 mr-2 text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M8 12h8" />
+                      <path d="M12 8v8" />
+                    </svg>
+                    <div>
+                      <div className="text-xs text-gray-400">You Rolled</div>
+                      <div className="font-mono font-bold text-secondary">{selectedStone}</div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className={cn(
+                  "px-4 py-2 rounded-lg text-white text-sm font-medium relative overflow-hidden shadow-lg border border-gray-700",
+                  "bg-accent"
+                )}>
+                  {/* Status animation background */}
+                  <div className="absolute inset-0 opacity-30 progress-animation"></div>
+                  
+                  {/* Status icon and text */}
+                  <div className="flex items-center relative z-10">
+                    <div className="mr-2">
+                      <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path d="M12 8v4l3 3" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-xs text-white/70">Status</div>
+                      <div className="font-semibold">In Progress</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Status indicator line */}
+            <div className="absolute bottom-0 left-0 h-1 bg-accent w-2/3 transition-all duration-700"></div>
           </div>
           
           <div className="p-6">
@@ -1050,27 +999,67 @@ export default function DemoPage() {
             >
               <h3 className="text-center text-white text-2xl font-bold mb-4">BIG BOYS GAME</h3>
               
-              {/* Winner overlay */}
+              {/* Enhanced Winner overlay with confetti effect */}
               {finalStoneSelected && (
-                <div className="winner-overlay absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="text-center">
-                    <h2 className="text-yellow-500 text-4xl font-bold winner-text-animation mb-4">
+                <div className="winner-overlay absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 backdrop-blur-sm">
+                  {/* Confetti animation elements */}
+                  <div className="confetti-container absolute inset-0 overflow-hidden">
+                    {[...Array(30)].map((_, i) => (
+                      <div 
+                        key={i}
+                        className="confetti" 
+                        style={{
+                          left: `${Math.random() * 100}%`,
+                          top: `-5%`,
+                          backgroundColor: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                          animationDelay: `${Math.random() * 5}s`,
+                          animationDuration: `${3 + Math.random() * 5}s`,
+                          transform: `rotate(${Math.random() * 360}deg) scale(${0.8 + Math.random() * 0.5})`,
+                          width: `${8 + Math.random() * 12}px`,
+                          height: `${8 + Math.random() * 12}px`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Winner content card */}
+                  <div className="relative z-10 bg-primary bg-opacity-90 p-8 rounded-2xl shadow-2xl border-4 border-secondary animate-winner-appear max-w-md w-full">
+                    <div className="absolute inset-0 winner-card-glow"></div>
+                    
+                    {/* Trophy icon */}
+                    <div className="winner-trophy-animation text-yellow-400 mx-auto mb-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-20 h-20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11 17.938A8.001 8.001 0 0 1 7 2h10a8.001 8.001 0 0 1-4 15.938v2.074c3.946.092 7 .723 7 1.488 0 .828-3.582 1.5-8 1.5s-8-.672-8-1.5c0-.765 3.054-1.396 7-1.488v-2.074zM8.5 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm7 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
+                      </svg>
+                    </div>
+                    
+                    <h2 className="text-yellow-500 text-4xl font-bold mb-4 animate-pulse">
                       WINNER!
                     </h2>
-                    <p className="text-white text-2xl winner-pulse-animation mb-6">
-                      {(() => {
-                        // Determine special message for special stones and announce it
-                        let message = `Stone ${selectedStone} wins the pot!`;
-                        if (selectedStone === 1000 || selectedStone === 500) {
-                          message = `Special stone ${selectedStone} wins! Double payout!`;
-                        } else if (selectedStone === 3355 || selectedStone === 6624) {
-                          message = `Super stone ${selectedStone} wins! Triple payout!`;
-                        }
-                        
-                        // Just return the message - we'll handle speech elsewhere
-                        return message;
-                      })()}
-                    </p>
+                    
+                    <div className="mb-6 flex flex-col items-center">
+                      <div className="text-secondary text-lg font-medium mb-1">
+                        Winning Stone
+                      </div>
+                      <div className="text-white text-5xl font-bold mb-2 winner-text-glow">
+                        {selectedStone}
+                      </div>
+                      <p className="text-white text-xl opacity-90 mt-2">
+                        {(() => {
+                          // Determine special message for special stones and announce it
+                          let message = `🎮 Regular win! Congratulations!`;
+                          if (selectedStone === 1000 || selectedStone === 500) {
+                            message = `✨ Special stone win! Double payout!`;
+                          } else if (selectedStone === 3355 || selectedStone === 6624) {
+                            message = `🔥 Super stone win! Triple payout!`;
+                          }
+                          
+                          // Just return the message - we'll handle speech elsewhere
+                          return message;
+                        })()}
+                      </p>
+                    </div>
+                    
                     <button 
                       onClick={() => {
                         setFinalStoneSelected(false);
@@ -1080,7 +1069,7 @@ export default function DemoPage() {
                           cancel();
                         }
                       }}
-                      className="bg-secondary hover:bg-secondary-dark text-primary font-bold py-2 px-6 rounded-full shadow-lg transform hover:scale-105 transition"
+                      className="bg-secondary hover:bg-yellow-500 text-primary font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition duration-300 mx-auto block"
                     >
                       Play Again
                     </button>
