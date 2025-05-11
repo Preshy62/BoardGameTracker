@@ -192,8 +192,10 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
               
               return (
                 <div key={user.uid} className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-xs">
+                  <Avatar className={`h-8 w-8 ${isPremiumGame ? "ring-1 ring-amber-300 ring-offset-1" : ""}`}>
+                    <AvatarFallback className={`text-xs ${isPremiumGame 
+                      ? "bg-gradient-to-br from-amber-200 to-amber-400 text-amber-800" 
+                      : ""}`}>
                       {playerInfo?.user.avatarInitials || "?"}
                     </AvatarFallback>
                   </Avatar>
@@ -204,9 +206,13 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                         {playerInfo?.user.username || `Player ${playerId}`}
                       </span>
                     </div>
-                    <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                    <div className={`h-1.5 w-full ${isPremiumGame ? "bg-amber-100" : "bg-gray-200"} rounded-full overflow-hidden`}>
                       <div
-                        className="h-full bg-green-500 rounded-full transition-all duration-100"
+                        className={`h-full rounded-full transition-all duration-100 ${
+                          isPremiumGame
+                            ? "bg-gradient-to-r from-green-400 to-green-500"
+                            : "bg-green-500"
+                        }`}
                         style={{ width: `${Math.min(audioLevel * 100, 100)}%` }}
                       />
                     </div>
@@ -223,6 +229,7 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
             
             {!isJoined && (
               <Button
+                variant={isPremiumGame ? "default" : "default"}
                 size="sm"
                 onClick={async () => {
                   setIsLoading(true);
@@ -230,7 +237,9 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                   setIsLoading(false);
                 }}
                 disabled={isLoading}
-                className="w-full mt-2"
+                className={`w-full mt-2 ${isPremiumGame 
+                  ? "bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white" 
+                  : ""}`}
               >
                 {isLoading ? "Connecting..." : "Join Voice Chat"}
               </Button>
