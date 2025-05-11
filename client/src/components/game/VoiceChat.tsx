@@ -100,13 +100,16 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
     <div className="mt-4 relative">
       <div className={`${
         isPremiumGame 
-          ? "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 shadow-md" 
+          ? "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 shadow-md relative after:absolute after:inset-0 after:rounded-lg after:border-2 after:border-amber-300 after:animate-pulse after:opacity-70 after:pointer-events-none" 
           : "bg-slate-50"
         } rounded-lg p-4 border`}>
         {isPremiumGame && (
-          <div className="absolute -top-2 -right-2">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-200 text-amber-800 border border-amber-300">
-              Premium
+          <div className="absolute -top-3 -right-2 z-10">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-300 to-amber-400 text-amber-900 border border-amber-400 shadow-md animate-[bounce_2s_ease-in-out_infinite]">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z" />
+              </svg>
+              Premium Voice
             </span>
           </div>
         )}
@@ -271,8 +274,10 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
         )}
         
         {!showVoiceChat && !isJoined && (
-          <p className="text-xs text-gray-500">
-            Voice chat is available for this high-stakes game. Click "Show Details" to join.
+          <p className={`text-xs ${isPremiumGame ? "text-amber-700" : "text-gray-500"}`}>
+            {isPremiumGame 
+              ? "Premium voice chat unlocked! Click 'Show Details' to join the exclusive audio experience." 
+              : "Voice chat is available for this high-stakes game. Click 'Show Details' to join."}
           </p>
         )}
       </div>
