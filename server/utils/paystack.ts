@@ -1,5 +1,5 @@
 import { createHmac } from 'crypto';
-import * as paystackLib from 'paystack-node';
+import paystackLib from 'paystack-node';
 
 // Check if Paystack API key is available
 if (!process.env.PAYSTACK_SECRET_KEY) {
