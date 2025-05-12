@@ -5,6 +5,7 @@ import { User } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { PaystackButton, BankAccountForm } from "@/components/payment";
 import { 
   Card, 
   CardContent, 
@@ -50,6 +51,15 @@ interface FundManagementProps {
 interface Bank {
   id: number;
   name: string;
+  code: string;
+}
+
+interface AccountVerification {
+  accountNumber: string;
+  accountName: string;
+  bankCode: string;
+  bankName: string;
+}
   code: string;
 }
 
@@ -505,20 +515,37 @@ export default function FundManagement({ user }: FundManagementProps) {
                 Quick Deposit
               </Button>
               
-              <Button 
-                onClick={handlePaystackDeposit}
-                disabled={paystackDepositMutation.isPending || !user.email}
-                variant="default"
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                {paystackDepositMutation.isPending ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
+              {user.email ? (
+                <PaystackButton
+                  amount={parseFloat(depositAmount) || 0}
+                  email={user.email}
+                  metadata={{ userId: user.id }}
+                  onSuccess={(reference) => {
+                    toast({
+                      title: "Payment Initiated",
+                      description: "Your payment is being processed. Your wallet will be updated shortly.",
+                    });
+                    // Clear the form
+                    setDepositAmount("");
+                  }}
+                  variant="default"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  disabled={paystackDepositMutation.isPending || !depositAmount || parseFloat(depositAmount) <= 0}
+                >
                   <CreditCard className="h-4 w-4 mr-2" />
-                )}
-                Pay with Paystack
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
+                  Pay with Paystack
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </PaystackButton>
+              ) : (
+                <Button 
+                  onClick={() => navigate('/profile')}
+                  variant="default"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Update Profile to Pay
+                </Button>
+              )}
             </div>
             
             <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800 flex items-start">
