@@ -10,6 +10,7 @@ declare module 'paystack-node' {
         reference?: string;
         callback_url?: string;
         metadata?: any;
+        currency?: string;
       }) => Promise<any>;
       verify: (reference: string) => Promise<any>;
       list: (params?: any) => Promise<any>;
@@ -26,6 +27,19 @@ declare module 'paystack-node' {
       }) => Promise<any>;
       list: (params?: any) => Promise<any>;
       verify: (reference: string) => Promise<any>;
+    };
+    
+    // Transfer Recipients (alias for transferrecipient)
+    transfer_recipient: {
+      create: (params: {
+        type: string;
+        name: string;
+        account_number: string;
+        bank_code: string;
+        currency?: string;
+        description?: string;
+        metadata?: any;
+      }) => Promise<any>;
     };
     
     // Transfer Recipients
@@ -48,6 +62,11 @@ declare module 'paystack-node' {
         account_number: string;
         bank_code: string;
       }) => Promise<any>;
+    };
+    
+    // Miscellaneous
+    misc: {
+      list_banks: (params?: { country?: string }) => Promise<any>;
     };
   }
 }

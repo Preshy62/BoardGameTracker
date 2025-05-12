@@ -48,6 +48,17 @@ router.get('/verify', async (req, res) => {
       status: 'completed',
       reference: data.reference,
       currency: 'NGN',
+      paymentMethod: 'paystack',
+      paymentDetails: { 
+        provider: 'paystack',
+        channel: data.channel,
+        card: data.authorization ? {
+          last4: data.authorization.last4,
+          brand: data.authorization.brand,
+          exp_month: data.authorization.exp_month,
+          exp_year: data.authorization.exp_year
+        } : undefined
+      }
     });
     
     // Update user balance
@@ -115,9 +126,43 @@ router.get('/banks', async (req, res) => {
       });
     }
     
-    return res.json({ success: true, data: banksResult.data });
+    return res.json({ success: true, banks: banksResult.data });
   } catch (error) {
     console.error('Banks fetch error:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Verify bank account
+router.post('/verify-account', async (req, res) => {
+  try {
+    const { bankCode, accountNumber } = req.body;
+    
+    if (!bankCode || !accountNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Bank code and account number are required' 
+      });
+    }
+    
+    const verificationResult = await paymentProcessing.verifyBankAccount(
+      accountNumber, 
+      bankCode
+    );
+    
+    if (!verificationResult.success) {
+      return res.status(400).json({ 
+        success: false, 
+        message: verificationResult.message || 'Failed to verify account' 
+      });
+    }
+    
+    return res.json({ 
+      success: true, 
+      accountName: verificationResult.accountName 
+    });
+  } catch (error) {
+    console.error('Account verification error:', error);
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -151,6 +196,17 @@ async function handleSuccessfulCharge(data: any) {
       status: 'completed',
       reference,
       currency: 'NGN',
+      paymentMethod: 'paystack',
+      paymentDetails: { 
+        provider: 'paystack',
+        channel: data.channel,
+        card: data.authorization ? {
+          last4: data.authorization.last4,
+          brand: data.authorization.brand,
+          exp_month: data.authorization.exp_month,
+          exp_year: data.authorization.exp_year
+        } : undefined
+      }
     });
     
     // Update user balance

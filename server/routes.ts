@@ -999,6 +999,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "completed",
         reference: paymentResult.reference,
         currency: "NGN",
+        paymentMethod: "quick_deposit",
+        paymentDetails: { source: "demo" }
       });
       
       // Update user balance
@@ -1106,7 +1108,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "pending", // Set to pending initially, will be updated on webhook callback
           reference: withdrawalResult.reference,
           currency: "NGN",
-          metadata: JSON.stringify(bankDetails)
+          withdrawalMethod: "bank_transfer",
+          bankDetails: bankDetails,
+          paymentDetails: { provider: "paystack" }
         });
         
         // Update user balance immediately to prevent double spending
