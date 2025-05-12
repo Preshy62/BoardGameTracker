@@ -12,6 +12,7 @@ import crypto from "crypto";
 import session from "express-session";
 import { paymentProcessing } from "./utils/payment";
 import Stripe from "stripe";
+import paystackRoutes from "./routes/paystack";
 import { addMinutes, addHours, addDays } from "date-fns";
 import { 
   generateVerificationToken, 
@@ -58,6 +59,9 @@ declare module 'express-session' {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize server
   const httpServer = createServer(app);
+  
+  // Register Paystack payment routes
+  app.use('/api/payment', paystackRoutes);
   
   // Initialize game manager
   const gameManager = new GameManager(storage);
@@ -941,15 +945,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Since authenticate middleware ensures userId exists, we can safely use the type guard
       ensureUserIdExists(req.session.userId);
       
-      const { amount } = req.body;
+      const { amount, usePaystack } = req.body;
       
       // Validate amount
       if (!amount || isNaN(amount) || amount <= 0) {
         return res.status(400).json({ message: "Invalid amount" });
       }
       
-      // Process payment (mock implementation)
-      const paymentResult = await paymentProcessing.processDeposit(req.session.userId, amount);
+      // Get user for email (needed for Paystack)
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // If using Paystack for real payment, initialize payment
+      if (usePaystack && user.email) {
+        const paymentResult = await paymentProcessing.processDeposit(
+          req.session.userId, 
+          amount, 
+          user.email
+        );
+        
+        if (!paymentResult.success) {
+          return res.status(400).json({ message: paymentResult.message });
+        }
+        
+        // If Paystack payment was initialized, return authorization URL
+        if (paymentResult.authorizationUrl) {
+          return res.json({
+            success: true,
+            authorizationUrl: paymentResult.authorizationUrl,
+            reference: paymentResult.reference,
+            message: "Payment initialized. Redirect to the authorization URL to complete payment."
+          });
+        }
+      }
+      
+      // If not using Paystack or using quick deposit fallback
+      const paymentResult = await paymentProcessing.processDeposit(
+        req.session.userId, 
+        amount
+      );
       
       if (!paymentResult.success) {
         return res.status(400).json({ message: paymentResult.message });
@@ -962,14 +998,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: "deposit",
         status: "completed",
         reference: paymentResult.reference,
+        currency: "NGN",
       });
       
       // Update user balance
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-      
       const updatedUser = await storage.updateUserBalance(
         req.session.userId,
         user.walletBalance + amount
