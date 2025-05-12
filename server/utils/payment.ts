@@ -1,14 +1,27 @@
 import { RandomNumberGenerator } from "../game/randomGenerator";
+import { 
+  generateReference, 
+  initializePayment, 
+  verifyPayment, 
+  initiateTransfer, 
+  createTransferRecipient 
+} from './paystack';
 
 /**
- * Mock payment processing service for handling deposits and withdrawals
- * This is a simplified simulation for the demo application
+ * Payment processing service for handling deposits and withdrawals
+ * Integrates with Paystack for real payment processing, with fallback to mock implementation
  */
 class PaymentProcessing {
   private rng: RandomNumberGenerator;
+  private useRealPaystack: boolean;
 
   constructor() {
     this.rng = new RandomNumberGenerator();
+    this.useRealPaystack = !!process.env.PAYSTACK_SECRET_KEY;
+    
+    if (!this.useRealPaystack) {
+      console.warn('PAYSTACK_SECRET_KEY not set. Using mock payment processing.');
+    }
   }
 
   /**
