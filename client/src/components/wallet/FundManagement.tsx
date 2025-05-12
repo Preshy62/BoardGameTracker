@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User } from "@shared/schema";
@@ -22,6 +22,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   ArrowUpCircle, 
   ArrowDownCircle, 
@@ -31,7 +38,8 @@ import {
   RefreshCw,
   Banknote,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  Building
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,14 +47,131 @@ interface FundManagementProps {
   user: User;
 }
 
+interface Bank {
+  id: number;
+  name: string;
+  code: string;
+}
+
+interface AccountVerification {
+  accountNumber: string;
+  accountName: string;
+  bankCode: string;
+  bankName: string;
+}
+
 export default function FundManagement({ user }: FundManagementProps) {
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [bankList, setBankList] = useState<Bank[]>([]);
+  const [selectedBank, setSelectedBank] = useState<string>("");
+  const [accountNumber, setAccountNumber] = useState<string>("");
+  const [verifiedAccount, setVerifiedAccount] = useState<AccountVerification | null>(null);
+  const [verifyingAccount, setVerifyingAccount] = useState(false);
+  const [loadingBanks, setLoadingBanks] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
 
-  // Deposit mutation
+  // Load bank list when withdraw tab is selected
+  useEffect(() => {
+    const fetchBanks = async () => {
+      try {
+        setLoadingBanks(true);
+        const response = await apiRequest('GET', '/api/payment/banks');
+        const data = await response.json();
+        if (data.success && data.banks) {
+          setBankList(data.banks);
+        }
+      } catch (error) {
+        console.error('Error fetching banks:', error);
+        toast({
+          title: "Error",
+          description: "Could not load bank list. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingBanks(false);
+      }
+    };
+    
+    fetchBanks();
+  }, [toast]);
+
+  // Account verification mutation
+  const verifyAccountMutation = useMutation({
+    mutationFn: async ({ bankCode, accountNumber }: { bankCode: string, accountNumber: string }) => {
+      const response = await apiRequest('POST', '/api/payment/verify-account', { 
+        bankCode, 
+        accountNumber 
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success && data.accountName) {
+        setVerifiedAccount({
+          accountNumber,
+          accountName: data.accountName,
+          bankCode: selectedBank,
+          bankName: bankList.find(bank => bank.code === selectedBank)?.name || ''
+        });
+        toast({
+          title: "Account Verified",
+          description: `Account name: ${data.accountName}`,
+        });
+      } else {
+        toast({
+          title: "Verification Failed",
+          description: data.message || "Could not verify account details",
+          variant: "destructive",
+        });
+        setVerifiedAccount(null);
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Verification Failed",
+        description: error instanceof Error ? error.message : "Could not verify account details",
+        variant: "destructive",
+      });
+      setVerifiedAccount(null);
+    }
+  });
+
+  // Paystack deposit mutation
+  const paystackDepositMutation = useMutation({
+    mutationFn: async (amount: number) => {
+      const response = await apiRequest('POST', '/api/transactions/deposit', { 
+        amount,
+        usePaystack: true
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.authorizationUrl) {
+        // Redirect to Paystack payment page
+        window.location.href = data.authorizationUrl;
+      } else {
+        // Handle fallback to quick deposit
+        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+        setDepositAmount("");
+        toast({
+          title: "Deposit Successful",
+          description: `${formatCurrency(parseFloat(depositAmount))} has been added to your wallet.`,
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Deposit Failed",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Standard deposit mutation (quick deposit)
   const depositMutation = useMutation({
     mutationFn: async (amount: number) => {
       const response = await apiRequest('POST', '/api/transactions/deposit', { amount });

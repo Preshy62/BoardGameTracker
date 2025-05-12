@@ -1060,7 +1060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Since authenticate middleware ensures userId exists, we can safely use the type guard
       ensureUserIdExists(req.session.userId);
       
-      const { amount } = req.body;
+      const { amount, bankCode, accountNumber, accountName, usePaystack } = req.body;
       
       // Validate amount
       if (!amount || isNaN(amount) || amount <= 0) {
@@ -1077,20 +1077,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Insufficient wallet balance" });
       }
       
-      // Process withdrawal (mock implementation)
-      const withdrawalResult = await paymentProcessing.processWithdrawal(req.session.userId, amount);
+      let withdrawalResult;
+      
+      // If using Paystack for real transfers, verify bank details first
+      if (usePaystack && bankCode && accountNumber) {
+        const bankDetails = {
+          bank_code: bankCode,
+          account_number: accountNumber,
+          account_name: accountName
+        };
+        
+        // Process withdrawal using Paystack
+        withdrawalResult = await paymentProcessing.processWithdrawal(
+          req.session.userId, 
+          amount, 
+          bankDetails
+        );
+        
+        if (!withdrawalResult.success) {
+          return res.status(400).json({ message: withdrawalResult.message });
+        }
+        
+        // Create pending transaction for Paystack withdrawal
+        const transaction = await storage.createTransaction({
+          userId: req.session.userId,
+          amount,
+          type: "withdrawal",
+          status: "pending", // Set to pending initially, will be updated on webhook callback
+          reference: withdrawalResult.reference,
+          currency: "NGN",
+          metadata: JSON.stringify(bankDetails)
+        });
+        
+        // Update user balance immediately to prevent double spending
+        const updatedUser = await storage.updateUserBalance(
+          req.session.userId,
+          user.walletBalance - amount
+        );
+        
+        return res.json({
+          transaction,
+          newBalance: updatedUser.walletBalance,
+          message: "Withdrawal initiated. You will be notified once processed."
+        });
+      }
+      
+      // Fallback to demo withdrawal when not using Paystack
+      withdrawalResult = await paymentProcessing.processWithdrawal(
+        req.session.userId, 
+        amount
+      );
       
       if (!withdrawalResult.success) {
         return res.status(400).json({ message: withdrawalResult.message });
       }
       
-      // Create transaction
+      // Create transaction for demo withdrawal
       const transaction = await storage.createTransaction({
         userId: req.session.userId,
         amount,
         type: "withdrawal",
         status: "completed",
         reference: withdrawalResult.reference,
+        currency: "NGN"
       });
       
       // Update user balance
