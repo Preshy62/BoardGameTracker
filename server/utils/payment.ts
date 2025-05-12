@@ -5,7 +5,8 @@ import {
   verifyPayment, 
   initiateTransfer, 
   createTransferRecipient,
-  getBanks
+  getBanks,
+  verifyBankAccount
 } from './paystack';
 
 /**
@@ -334,6 +335,57 @@ class PaymentProcessing {
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to fetch banks'
+      };
+    }
+  }
+
+  /**
+   * Verify a bank account with Paystack
+   */
+  async verifyBankAccount(
+    accountNumber: string,
+    bankCode: string
+  ): Promise<{
+    success: boolean;
+    accountName?: string;
+    message?: string;
+  }> {
+    if (!this.useRealPaystack) {
+      // Return mock verification data if Paystack is not available
+      await this.simulateProcessingDelay();
+      
+      if (accountNumber.length !== 10) {
+        return {
+          success: false,
+          message: 'Invalid account number. Must be 10 digits.'
+        };
+      }
+      
+      // For demo purposes, generate a fake account name based on the account number
+      // In a real app, this would validate with the actual bank
+      const lastName = ['Smith', 'Johnson', 'Williams', 'Jones', 'Brown'][parseInt(accountNumber.charAt(0)) % 5];
+      const firstName = ['John', 'Mary', 'James', 'Patricia', 'Robert'][parseInt(accountNumber.charAt(1)) % 5];
+      
+      return {
+        success: true,
+        accountName: `${firstName} ${lastName}`
+      };
+    }
+    
+    try {
+      const accountData = await verifyBankAccount(accountNumber, bankCode);
+      
+      return {
+        success: true,
+        accountName: accountData.account_name
+      };
+    } catch (error) {
+      console.error('Bank account verification error:', error);
+      return {
+        success: false,
+        message: error instanceof Error 
+          ? error.message 
+          : 'Failed to verify bank account. Please check the details and try again.'
       };
     }
   }

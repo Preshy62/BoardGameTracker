@@ -7,7 +7,7 @@ if (!process.env.PAYSTACK_SECRET_KEY) {
 }
 
 // Initialize Paystack
-export const paystack = new paystackLib(process.env.PAYSTACK_SECRET_KEY);
+export const paystack = new paystackLib(process.env.PAYSTACK_SECRET_KEY || 'sk_test_placeholder');
 
 // Generate a reference for Paystack transactions 
 export function generateReference(userId: number) {
