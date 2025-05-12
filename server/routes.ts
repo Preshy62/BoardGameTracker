@@ -1082,9 +1082,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If using Paystack for real transfers, verify bank details first
       if (usePaystack && bankCode && accountNumber) {
         const bankDetails = {
-          bank_code: bankCode,
-          account_number: accountNumber,
-          account_name: accountName
+          accountNumber,
+          bankCode,
+          accountName
         };
         
         // Process withdrawal using Paystack

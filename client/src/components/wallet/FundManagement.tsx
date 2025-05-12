@@ -218,7 +218,46 @@ export default function FundManagement({ user }: FundManagementProps) {
     }
   });
 
-  // Withdraw mutation
+  // Paystack withdrawal mutation
+  const paystackWithdrawMutation = useMutation({
+    mutationFn: async ({ amount, bankCode, accountNumber, accountName }: {
+      amount: number;
+      bankCode: string;
+      accountNumber: string;
+      accountName: string;
+    }) => {
+      const response = await apiRequest('POST', '/api/transactions/withdraw', { 
+        amount,
+        bankCode,
+        accountNumber,
+        accountName,
+        usePaystack: true
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      setWithdrawAmount("");
+      setVerifiedAccount(null);
+      setSelectedBank("");
+      setAccountNumber("");
+      
+      toast({
+        title: "Withdrawal Initiated",
+        description: data.message || `${formatCurrency(parseFloat(withdrawAmount))} withdrawal has been initiated and will be processed shortly.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Withdrawal Failed",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Standard withdraw mutation (quick withdrawal for demo)
   const withdrawMutation = useMutation({
     mutationFn: async (amount: number) => {
       const response = await apiRequest('POST', '/api/transactions/withdraw', { amount });
@@ -241,8 +280,35 @@ export default function FundManagement({ user }: FundManagementProps) {
       });
     }
   });
+  
+  // Handler for verifying bank account
+  const handleVerifyAccount = () => {
+    if (!selectedBank) {
+      toast({
+        title: "Bank Required",
+        description: "Please select a bank",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!accountNumber || accountNumber.length < 10) {
+      toast({
+        title: "Invalid Account Number",
+        description: "Please enter a valid account number",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setVerifyingAccount(true);
+    verifyAccountMutation.mutate({ 
+      bankCode: selectedBank, 
+      accountNumber 
+    });
+  };
 
-  const handleDeposit = () => {
+  const handleQuickDeposit = () => {
     const amount = parseFloat(depositAmount);
     if (isNaN(amount) || amount <= 0) {
       toast({
@@ -255,8 +321,33 @@ export default function FundManagement({ user }: FundManagementProps) {
     
     depositMutation.mutate(amount);
   };
+  
+  const handlePaystackDeposit = () => {
+    const amount = parseFloat(depositAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount to deposit",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // If user doesn't have an email, they need to update their profile
+    if (!user.email) {
+      toast({
+        title: "Email Required",
+        description: "Please update your profile with an email address to make Paystack payments",
+        variant: "destructive",
+      });
+      navigate('/profile');
+      return;
+    }
+    
+    paystackDepositMutation.mutate(amount);
+  };
 
-  const handleWithdraw = () => {
+  const handleQuickWithdraw = () => {
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount <= 0) {
       toast({
@@ -277,6 +368,43 @@ export default function FundManagement({ user }: FundManagementProps) {
     }
     
     withdrawMutation.mutate(amount);
+  };
+  
+  const handlePaystackWithdraw = () => {
+    const amount = parseFloat(withdrawAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount to withdraw",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (user && amount > user.walletBalance) {
+      toast({
+        title: "Insufficient Funds",
+        description: "You don't have enough funds in your wallet",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!verifiedAccount) {
+      toast({
+        title: "Bank Account Required",
+        description: "Please verify your bank account details first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    paystackWithdrawMutation.mutate({
+      amount,
+      bankCode: verifiedAccount.bankCode,
+      accountNumber: verifiedAccount.accountNumber,
+      accountName: verifiedAccount.accountName
+    });
   };
   
   // Predefined deposit amounts
@@ -365,7 +493,7 @@ export default function FundManagement({ user }: FundManagementProps) {
             {/* Deposit buttons */}
             <div className="grid grid-cols-1 gap-3 pt-2">
               <Button 
-                onClick={handleDeposit}
+                onClick={handleQuickDeposit}
                 disabled={depositMutation.isPending}
                 className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
               >
@@ -378,30 +506,32 @@ export default function FundManagement({ user }: FundManagementProps) {
               </Button>
               
               <Button 
-                onClick={() => {
-                  if (!depositAmount || isNaN(parseFloat(depositAmount)) || parseFloat(depositAmount) <= 0) {
-                    toast({
-                      title: "Invalid Amount",
-                      description: "Please enter a valid amount to deposit",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  navigate(`/checkout/${depositAmount}`);
-                }}
+                onClick={handlePaystackDeposit}
+                disabled={paystackDepositMutation.isPending || !user.email}
                 variant="default"
-                className="bg-primary hover:bg-primary-dark text-white"
+                className="bg-green-600 hover:bg-green-700 text-white"
               >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Pay with Stripe
+                {paystackDepositMutation.isPending ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CreditCard className="h-4 w-4 mr-2" />
+                )}
+                Pay with Paystack
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             </div>
             
             <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800 flex items-start">
               <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <p>Choose Quick Deposit for simulated payments or Pay with Stripe for real card processing. Demo funds are available on the demo page.</p>
+              <p>Choose Quick Deposit for simulated payments or Pay with Paystack for real payment processing with cards, bank transfers, and mobile money in Nigeria and across Africa.</p>
             </div>
+            
+            {!user.email && (
+              <div className="bg-yellow-50 p-3 rounded-md text-sm text-yellow-800 flex items-start mt-2">
+                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                <p>An email address is required for Paystack payments. Please update your profile to add your email.</p>
+              </div>
+            )}
           </TabsContent>
           
           {/* Withdraw Tab */}
@@ -439,18 +569,119 @@ export default function FundManagement({ user }: FundManagementProps) {
               </p>
             </div>
             
-            <Button 
-              onClick={handleWithdraw}
-              disabled={withdrawMutation.isPending || user.walletBalance <= 0}
-              className="w-full bg-primary hover:bg-primary-light text-white"
-            >
-              {withdrawMutation.isPending ? (
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <ArrowDownCircle className="h-4 w-4 mr-2" />
-              )}
-              Withdraw Funds
-            </Button>
+            {/* Bank Account Details */}
+            <div className={`space-y-3 ${user.walletBalance <= 0 ? 'opacity-60 pointer-events-none' : ''}`}>
+              <div className="border-t pt-3">
+                <h3 className="text-sm font-medium mb-2 flex items-center">
+                  <Building className="h-4 w-4 mr-1.5 text-gray-500" />
+                  Bank Details
+                </h3>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="bank">Bank</Label>
+                  <Select
+                    value={selectedBank}
+                    onValueChange={setSelectedBank}
+                    disabled={loadingBanks}
+                  >
+                    <SelectTrigger id="bank" className="w-full">
+                      <SelectValue placeholder={loadingBanks ? "Loading banks..." : "Select bank"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bankList.map((bank) => (
+                        <SelectItem key={bank.code} value={bank.code}>
+                          {bank.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <Label htmlFor="account-number">Account Number</Label>
+                  <Input
+                    id="account-number"
+                    type="text"
+                    placeholder="Enter 10-digit account number"
+                    value={accountNumber}
+                    onChange={(e) => {
+                      // Only allow numbers
+                      const value = e.target.value.replace(/\D/g, '');
+                      // Limit to 10 digits (Nigeria bank account numbers)
+                      if (value.length <= 10) {
+                        setAccountNumber(value);
+                        setVerifiedAccount(null); // Clear verification when account changes
+                      }
+                    }}
+                    disabled={!selectedBank}
+                  />
+                </div>
+                
+                {!verifiedAccount && accountNumber && selectedBank && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleVerifyAccount}
+                    disabled={verifyAccountMutation.isPending || accountNumber.length < 10}
+                  >
+                    {verifyAccountMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Info className="h-4 w-4 mr-2" />
+                    )}
+                    Verify Account
+                  </Button>
+                )}
+                
+                {verifiedAccount && (
+                  <div className="bg-green-50 p-3 rounded-md">
+                    <p className="text-sm font-medium text-green-800">Account Verified</p>
+                    <p className="text-sm text-green-700">{verifiedAccount.accountName}</p>
+                    <p className="text-xs text-green-600 mt-1">
+                      {verifiedAccount.bankName} - {verifiedAccount.accountNumber}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Withdraw buttons */}
+            <div className="grid grid-cols-1 gap-3 pt-2">
+              <Button 
+                onClick={handleQuickWithdraw}
+                disabled={withdrawMutation.isPending || user.walletBalance <= 0}
+                className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
+              >
+                {withdrawMutation.isPending ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <ArrowDownCircle className="h-4 w-4 mr-2" />
+                )}
+                Quick Withdrawal
+              </Button>
+              
+              <Button 
+                onClick={handlePaystackWithdraw}
+                disabled={
+                  paystackWithdrawMutation.isPending || 
+                  user.walletBalance <= 0 || 
+                  !verifiedAccount
+                }
+                variant="default"
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {paystackWithdrawMutation.isPending ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Building className="h-4 w-4 mr-2" />
+                )}
+                Bank Transfer
+              </Button>
+            </div>
             
             {user.walletBalance <= 0 && (
               <div className="bg-yellow-50 p-3 rounded-md text-sm text-yellow-800 flex items-start">
@@ -461,7 +692,7 @@ export default function FundManagement({ user }: FundManagementProps) {
             
             <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800 flex items-start">
               <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <p>For this demo, withdrawals are simulated and no actual payment processing occurs.</p>
+              <p>Choose Quick Withdrawal for simulated transfers or Bank Transfer for real bank transfers via Paystack to Nigerian bank accounts.</p>
             </div>
           </TabsContent>
         </Tabs>
