@@ -224,10 +224,16 @@ router.get('/users/:userId/transactions/export', async (req, res) => {
     
     // Filter transactions
     const filteredTransactions = transactions.filter(transaction => {
-      if (filter.startDate && transaction.createdAt && 
-          new Date(transaction.createdAt as string) < filter.startDate) return false;
-      if (filter.endDate && transaction.createdAt && 
-          new Date(transaction.createdAt as string) > filter.endDate) return false;
+      // Date filters
+      if (filter.startDate && transaction.createdAt) {
+        const transactionDate = new Date(transaction.createdAt.toString());
+        if (transactionDate < filter.startDate) return false;
+      }
+      
+      if (filter.endDate && transaction.createdAt) {
+        const transactionDate = new Date(transaction.createdAt.toString());
+        if (transactionDate > filter.endDate) return false;
+      }
       if (filter.type && transaction.type !== filter.type) return false;
       if (filter.status && transaction.status !== filter.status) return false;
       if (filter.minAmount && transaction.amount < filter.minAmount) return false;
@@ -248,12 +254,17 @@ router.get('/users/:userId/transactions/export', async (req, res) => {
     
     // Add each transaction as a CSV row
     filteredTransactions.forEach(transaction => {
-      const date = new Date(transaction.createdAt).toISOString().split('T')[0];
+      let dateStr = 'N/A';
+      if (transaction.createdAt) {
+        const date = new Date(transaction.createdAt.toString());
+        dateStr = date.toISOString().split('T')[0];
+      }
+      
       const description = transaction.description || '';
       const formattedDescription = description.replace(/"/g, '""'); // Escape quotes for CSV
       
       // Build CSV row
-      csv += `${transaction.id},${date},${transaction.type},${transaction.status},${transaction.amount},${transaction.currency},"${formattedDescription}",${transaction.reference || ''}\n`;
+      csv += `${transaction.id},${dateStr},${transaction.type},${transaction.status},${transaction.amount},${transaction.currency},"${formattedDescription}",${transaction.reference || ''}\n`;
     });
     
     // Send the CSV data

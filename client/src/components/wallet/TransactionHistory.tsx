@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Transaction } from '@shared/schema';
 import {
@@ -31,10 +31,12 @@ import {
   AlertCircle,
   ArrowDown,
   ArrowUp,
+  Calendar,
   Check,
   Clock,
   CreditCard,
   DollarSign,
+  Download,
   Filter,
   Search,
   Trophy,
@@ -49,8 +51,20 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger 
+} from '@/components/ui/popover';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger 
+} from '@/components/ui/tooltip';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 
 interface TransactionHistoryProps {
   userId: number;
@@ -59,8 +73,9 @@ interface TransactionHistoryProps {
   className?: string;
 }
 
-type TransactionFilter = 'all' | 'deposit' | 'withdrawal' | 'winnings' | 'stake';
-type StatusFilter = 'all' | 'completed' | 'pending' | 'failed';
+type TransactionFilter = 'all' | 'deposit' | 'withdrawal' | 'winnings' | 'stake' | 'refund';
+type StatusFilter = 'all' | 'completed' | 'pending' | 'failed' | 'disputed';
+type CurrencyFilter = 'all' | 'NGN' | 'USD' | 'EUR' | 'GBP' | 'CAD';
 
 export default function TransactionHistory({
   userId,
@@ -72,7 +87,11 @@ export default function TransactionHistory({
   const [activeTab, setActiveTab] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<TransactionFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [currencyFilter, setCurrencyFilter] = useState<CurrencyFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
   
   // Fetch transactions for the user
   const { data: transactionData, isLoading, isError, refetch } = useQuery<{
@@ -89,6 +108,19 @@ export default function TransactionHistory({
     queryKey: [`/api/users/${userId}/transactions/summary`],
     enabled: !!userId
   });
+  
+  // Function to build query params for filters
+  const buildFilterQueryParams = () => {
+    const params = new URLSearchParams();
+    
+    if (typeFilter !== 'all') params.append('type', typeFilter);
+    if (statusFilter !== 'all') params.append('status', statusFilter);
+    if (currencyFilter !== 'all') params.append('currency', currencyFilter);
+    if (startDate) params.append('startDate', startDate.toISOString().split('T')[0]);
+    if (endDate) params.append('endDate', endDate.toISOString().split('T')[0]);
+    
+    return params.toString();
+  };
   
   // Format currency for display
   const formatCurrency = (amount: number, currency: string) => {
@@ -152,6 +184,32 @@ export default function TransactionHistory({
       transactions = transactions.filter(t => t.status === statusFilter);
     }
     
+    // Filter by currency
+    if (currencyFilter !== 'all') {
+      transactions = transactions.filter(t => t.currency === currencyFilter);
+    }
+    
+    // Filter by date range
+    if (startDate) {
+      transactions = transactions.filter(t => {
+        if (!t.createdAt) return false;
+        const transactionDate = new Date(t.createdAt.toString());
+        return transactionDate >= startDate;
+      });
+    }
+    
+    if (endDate) {
+      // Include the entire end date by setting time to 23:59:59
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      transactions = transactions.filter(t => {
+        if (!t.createdAt) return false;
+        const transactionDate = new Date(t.createdAt.toString());
+        return transactionDate <= endOfDay;
+      });
+    }
+    
     // Filter by search query (match against description, amount, type, status)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -167,6 +225,60 @@ export default function TransactionHistory({
     return transactions;
   };
   
+  // Function to export transactions to CSV
+  const exportTransactions = async () => {
+    if (!userId) return;
+    
+    try {
+      setIsExporting(true);
+      
+      // Build query parameters for filtered export
+      const queryParams = buildFilterQueryParams();
+      const url = `/api/users/${userId}/transactions/export${queryParams ? `?${queryParams}` : ''}`;
+      
+      // Fetch CSV data
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error('Failed to export transactions');
+      }
+      
+      // Get the CSV data
+      const csvData = await response.text();
+      
+      // Create a blob and download link
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      
+      // Set up download link
+      link.href = downloadUrl;
+      link.download = `transactions-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      
+      // Trigger download
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+      
+      toast({
+        title: 'Export successful',
+        description: 'Your transactions have been exported to CSV',
+        variant: 'default'
+      });
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: error instanceof Error ? error.message : 'An error occurred',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
   // Get the icon for a transaction type
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -178,6 +290,8 @@ export default function TransactionHistory({
         return <Trophy className="h-4 w-4 text-amber-500" />;
       case 'stake':
         return <CreditCard className="h-4 w-4 text-blue-500" />;
+      case 'refund':
+        return <ArrowDown className="h-4 w-4 text-purple-500" />;
       default:
         return <DollarSign className="h-4 w-4" />;
     }
@@ -192,6 +306,8 @@ export default function TransactionHistory({
         return 'outline';
       case 'failed':
         return 'destructive';
+      case 'disputed':
+        return 'warning';
       default:
         return 'secondary';
     }
@@ -206,6 +322,8 @@ export default function TransactionHistory({
         return <Clock className="h-3 w-3" />;
       case 'failed':
         return <XCircle className="h-3 w-3" />;
+      case 'disputed':
+        return <AlertCircle className="h-3 w-3" />;
       default:
         return <AlertCircle className="h-3 w-3" />;
     }
@@ -232,7 +350,8 @@ export default function TransactionHistory({
         
         {/* Control panel */}
         {showControls && (
-          <div className="px-6 py-4 space-y-2">
+          <div className="px-6 py-4 space-y-4">
+            {/* Search and basic filters */}
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-grow">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -244,7 +363,7 @@ export default function TransactionHistory({
                 />
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Select 
                   value={typeFilter} 
                   onValueChange={(value) => setTypeFilter(value as TransactionFilter)}
@@ -261,6 +380,7 @@ export default function TransactionHistory({
                     <SelectItem value="withdrawal">Withdrawals</SelectItem>
                     <SelectItem value="winnings">Winnings</SelectItem>
                     <SelectItem value="stake">Stakes</SelectItem>
+                    <SelectItem value="refund">Refunds</SelectItem>
                   </SelectContent>
                 </Select>
                 
@@ -279,8 +399,111 @@ export default function TransactionHistory({
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="disputed">Disputed</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                <Select 
+                  value={currencyFilter} 
+                  onValueChange={(value) => setCurrencyFilter(value as CurrencyFilter)}
+                >
+                  <SelectTrigger className="w-[130px]">
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      <span>Currency</span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Currencies</SelectItem>
+                    <SelectItem value="NGN">Naira (₦)</SelectItem>
+                    <SelectItem value="USD">US Dollar ($)</SelectItem>
+                    <SelectItem value="EUR">Euro (€)</SelectItem>
+                    <SelectItem value="GBP">Pound (£)</SelectItem>
+                    <SelectItem value="CAD">CAD ($)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Date range filters and export button */}
+            <div className="flex flex-col sm:flex-row gap-2 justify-between">
+              <div className="flex flex-wrap gap-2 items-center">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="w-[150px] justify-start text-left font-normal"
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, 'PP') : 'Start date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                <span className="text-sm text-muted-foreground">to</span>
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="w-[150px] justify-start text-left font-normal"
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, 'PP') : 'End date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                {(startDate || endDate) && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setStartDate(undefined);
+                      setEndDate(undefined);
+                    }}
+                    className="h-8 px-2"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+              
+              <div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="gap-2" 
+                        onClick={exportTransactions}
+                        disabled={isExporting || !getFilteredTransactions().length}
+                      >
+                        <Download className="h-4 w-4" />
+                        {isExporting ? 'Exporting...' : 'Export CSV'}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Export filtered transactions to CSV</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </div>
