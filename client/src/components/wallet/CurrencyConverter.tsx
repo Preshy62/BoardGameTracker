@@ -14,13 +14,16 @@ import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, RefreshCw, ArrowRightLeft } from 'lucide-react';
+import { Loader2, RefreshCw, ArrowRightLeft, Star, Home } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { groupCurrencies } from '@/lib/countryData';
 
 // Currency details type from server
 interface CurrencyDetails {
@@ -49,11 +52,33 @@ interface ConversionResponse {
   timestamp: string;
 }
 
-const CurrencyConverter = () => {
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  walletBalance: number;
+  preferredCurrency?: string;
+  countryCode?: string;
+  avatarInitials?: string;
+  emailVerified: boolean | null;
+  isActive: boolean;
+  isAdmin: boolean;
+  language?: string | null;
+  createdAt?: Date | string | null;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  emailNotifications?: boolean;
+}
+
+type CurrencyConverterProps = {
+  user?: User;
+};
+
+const CurrencyConverter = ({ user }: CurrencyConverterProps) => {
   const { toast } = useToast();
   const [amount, setAmount] = useState<number>(100);
-  const [fromCurrency, setFromCurrency] = useState<string>('NGN');
-  const [toCurrency, setToCurrency] = useState<string>('USD');
+  const [fromCurrency, setFromCurrency] = useState<string>(user?.preferredCurrency || 'NGN');
+  const [toCurrency, setToCurrency] = useState<string>(fromCurrency === 'USD' ? 'NGN' : 'USD');
   const [result, setResult] = useState<ConversionResponse | null>(null);
   
   // Fetch available currencies
@@ -172,6 +197,80 @@ const CurrencyConverter = () => {
     return currency?.symbol || code;
   };
   
+  // Helper function to render currency groups
+  const renderCurrencyGroups = () => {
+    if (currenciesLoading) {
+      return (
+        <div className="flex items-center justify-center p-2">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          <span>Loading currencies...</span>
+        </div>
+      );
+    }
+    
+    if (currenciesError) {
+      return (
+        <div className="p-2 text-destructive">
+          Failed to load currencies
+        </div>
+      );
+    }
+    
+    if (!currencyData?.currencies?.length) {
+      return (
+        <div className="p-2 text-muted-foreground">
+          No currencies available
+        </div>
+      );
+    }
+    
+    // Transform API data to format needed by groupCurrencies
+    const formattedCurrencies = currencyData.currencies.map((c: CurrencyDetails) => ({
+      code: c.code,
+      name: c.name,
+      symbol: c.symbol
+    }));
+    
+    // Group currencies based on user's country
+    const { recommended, others } = groupCurrencies(
+      formattedCurrencies, 
+      user?.countryCode
+    );
+    
+    return (
+      <>
+        {/* Recommended currencies group */}
+        <SelectGroup>
+          <SelectLabel className="flex items-center gap-1">
+            <Star className="h-3 w-3 text-yellow-500" />
+            Recommended
+          </SelectLabel>
+          {recommended.map(currency => (
+            <SelectItem key={currency.code} value={currency.code} className="pl-6">
+              {/* Show home icon for user's local currency */}
+              {user?.countryCode && currency.code === recommended[0].code && (
+                <Home className="h-3 w-3 mr-1 inline-block text-blue-500" />
+              )}
+              {currency.symbol} {currency.name}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+        
+        {/* Other currencies group - only show if there are others */}
+        {others.length > 0 && (
+          <SelectGroup>
+            <SelectLabel>Other Currencies</SelectLabel>
+            {others.map(currency => (
+              <SelectItem key={currency.code} value={currency.code}>
+                {currency.symbol} {currency.name}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        )}
+      </>
+    );
+  };
+  
   return (
     <Card className="w-full max-w-lg mx-auto">
       <CardHeader>
@@ -220,27 +319,8 @@ const CurrencyConverter = () => {
                 <SelectTrigger id="fromCurrency">
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
-                <SelectContent>
-                  {currenciesLoading ? (
-                    <div className="flex items-center justify-center p-2">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      <span>Loading currencies...</span>
-                    </div>
-                  ) : currenciesError ? (
-                    <div className="p-2 text-destructive">
-                      Failed to load currencies
-                    </div>
-                  ) : !currencyData?.currencies?.length ? (
-                    <div className="p-2 text-muted-foreground">
-                      No currencies available
-                    </div>
-                  ) : (
-                    currencyData.currencies.map((currency: CurrencyDetails) => (
-                      <SelectItem key={currency.code} value={currency.code}>
-                        {currency.symbol} {currency.name}
-                      </SelectItem>
-                    ))
-                  )}
+                <SelectContent className="max-h-80">
+                  {renderCurrencyGroups()}
                 </SelectContent>
               </Select>
             </div>
@@ -267,27 +347,8 @@ const CurrencyConverter = () => {
                 <SelectTrigger id="toCurrency">
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
-                <SelectContent>
-                  {currenciesLoading ? (
-                    <div className="flex items-center justify-center p-2">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      <span>Loading currencies...</span>
-                    </div>
-                  ) : currenciesError ? (
-                    <div className="p-2 text-destructive">
-                      Failed to load currencies
-                    </div>
-                  ) : !currencyData?.currencies?.length ? (
-                    <div className="p-2 text-muted-foreground">
-                      No currencies available
-                    </div>
-                  ) : (
-                    currencyData.currencies.map((currency: CurrencyDetails) => (
-                      <SelectItem key={currency.code} value={currency.code}>
-                        {currency.symbol} {currency.name}
-                      </SelectItem>
-                    ))
-                  )}
+                <SelectContent className="max-h-80">
+                  {renderCurrencyGroups()}
                 </SelectContent>
               </Select>
             </div>
