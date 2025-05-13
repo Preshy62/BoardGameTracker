@@ -17,7 +17,6 @@ import SimpleVoiceChat from "@/pages/simple-voice-chat";
 import SoundTest from "@/pages/sound-test";
 import AgoraVoiceChat from "@/pages/agora-voice-chat";
 import VoiceTest from "@/pages/voice-test";
-import StoneTest from "@/pages/stone-test";
 import BoardTest from "@/pages/board-test";
 import TestPaystack from "@/pages/test-paystack";
 import AdminDashboard from "@/pages/admin/index";
@@ -52,7 +51,6 @@ function Router() {
       <Route path="/sound-test" component={SoundTest} />
       <Route path="/agora-voice-chat" component={AgoraVoiceChat} />
       <Route path="/voice-test" component={VoiceTest} />
-      <Route path="/stone-test" component={StoneTest} />
       <Route path="/board-test" component={BoardTest} />
       <Route path="/test-paystack" component={TestPaystack} />
       

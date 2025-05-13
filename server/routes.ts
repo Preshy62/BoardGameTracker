@@ -13,6 +13,7 @@ import session from "express-session";
 import { paymentProcessing } from "./utils/payment";
 import Stripe from "stripe";
 import paystackRoutes from "./routes/paystack";
+import transactionRoutes from "./routes/transactions";
 import { addMinutes, addHours, addDays } from "date-fns";
 import { 
   generateVerificationToken, 
