@@ -6,14 +6,26 @@ import { useToast } from "@/hooks/use-toast";
 import DemoVoiceChat from "@/components/game/DemoVoiceChat";
 import DemoTextChat from "@/components/game/DemoTextChat";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import { preloadSounds, SOUND_FILES } from '@/lib/sounds';
 
-// Import the enhanced GameStone component instead of creating a separate demo version
-import GameStone from "@/components/game/GameStone";
+// Import the enhanced DemoGameStone component for the demo page
+import DemoGameStone from "@/components/game/DemoGameStone";
 
 // Demo Board Page
 export default function DemoPage() {
   // No longer requiring auth
   const { toast } = useToast();
+  
+  // Preload sounds when page loads
+  useEffect(() => {
+    // Preload the primary sound effects we'll use in the demo
+    const gameSounds = [
+      SOUND_FILES.CLICK,
+      SOUND_FILES.ROLLING_DICE,
+      SOUND_FILES.DICE_LANDING
+    ];
+    preloadSounds(gameSounds);
+  }, []);
   const [, setLocation] = useLocation();
 
   // State for board and stone animations
@@ -883,6 +895,18 @@ export default function DemoPage() {
           <div className="flex items-center">
             <h1 className="text-2xl font-bold">Big Boys Game</h1>
             <span className="ml-2 px-2 py-1 bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse">DEMO MODE</span>
+            
+            <div className="ml-4 flex space-x-2">
+              <Button variant="ghost" size="sm" onClick={() => setLocation('/stone-test')} className="bg-white/10 hover:bg-white/20">
+                Stone Test
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setLocation('/board-test')} className="bg-white/10 hover:bg-white/20">
+                Board Test
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setLocation('/voice-test')} className="bg-white/10 hover:bg-white/20">
+                Voice Test
+              </Button>
+            </div>
           </div>
           <div className="flex space-x-2">
             <Button 
@@ -1146,7 +1170,7 @@ export default function DemoPage() {
                     .filter(stone => stone.row === row)
                     .map((stone) => (
                       <div id={`stone-${stone.index}`} key={`stone-${stone.row}-${stone.index}`}>
-                        <GameStone 
+                        <DemoGameStone 
                           number={stone.number}
                           isSpecial={!!stone.isSpecial}
                           isSuper={!!stone.isSuper}
@@ -1168,7 +1192,7 @@ export default function DemoPage() {
                     .filter(stone => stone.row === row)
                     .map((stone) => (
                       <div id={`small-stone-${stone.index}`} key={`small-stone-${stone.row}-${stone.index}`}>
-                        <GameStone 
+                        <DemoGameStone 
                           number={stone.number}
                           size="sm"
                           isRolling={rollingStoneIndex === 100 + stone.index}
