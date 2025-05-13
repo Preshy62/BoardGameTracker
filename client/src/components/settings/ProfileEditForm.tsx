@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { countries, getPrimaryCurrencyForCountry } from '@/lib/countryData';
+import { countries, currencies, getPrimaryCurrencyForCountry } from '@/lib/countryData';
 
 // User type definition that matches our components
 interface User {
@@ -157,26 +157,37 @@ const ProfileEditForm = ({ user, onCancel, onSuccess }: ProfileEditFormProps) =>
 
   // Form submission handler
   const onSubmit = (values: ProfileFormValues) => {
-    // If currency update prompt is shown and country changed
-    if (showCurrencyUpdatePrompt) {
-      const countryName = countries.find(c => c.code === values.countryCode)?.name || values.countryCode;
-      const currencyCode = getPrimaryCurrencyForCountry(values.countryCode);
-      const currencyName = currencies.find(c => c.code === currencyCode)?.name || currencyCode;
+    try {
+      console.log('Form values to submit:', values);
       
-      const confirmed = window.confirm(
-        `Would you like to update your preferred currency to ${currencyName} (${currencyCode}) to match your new country (${countryName})?`
-      );
-      
-      // Submit with the updateCurrency flag
-      updateProfileMutation.mutate({
-        ...values,
-        updateCurrency: confirmed
+      // If currency update prompt is shown and country changed
+      if (showCurrencyUpdatePrompt) {
+        const countryName = countries.find(c => c.code === values.countryCode)?.name || values.countryCode;
+        const currencyCode = getPrimaryCurrencyForCountry(values.countryCode);
+        const currencyName = currencies.find(c => c.code === currencyCode)?.name || currencyCode;
+        
+        const confirmed = window.confirm(
+          `Would you like to update your preferred currency to ${currencyName} (${currencyCode}) to match your new country (${countryName})?`
+        );
+        
+        // Submit with the updateCurrency flag
+        updateProfileMutation.mutate({
+          ...values,
+          updateCurrency: confirmed
+        });
+        
+        // Reset the prompt
+        setShowCurrencyUpdatePrompt(false);
+      } else {
+        updateProfileMutation.mutate(values);
+      }
+    } catch (error) {
+      console.error('Error in form submission:', error);
+      toast({
+        title: 'Submission Error',
+        description: 'There was a problem submitting the form. Please try again.',
+        variant: 'destructive',
       });
-      
-      // Reset the prompt
-      setShowCurrencyUpdatePrompt(false);
-    } else {
-      updateProfileMutation.mutate(values);
     }
   };
 
