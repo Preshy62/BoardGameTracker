@@ -1,220 +1,176 @@
-// Sound effects system for the game
-let soundEnabled = true;
+// Sound effects utility module
+
 let audioContext: AudioContext | null = null;
 
-// Cache for preloaded audio files
-const audioCache: Record<string, HTMLAudioElement> = {};
-
-// Initialize the AudioContext for better audio control
-export function initAudioContext(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-  
-  try {
-    if (!audioContext) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContextClass) {
-        audioContext = new AudioContextClass();
-      }
-    }
-    
-    // Resume AudioContext if it's suspended (browsers often require user interaction)
-    if (audioContext && audioContext.state === 'suspended') {
-      audioContext.resume().catch(err => {
-        console.warn('Failed to resume AudioContext:', err);
-      });
-    }
-    
-    return audioContext;
-  } catch (err) {
-    console.error('Failed to initialize AudioContext:', err);
-    return null;
-  }
-}
-
-// Available sound files
-export const SOUND_FILES = {
+// Sound effect paths
+export const SOUND_EFFECTS = {
   // Game sounds
+  STONE_ROLL: '/rolling-dice.mp3',
+  STONE_LAND: '/dice-landing.mp3',
   CLICK: '/click.mp3',
-  ROLLING_DICE: '/rolling-dice.mp3',
-  DICE_LANDING: '/dice-landing.mp3',
-  
-  // Notification sounds
-  NOTIFICATION: '/notification.mp3',
-  ERROR: '/error.mp3',
-  SUCCESS: '/success.mp3',
   
   // Voice chat sounds
   VOICE_CONNECTED: '/voice-connected.mp3',
-  VOICE_DISCONNECTED: '/voice-disconnected.mp3',
   VOICE_MUTE: '/mute.mp3',
   VOICE_UNMUTE: '/unmute.mp3',
 };
 
-// Preload sounds for faster playback
-export function preloadSounds(soundsToPreload: string[] = Object.values(SOUND_FILES)) {
-  if (typeof window === 'undefined') return; // Skip if not in browser
-  
-  soundsToPreload.forEach(sound => {
-    try {
-      if (!audioCache[sound]) {
-        const audio = new Audio(sound);
-        audio.load(); // Begins loading the audio
-        audioCache[sound] = audio;
-      }
-    } catch (err) {
-      console.error(`Failed to preload sound: ${sound}`, err);
+// Initialize audio context (needed for Safari and iOS)
+export function initAudioContext(): AudioContext | null {
+  try {
+    // Check if AudioContext is supported
+    if (typeof AudioContext !== 'undefined') {
+      audioContext = audioContext || new AudioContext();
+      return audioContext;
+    } else if (typeof (window as any).webkitAudioContext !== 'undefined') {
+      // Fallback for Safari
+      audioContext = audioContext || new (window as any).webkitAudioContext();
+      return audioContext;
     }
-  });
+  } catch (error) {
+    console.error('Failed to initialize AudioContext:', error);
+  }
+  return null;
 }
 
-// Set sound enabled status
-export function setSoundEnabled(enabled: boolean) {
-  soundEnabled = enabled;
-}
-
-// Get sound enabled status
-export function isSoundEnabled() {
-  return soundEnabled;
+// Resume audio context on user interaction
+export function resumeAudioContext(): void {
+  if (audioContext && audioContext.state === 'suspended') {
+    audioContext.resume().catch(err => {
+      console.error('Failed to resume audio context:', err);
+    });
+  }
 }
 
 // Play a sound effect
-export function playSound(soundPath: string, volume = 0.5) {
-  if (!soundEnabled || typeof window === 'undefined') return;
-  
+export function playSound(sound: keyof typeof SOUND_EFFECTS, volume = 0.5): void {
   try {
-    // Use cached audio if available or create a new one
-    let audio = audioCache[soundPath];
+    // Resume audio context if needed
+    resumeAudioContext();
     
-    if (!audio) {
-      audio = new Audio(soundPath);
-      audioCache[soundPath] = audio;
-    } else {
-      // Reset audio to beginning if it's already playing
-      audio.currentTime = 0;
-    }
-    
-    // Set volume and play
+    // Create audio element
+    const audio = new Audio(SOUND_EFFECTS[sound]);
     audio.volume = volume;
-    audio.play().catch(err => {
-      console.error(`Error playing sound ${soundPath}:`, err);
-    });
-  } catch (err) {
-    console.error(`Error with sound playback for ${soundPath}:`, err);
-  }
-}
-
-// Play a sound by its key
-export function playSoundByKey(soundKey: keyof typeof SOUND_FILES, volume = 0.5) {
-  const soundPath = SOUND_FILES[soundKey];
-  if (soundPath) {
-    playSound(soundPath, volume);
-  } else {
-    console.error(`Sound key not found: ${soundKey}`);
-  }
-}
-
-// Interface for managing audio elements with controls
-export interface SoundControl {
-  play: () => void;
-  stop: () => void;
-  setVolume: (volume: number) => void;
-  isPlaying: () => boolean;
-}
-
-// Create a controlled sound that can be played, stopped, and adjusted
-export function createControlledSound(soundPath: string, initialVolume = 0.5): SoundControl {
-  let audio: HTMLAudioElement | null = null;
-  let volume = initialVolume;
-  
-  // Initialize the audio element
-  const initialize = () => {
-    if (typeof window === 'undefined') return;
     
-    if (!audio) {
-      audio = audioCache[soundPath] || new Audio(soundPath);
-      audio.volume = volume;
-      audioCache[soundPath] = audio;
-    }
-  };
-  
-  return {
-    play: () => {
-      if (!soundEnabled) return;
-      initialize();
-      if (audio) {
-        audio.currentTime = 0;
-        audio.play().catch(err => {
-          console.error(`Error playing controlled sound:`, err);
-        });
-      }
-    },
-    stop: () => {
-      if (audio) {
-        audio.pause();
-        audio.currentTime = 0;
-      }
-    },
-    setVolume: (newVolume: number) => {
-      volume = Math.max(0, Math.min(1, newVolume)); // Clamp between 0 and 1
-      if (audio) {
-        audio.volume = volume;
-      }
-    },
-    isPlaying: () => {
-      return !!(audio && !audio.paused);
-    }
-  };
+    // Play the sound
+    audio.play().catch(err => {
+      console.error(`Error playing sound ${sound}:`, err);
+    });
+  } catch (error) {
+    console.error(`Error creating audio for ${sound}:`, error);
+  }
 }
 
-// Play a random tone for testing/demo purposes
-export function playRandomTone(minFreq = 200, maxFreq = 800, duration = 300, volume = 0.5) {
-  if (!soundEnabled || typeof window === 'undefined') return;
-  
+// Generate random sounds within a range (for testing)
+export function playRandomTone(minFreq = 220, maxFreq = 880, duration = 0.3): void {
   try {
-    // Initialize audio context if needed
+    // Initialize or resume audio context
     const ctx = initAudioContext();
     if (!ctx) return;
     
-    // Create an oscillator
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    resumeAudioContext();
     
-    // Generate a random frequency
-    const randomFreq = Math.floor(Math.random() * (maxFreq - minFreq) + minFreq);
+    // Create oscillator
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
     
-    // Configure oscillator
-    oscillator.type = 'sine';
-    oscillator.frequency.value = randomFreq;
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    // Random frequency
+    const freq = minFreq + Math.random() * (maxFreq - minFreq);
+    osc.frequency.value = freq;
     
-    // Set volume
-    gainNode.gain.value = volume;
+    // Waveform type
+    osc.type = 'sine';
     
-    // Play the tone
-    oscillator.start();
+    // Envelope
+    gain.gain.value = 0;
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.7, ctx.currentTime + 0.01);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
     
-    // Stop after duration
-    setTimeout(() => {
-      oscillator.stop();
-      oscillator.disconnect();
-      gainNode.disconnect();
-    }, duration);
-  } catch (err) {
-    console.error(`Error playing random tone:`, err);
+    // Connect and play
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + duration + 0.1);
+  } catch (error) {
+    console.error('Error playing random tone:', error);
   }
 }
 
-// Play a winning sound sequence
-export function playWinSound() {
-  if (!soundEnabled || typeof window === 'undefined') return;
-  
+// Play a winning sound effect for when a user wins a game
+export function playWinSound(): void {
   try {
-    playSound(SOUND_FILES.SUCCESS, 0.5);
-  } catch (err) {
-    console.error('Error playing win sound:', err);
+    const ctx = initAudioContext();
+    if (!ctx) return;
+    
+    resumeAudioContext();
+    
+    // Create oscillators for a chord
+    const oscA = ctx.createOscillator();
+    const oscB = ctx.createOscillator();
+    const oscC = ctx.createOscillator();
+    
+    // Create gain nodes
+    const gainA = ctx.createGain();
+    const gainB = ctx.createGain();
+    const gainC = ctx.createGain();
+    
+    // Set frequencies for a major chord
+    oscA.frequency.value = 440; // A4
+    oscB.frequency.value = 554.37; // C#5
+    oscC.frequency.value = 659.25; // E5
+    
+    // Set waveform types
+    oscA.type = 'sine';
+    oscB.type = 'triangle';
+    oscC.type = 'square';
+    
+    // Configure envelopes
+    const now = ctx.currentTime;
+    
+    gainA.gain.value = 0;
+    gainA.gain.setValueAtTime(0, now);
+    gainA.gain.linearRampToValueAtTime(0.3, now + 0.05);
+    gainA.gain.linearRampToValueAtTime(0, now + 1.5);
+    
+    gainB.gain.value = 0;
+    gainB.gain.setValueAtTime(0, now);
+    gainB.gain.linearRampToValueAtTime(0.2, now + 0.1);
+    gainB.gain.linearRampToValueAtTime(0, now + 1.2);
+    
+    gainC.gain.value = 0;
+    gainC.gain.setValueAtTime(0, now);
+    gainC.gain.linearRampToValueAtTime(0.2, now + 0.2);
+    gainC.gain.linearRampToValueAtTime(0, now + 1.0);
+    
+    // Connect nodes
+    oscA.connect(gainA);
+    oscB.connect(gainB);
+    oscC.connect(gainC);
+    
+    gainA.connect(ctx.destination);
+    gainB.connect(ctx.destination);
+    gainC.connect(ctx.destination);
+    
+    // Start and stop oscillators
+    oscA.start(now);
+    oscB.start(now + 0.05);
+    oscC.start(now + 0.1);
+    
+    oscA.stop(now + 1.5);
+    oscB.stop(now + 1.2);
+    oscC.stop(now + 1.0);
+  } catch (error) {
+    console.error('Error playing win sound:', error);
   }
 }
 
-// Export by default a simplified version that just references the SOUND_FILES
-export default SOUND_FILES;
+export default {
+  initAudioContext,
+  resumeAudioContext,
+  playSound,
+  playRandomTone,
+  playWinSound,
+  SOUND_EFFECTS
+};

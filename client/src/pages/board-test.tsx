@@ -1,306 +1,349 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import GameBoard from "@/components/game/GameBoard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { preloadSounds } from '@/lib/sounds';
-import DemoGameStone from '@/components/game/DemoGameStone';
+import { useAuth } from "@/hooks/use-auth";
+import { Dices, Settings } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import VoiceChat from "@/components/game/VoiceChat";
 
-// Define the stone interface
-interface Stone {
-  index: number; 
-  row: number;
-  col: number;
-  number: number;
-  isSpecial?: boolean;
-  isSuper?: boolean;
-  size?: 'sm' | 'md' | 'lg';
-}
-
-// Regular stones configuration (main board)
-const stones: Stone[] = [
-  // Row 1 - Top row (largest stones)
-  { index: 1, row: 1, col: 1, number: 6624, isSuper: true, size: 'lg' },
-  { index: 2, row: 1, col: 2, number: 1500, size: 'lg' },
-  { index: 3, row: 1, col: 3, number: 1000, isSpecial: true, size: 'lg' },
-  { index: 4, row: 1, col: 4, number: 500, isSpecial: true, size: 'lg' },
-  { index: 5, row: 1, col: 5, number: 3355, isSuper: true, size: 'lg' },
+export default function BoardTest() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [gameStatus, setGameStatus] = useState<'waiting' | 'in_progress' | 'completed'>('in_progress');
+  const [gameStake, setGameStake] = useState(20000); // Default to high stakes game
+  const [hasRolled, setHasRolled] = useState(false);
+  const [userRolledNumber, setUserRolledNumber] = useState<number | null>(null);
+  const [winningNumber, setWinningNumber] = useState<number | null>(null);
   
-  // Row 2
-  { index: 6, row: 2, col: 1, number: 1400, size: 'md' },
-  { index: 7, row: 2, col: 2, number: 1300, size: 'md' },
-  { index: 8, row: 2, col: 3, number: 1200, size: 'md' },
-  { index: 9, row: 2, col: 4, number: 1100, size: 'md' },
-  { index: 10, row: 2, col: 5, number: 900, size: 'md' },
-  
-  // Row 3
-  { index: 11, row: 3, col: 1, number: 800, size: 'md' },
-  { index: 12, row: 3, col: 2, number: 700, size: 'md' },
-  { index: 13, row: 3, col: 3, number: 600, size: 'md' },
-  { index: 14, row: 3, col: 4, number: 400, size: 'md' },
-  { index: 15, row: 3, col: 5, number: 300, size: 'md' },
-  
-  // Row 4
-  { index: 16, row: 4, col: 1, number: 200, size: 'md' },
-  { index: 17, row: 4, col: 2, number: 100, size: 'md' },
-  { index: 18, row: 4, col: 3, number: 1600, size: 'md' },
-  { index: 19, row: 4, col: 4, number: 1700, size: 'md' },
-  { index: 20, row: 4, col: 5, number: 1800, size: 'md' },
-];
-
-// Small stones for the bottom rows
-const smallStones: Stone[] = [
-  // Row 5
-  { index: 21, row: 5, col: 1, number: 110, size: 'sm' },
-  { index: 22, row: 5, col: 2, number: 120, size: 'sm' },
-  { index: 23, row: 5, col: 3, number: 130, size: 'sm' },
-  { index: 24, row: 5, col: 4, number: 140, size: 'sm' },
-  { index: 25, row: 5, col: 5, number: 150, size: 'sm' },
-  
-  // Row 6
-  { index: 26, row: 6, col: 1, number: 160, size: 'sm' },
-  { index: 27, row: 6, col: 2, number: 170, size: 'sm' },
-  { index: 28, row: 6, col: 3, number: 180, size: 'sm' },
-  { index: 29, row: 6, col: 4, number: 190, size: 'sm' },
-  { index: 30, row: 6, col: 5, number: 210, size: 'sm' },
-];
-
-export default function BoardTestPage() {
-  const [rollingStoneIndex, setRollingStoneIndex] = useState<number | null>(null);
-  const [winningStone, setWinningStone] = useState<number | null>(null);
-  const [selectedLayout, setSelectedLayout] = useState<'grid' | 'circular'>('grid');
-  
-  // Preload sounds when the page loads
-  useEffect(() => {
-    preloadSounds();
-  }, []);
-  
-  // Handle stone click
-  const handleStoneClick = (stoneIndex: number, stoneNumber: number) => {
-    // If already rolling, don't do anything
-    if (rollingStoneIndex !== null) return;
-    
-    setRollingStoneIndex(stoneIndex);
-    
-    // After a delay to allow the animation to complete, set the stone as winner
-    setTimeout(() => {
-      setRollingStoneIndex(null);
-      setWinningStone(stoneNumber);
-    }, 2000);
-  };
-  
-  // Reset the board
-  const resetBoard = () => {
-    setRollingStoneIndex(null);
-    setWinningStone(null);
-  };
-  
-  // Find a stone by its number
-  const findStoneByNumber = (number: number): Stone | undefined => {
-    return [...stones, ...smallStones].find(stone => stone.number === number);
-  };
-  
-  // Render a grid layout board
-  const renderGridLayout = () => {
+  if (!user) {
     return (
-      <div className="board-container p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg shadow-lg">
-        {/* Main board with regular stones */}
-        {[1, 2, 3, 4].map(row => (
-          <div key={`row-${row}`} className="flex justify-between mb-4">
-            {stones
-              .filter(stone => stone.row === row)
-              .map((stone) => (
-                <div key={`stone-${stone.row}-${stone.index}`} className="stone-container">
-                  <DemoGameStone 
-                    number={stone.number}
-                    isSpecial={!!stone.isSpecial}
-                    isSuper={!!stone.isSuper}
-                    size={stone.size as 'sm' | 'md' | 'lg'}
-                    isRolling={rollingStoneIndex === stone.index}
-                    isWinner={winningStone === stone.number}
-                    onClick={() => handleStoneClick(stone.index, stone.number)}
-                  />
-                </div>
-              ))
-            }
-          </div>
-        ))}
-        
-        {/* Small stones for bottom rows */}
-        {[5, 6].map(row => (
-          <div key={`row-${row}`} className="flex justify-between mb-4">
-            {smallStones
-              .filter(stone => stone.row === row)
-              .map((stone) => (
-                <div key={`small-stone-${stone.row}-${stone.index}`} className="stone-container">
-                  <DemoGameStone 
-                    number={stone.number}
-                    size="sm"
-                    isRolling={rollingStoneIndex === stone.index}
-                    isWinner={winningStone === stone.number}
-                    onClick={() => handleStoneClick(stone.index, stone.number)}
-                  />
-                </div>
-              ))
-            }
-          </div>
-        ))}
+      <div className="container max-w-5xl mx-auto py-10">
+        <Card>
+          <CardHeader>
+            <CardTitle>Game Board Testing</CardTitle>
+            <CardDescription>
+              Please log in to test the game board functionality
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
+  }
+  
+  // Create a mock game object for testing
+  const mockGame = {
+    id: 888,
+    createdAt: new Date(),
+    status: gameStatus,
+    stake: gameStake,
+    commissionPercentage: 0.05,
+    currency: "NGN",
+    maxPlayers: 4,
+    creatorId: user.id,
+    winningNumber: winningNumber,
+    endedAt: gameStatus === 'completed' ? new Date() : null,
+    winnerIds: gameStatus === 'completed' && winningNumber !== null ? [user.id] : [],
+    language: "en",
+    isPrivate: false,
+    region: "NG",
+    voiceChatEnabled: gameStake >= 20000
   };
   
-  // Render a circular layout board (alternative layout)
-  const renderCircularLayout = () => {
-    return (
-      <div className="board-container relative w-full h-[600px] bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg shadow-lg p-4">
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          {/* Center special stone */}
-          <div className="absolute -translate-x-1/2 -translate-y-1/2">
-            <DemoGameStone 
-              number={1000}
-              isSpecial={true}
-              size="lg"
-              isRolling={rollingStoneIndex === 3}
-              isWinner={winningStone === 1000}
-              onClick={() => handleStoneClick(3, 1000)}
-            />
-          </div>
-          
-          {/* First circle - Super stones */}
-          {[
-            { index: 1, number: 6624, isSuper: true, angle: 0 },
-            { index: 5, number: 3355, isSuper: true, angle: 180 },
-          ].map((stone, i) => (
-            <div 
-              key={`super-${i}`}
-              className="absolute"
-              style={{
-                transform: `rotate(${stone.angle}deg) translateX(160px) rotate(-${stone.angle}deg)`,
-              }}
-            >
-              <DemoGameStone 
-                number={stone.number}
-                isSuper={stone.isSuper}
-                size="lg"
-                isRolling={rollingStoneIndex === stone.index}
-                isWinner={winningStone === stone.number}
-                onClick={() => handleStoneClick(stone.index, stone.number)}
-              />
-            </div>
-          ))}
-          
-          {/* Second circle - Medium stones */}
-          {stones
-            .filter(s => s.size === 'md')
-            .slice(0, 12) // Use only the first 12 medium stones
-            .map((stone, i) => (
-              <div 
-                key={`med-${i}`}
-                className="absolute"
-                style={{
-                  transform: `rotate(${i * 30}deg) translateX(240px) rotate(-${i * 30}deg)`,
-                }}
-              >
-                <DemoGameStone 
-                  number={stone.number}
-                  size="md"
-                  isRolling={rollingStoneIndex === stone.index}
-                  isWinner={winningStone === stone.number}
-                  onClick={() => handleStoneClick(stone.index, stone.number)}
-                />
-              </div>
-            ))
-          }
-          
-          {/* Outer circle - Small stones */}
-          {smallStones
-            .slice(0, 10) // Use only the first 10 small stones
-            .map((stone, i) => (
-              <div 
-                key={`small-${i}`}
-                className="absolute"
-                style={{
-                  transform: `rotate(${i * 36}deg) translateX(320px) rotate(-${i * 36}deg)`,
-                }}
-              >
-                <DemoGameStone 
-                  number={stone.number}
-                  size="sm"
-                  isRolling={rollingStoneIndex === stone.index}
-                  isWinner={winningStone === stone.number}
-                  onClick={() => handleStoneClick(stone.index, stone.number)}
-                />
-              </div>
-            ))
-          }
-        </div>
-      </div>
-    );
+  // Create mock players
+  const mockPlayers = [
+    {
+      id: 1,
+      gameId: 888,
+      userId: user.id,
+      user: {
+        username: user.username,
+        avatarInitials: user.avatarInitials || "YO"
+      },
+      hasRolled: hasRolled,
+      rolledNumber: userRolledNumber,
+      isWinner: gameStatus === 'completed' && userRolledNumber === winningNumber,
+      winShare: gameStatus === 'completed' && userRolledNumber === winningNumber ? gameStake * 0.95 : 0,
+      createdAt: new Date()
+    },
+    {
+      id: 2,
+      gameId: 888,
+      userId: 999,
+      user: {
+        username: "Player2",
+        avatarInitials: "P2"
+      },
+      hasRolled: true,
+      rolledNumber: 300,
+      isWinner: gameStatus === 'completed' && 300 === winningNumber,
+      winShare: gameStatus === 'completed' && 300 === winningNumber ? gameStake * 0.95 : 0,
+      createdAt: new Date()
+    },
+    {
+      id: 3,
+      gameId: 888,
+      userId: 998,
+      user: {
+        username: "Player3",
+        avatarInitials: "P3"
+      },
+      hasRolled: true,
+      rolledNumber: 500,
+      isWinner: gameStatus === 'completed' && 500 === winningNumber,
+      winShare: gameStatus === 'completed' && 500 === winningNumber ? gameStake * 0.95 : 0,
+      createdAt: new Date()
+    }
+  ];
+  
+  // Handle when user rolls the stone
+  const handleRollStone = () => {
+    // Random stone values
+    const stoneValues = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 3355, 6624];
+    const randomIndex = Math.floor(Math.random() * stoneValues.length);
+    const rolledNumber = stoneValues[randomIndex];
+    
+    setHasRolled(true);
+    setUserRolledNumber(rolledNumber);
+    
+    toast({
+      title: `You rolled: ${rolledNumber}`,
+      description: "Waiting for other players to roll...",
+    });
+  };
+  
+  // End the game with a winner
+  const endGame = () => {
+    // Choose a random player as winner or set the current user as winner
+    const winnerIndex = Math.floor(Math.random() * mockPlayers.length);
+    const winnerNumber = mockPlayers[winnerIndex].rolledNumber || 0;
+    
+    setGameStatus('completed');
+    setWinningNumber(winnerNumber);
+    
+    toast({
+      title: "Game Completed",
+      description: `Winning number: ${winnerNumber}`,
+      variant: winnerNumber === userRolledNumber ? "default" : "destructive",
+    });
+  };
+  
+  // Reset the game
+  const resetGame = () => {
+    setGameStatus('waiting');
+    setHasRolled(false);
+    setUserRolledNumber(null);
+    setWinningNumber(null);
+    
+    toast({
+      title: "Game Reset",
+      description: "Waiting for players to join...",
+    });
+  };
+  
+  // Start the game
+  const startGame = () => {
+    setGameStatus('in_progress');
+    
+    toast({
+      title: "Game Started",
+      description: "Roll your stone now!",
+    });
   };
   
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-2">Game Board Testing</h1>
-      <p className="text-gray-500 mb-8">Test the enhanced game board layouts and animations</p>
-      
-      <div className="mb-6 flex items-center gap-4">
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant={selectedLayout === 'grid' ? 'default' : 'outline'} 
-            onClick={() => setSelectedLayout('grid')}
-          >
-            Grid Layout
-          </Button>
-          <Button 
-            variant={selectedLayout === 'circular' ? 'default' : 'outline'} 
-            onClick={() => setSelectedLayout('circular')}
-          >
-            Circular Layout
-          </Button>
-        </div>
-        
-        <div className="flex-1"></div>
-        
-        <Button 
-          variant="secondary" 
-          onClick={resetBoard}
-        >
-          Reset Board
-        </Button>
-      </div>
-      
-      {/* Board Layout */}
-      {selectedLayout === 'grid' ? renderGridLayout() : renderCircularLayout()}
-      
-      {/* Result Card */}
-      {winningStone && (
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              Result 
-              <Badge variant="outline" className="ml-2">
-                {findStoneByNumber(winningStone)?.isSpecial ? 'Special Stone' : 
-                 findStoneByNumber(winningStone)?.isSuper ? 'Super Stone' : 'Regular Stone'}
-              </Badge>
-            </CardTitle>
-            <CardDescription>You rolled and landed on stone value:</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center py-4">
-              <div className="text-4xl font-bold">{winningStone}</div>
+    <div className="container max-w-5xl mx-auto py-10 space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Game Board Testing</CardTitle>
+              <CardDescription>
+                Test the game board interface and functionality
+              </CardDescription>
             </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      <div className="mt-12 text-center">
-        <Button 
-          variant="ghost" 
-          onClick={() => window.history.back()}
-        >
-          Back
-        </Button>
-      </div>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <Settings className="h-4 w-4" />
+                  <span>Game Settings</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Game Settings</DialogTitle>
+                  <DialogDescription>
+                    Customize the game state for testing
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <span className="text-sm">Game Status:</span>
+                    <div className="col-span-3">
+                      <Tabs
+                        defaultValue={gameStatus}
+                        className="w-full"
+                        onValueChange={(value) => setGameStatus(value as 'waiting' | 'in_progress' | 'completed')}
+                      >
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="waiting">Waiting</TabsTrigger>
+                          <TabsTrigger value="in_progress">In Progress</TabsTrigger>
+                          <TabsTrigger value="completed">Completed</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <span className="text-sm">Game Stake:</span>
+                    <div className="col-span-3">
+                      <RadioGroup 
+                        defaultValue={gameStake.toString()} 
+                        className="flex space-x-4"
+                        onValueChange={(value) => setGameStake(Number(value))}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="10000" id="stake-10k" />
+                          <Label htmlFor="stake-10k">₦10,000</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="20000" id="stake-20k" />
+                          <Label htmlFor="stake-20k">₦20,000</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="50000" id="stake-50k" />
+                          <Label htmlFor="stake-50k">₦50,000</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
+                </div>
+                
+                <DialogFooter>
+                  <Button type="submit">Save changes</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          <div className="bg-slate-50 p-4 rounded-lg border">
+            <h3 className="text-sm font-medium mb-2">Game Controls</h3>
+            
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetGame}
+                className="flex items-center gap-1"
+              >
+                <Dices className="h-4 w-4" />
+                Reset Game
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={startGame}
+                disabled={gameStatus !== 'waiting'}
+                className="flex items-center gap-1"
+              >
+                <Dices className="h-4 w-4" />
+                Start Game
+              </Button>
+              
+              <Button
+                variant={hasRolled ? "secondary" : "default"}
+                size="sm"
+                onClick={handleRollStone}
+                disabled={gameStatus !== 'in_progress' || hasRolled}
+                className="flex items-center gap-1"
+              >
+                <Dices className="h-4 w-4" />
+                {hasRolled ? `Rolled: ${userRolledNumber}` : 'Roll Stone'}
+              </Button>
+              
+              <Button
+                variant="default"
+                size="sm"
+                onClick={endGame}
+                disabled={gameStatus !== 'in_progress' || !mockPlayers.every(p => p.hasRolled)}
+                className="flex items-center gap-1"
+              >
+                <Dices className="h-4 w-4" />
+                End Game
+              </Button>
+            </div>
+          </div>
+          
+          <div className="grid gap-6 md:grid-cols-5">
+            {/* Game board takes up most of the space */}
+            <div className="md:col-span-3">
+              <GameBoard
+                game={mockGame as any}
+                players={mockPlayers as any}
+                currentUserId={user.id}
+                onRollStone={handleRollStone}
+              />
+            </div>
+            
+            {/* Voice chat and other panels */}
+            <div className="md:col-span-2 space-y-4">
+              {/* Only show voice chat for high stakes games */}
+              {gameStake >= 20000 && (
+                <VoiceChat
+                  game={mockGame as any}
+                  players={mockPlayers as any}
+                  currentUserId={user.id}
+                />
+              )}
+              
+              {/* Game info card */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Game Information</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Game ID:</span>
+                    <span className="font-medium">{mockGame.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Stake:</span>
+                    <span className="font-medium">₦{mockGame.stake.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Commission:</span>
+                    <span className="font-medium">{mockGame.commissionPercentage * 100}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Players:</span>
+                    <span className="font-medium">{mockPlayers.length}/{mockGame.maxPlayers}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status:</span>
+                    <span className="font-medium capitalize">{mockGame.status.replace('_', ' ')}</span>
+                  </div>
+                  {mockGame.winningNumber !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Winning Number:</span>
+                      <span className="font-medium">{mockGame.winningNumber}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
