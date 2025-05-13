@@ -55,30 +55,46 @@ const CurrencyPreference = ({ user }: { user: User }) => {
     user?.preferredCurrency || 'NGN'
   );
 
-  // Fetch available currencies
-  const { data: currencyData, isLoading: currenciesLoading } = useQuery({
+  // Fetch available currencies with improved error handling
+  const { data: currencyData, isLoading: currenciesLoading, error: currenciesError } = useQuery({
     queryKey: ['/api/currencies'],
     queryFn: async () => {
-      const response = await fetch('/api/currencies');
-      if (!response.ok) {
-        throw new Error('Failed to fetch currencies');
+      try {
+        const response = await fetch('/api/currencies');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch currencies: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      } catch (error) {
+        console.error('Error fetching currencies:', error);
+        throw new Error('Failed to fetch currencies. Please try again later.');
       }
-      return response.json();
     }
   });
 
-  // Update preferred currency mutation
+  // Update preferred currency mutation with improved error handling
   const updateCurrencyMutation = useMutation({
     mutationFn: async (currency: string) => {
-      const response = await apiRequest('PATCH', '/api/user/preferences', {
-        preferredCurrency: currency
-      });
+      try {
+        const response = await apiRequest('PATCH', '/api/user/preferences', {
+          preferredCurrency: currency
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to update preferred currency');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || 
+            `Failed to update preferred currency: ${response.status} ${response.statusText}`
+          );
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error('Currency preference update error:', error);
+        throw error instanceof Error 
+          ? error 
+          : new Error('Failed to update preferred currency. Please try again later.');
       }
-
-      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -142,18 +158,41 @@ const CurrencyPreference = ({ user }: { user: User }) => {
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
               <SelectContent>
-                {currencyData?.currencies?.map((currency: CurrencyDetails) => (
-                  <SelectItem key={currency.code} value={currency.code}>
-                    {currency.symbol} {currency.name}
-                  </SelectItem>
-                ))}
+                {currenciesLoading ? (
+                  <div className="flex items-center justify-center p-2">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <span>Loading currencies...</span>
+                  </div>
+                ) : currenciesError ? (
+                  <div className="p-2 text-destructive">
+                    Failed to load currencies
+                  </div>
+                ) : !currencyData?.currencies?.length ? (
+                  <div className="p-2 text-muted-foreground">
+                    No currencies available
+                  </div>
+                ) : (
+                  currencyData.currencies.map((currency: CurrencyDetails) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      {currency.symbol} {currency.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
 
-          {selectedCurrency !== user?.preferredCurrency && (
+          {/* Only show help text when user is actually changing their preference */}
+          {(user?.preferredCurrency && selectedCurrency !== user.preferredCurrency) && (
             <p className="text-sm text-muted-foreground">
               Changing your preferred currency will affect how amounts are displayed in your wallet and game interfaces.
+            </p>
+          )}
+          
+          {/* Show guidance for new users who haven't set a preference yet */}
+          {!user?.preferredCurrency && (
+            <p className="text-sm text-muted-foreground">
+              Set your preferred currency to customize how amounts are displayed throughout the application.
             </p>
           )}
         </div>
@@ -165,7 +204,8 @@ const CurrencyPreference = ({ user }: { user: User }) => {
           disabled={
             updateCurrencyMutation.isPending || 
             currenciesLoading || 
-            selectedCurrency === user?.preferredCurrency
+            (!user?.preferredCurrency && selectedCurrency === 'NGN') ||
+            (user?.preferredCurrency && selectedCurrency === user.preferredCurrency)
           }
           className="w-full"
         >
@@ -174,8 +214,10 @@ const CurrencyPreference = ({ user }: { user: User }) => {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Saving...
             </>
+          ) : user?.preferredCurrency ? (
+            'Update Preference'
           ) : (
-            'Save Preference'
+            'Set Preference'
           )}
         </Button>
       </CardFooter>
