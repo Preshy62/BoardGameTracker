@@ -271,29 +271,7 @@ export default function GameBoard({
             ...player,
             user: {
               id: player.userId,
-              username: player.user.username,
-              password: "",
-              email: "",
-              walletBalance: 0,
-              avatarInitials: player.user.avatarInitials || player.user.username.charAt(0).toUpperCase(),
-              isAdmin: false,
-              isActive: true,
-              createdAt: null,
-              emailVerified: null,
-              verificationToken: null,
-              verificationTokenExpires: null,
-              resetPasswordToken: null,
-              resetPasswordTokenExpires: null,
-              emailNotifications: null,
-              countryCode: null,
-              preferredCurrency: null,
-              language: null,
-              timeZone: null,
-              bankDetails: null,
-              isVerified: false,
-              verificationLevel: 0,
-              stripeCustomerId: null,
-              stripeSubscriptionId: null
+              username: player.user.username
             }
           }))}
           currentUserId={currentUserId}

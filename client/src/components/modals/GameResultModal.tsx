@@ -12,7 +12,7 @@ interface GameResultModalProps {
   winAmount: number;
   winningNumber: number;
   winners: User[]; // Changed from single winner to array of winners
-  standings: (GamePlayer & { user: User })[];
+  standings: (GamePlayer & { user: { username: string, id?: number } })[];
   currentUserId: number;
 }
 
@@ -243,7 +243,7 @@ const GameResultModal = ({
                       {index + 1}
                     </span>
                     <span>
-                      {player.user.username} {player.userId === currentUserId ? "(You)" : ""}
+                      {player.user.username} {(player.userId === currentUserId || player.user.id === currentUserId) ? "(You)" : ""}
                     </span>
                   </div>
                   <span className="font-mono font-bold">
