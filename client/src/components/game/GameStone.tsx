@@ -1,213 +1,200 @@
-import { cn } from "@/lib/utils";
-import { useRef, useEffect, useState } from "react";
-import { CSSProperties } from "react";
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { playSound } from '@/lib/sounds';
+import { Badge } from "@/components/ui/badge";
+import { cn } from '@/lib/utils';
+import { LucideLoader2 } from 'lucide-react';
 
 interface GameStoneProps {
   number: number;
+  isWinner?: boolean;
   isRolling?: boolean;
-  isSpecial?: boolean;
-  isSuper?: boolean; // For 6624 and 3355
-  isWinner?: boolean; // For the winner animation
-  isYourTurn?: boolean; // Indicates if it's the current player's turn
+  isUserTurn?: boolean;
+  onRollComplete?: (number: number) => void;
+  size?: 'sm' | 'md' | 'lg';
+  showLabel?: boolean;
   className?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl'; // Different stone sizes
-  id?: string; // Optional ID for directly targeting the stone element
-  onClick?: () => void; // Optional click handler for interactive stones
-  disabled?: boolean; // Optional disabled state
-  animationType?: 'none' | 'pulse' | 'glow' | 'spin' | 'bounce'; // Optional animation type
 }
 
-const GameStone = ({ 
-  number, 
-  isRolling = false, 
-  isSpecial = false,
-  isSuper = false,
+export default function GameStone({
+  number,
   isWinner = false,
-  isYourTurn = false,
+  isRolling = false,
+  isUserTurn = false,
+  onRollComplete,
   size = 'md',
-  className,
-  id,
-  onClick,
-  disabled = false,
-  animationType = 'none'
-}: GameStoneProps) => {
-  // Add subtle hover animation for clickable stones
-  const [isHovering, setIsHovering] = useState(false);
-  const [hasEntered, setHasEntered] = useState(false); // Track if stone has been seen for entrance animations
-  const stoneRef = useRef<HTMLDivElement>(null);
+  showLabel = false,
+  className = ''
+}: GameStoneProps) {
+  const [rollAnimation, setRollAnimation] = useState(false);
+  const [displayNumber, setDisplayNumber] = useState(number);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const rollCountRef = useRef(0);
+  const maxRolls = 15; // Number of random numbers to show during animation
   
-  // Set hasEntered to true once after component mounts
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setHasEntered(true);
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Determine size classes based on the size prop
-  const sizeClasses = {
-    'sm': 'w-10 h-10 text-base',
-    'md': 'w-14 h-14 text-xl',
-    'lg': 'w-20 h-20 text-2xl',
-    'xl': 'w-24 h-24 text-3xl',
-  }[size];
-
-  // Add focus highlight for accessibility
-  useEffect(() => {
-    if (onClick && stoneRef.current) {
-      stoneRef.current.tabIndex = 0; // Make it focusable
+  // Determine stone background style based on number value
+  const getStoneStyle = (num: number) => {
+    // Special stone styling (1000, 500)
+    if (num === 1000 || num === 500) {
+      return 'bg-amber-100 text-amber-900 border-amber-300';
     }
-  }, [onClick]);
-
-  // Determine interactive classes
-  const interactiveClasses = onClick && !disabled ? 
-    "cursor-pointer hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 focus:ring-offset-primary" : 
-    "";
+    // Super stone styling (3355, 6624)
+    else if (num === 3355 || num === 6624) {
+      return 'bg-red-100 text-red-900 border-red-300';
+    }
     
-  // Get animation class based on animationType
-  const getAnimationClass = () => {
-    if (isRolling) return "stone-roll-animation";
-    if (isWinner) return "winner-stone-animation";
-    
-    switch (animationType) {
-      case 'pulse': return "stone-pulse";
-      case 'glow': return "stone-hover-glow";
-      case 'spin': return "slow-spin";
-      case 'bounce': return "animate-bounce";
-      default: return "";
+    // Default stone styling
+    return 'bg-white text-slate-800 border-slate-300';
+  };
+  
+  // Get size classes for the stone
+  const getSizeClasses = () => {
+    switch (size) {
+      case 'sm':
+        return 'h-12 w-12 text-sm';
+      case 'lg':
+        return 'h-20 w-20 text-xl';
+      case 'md':
+      default:
+        return 'h-16 w-16 text-lg';
     }
   };
   
-  // Entrance animation for visual appeal
-  const entranceAnimation = !hasEntered ? {
-    opacity: 0,
-    transform: 'scale(0.8)',
-    transition: 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
-  } : {
-    opacity: 1,
-    transform: 'scale(1)',
-    transition: 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+  // Winner animation classes
+  const getWinnerClasses = () => {
+    if (isWinner) {
+      return 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)] animate-pulse';
+    }
+    return '';
   };
   
-  // Main style for the stone with enhanced visual effects
-  const stoneStyle = {
-    ...entranceAnimation,
-    boxShadow: isWinner 
-      ? "0 0 75px 35px rgba(255, 215, 0, 0.95)"
-      : isHovering && !isRolling && onClick && !disabled
-        ? "0 0 30px 15px rgba(255, 215, 0, 0.6)"
-        : isRolling
-          ? "0 0 60px 30px rgba(255, 255, 0, 0.8), inset 0 0 15px 5px rgba(255, 255, 255, 0.6)"
-          : isYourTurn 
-            ? "0 0 20px 10px rgba(255, 255, 255, 0.7)"
-            : "0 0 5px 2px rgba(255, 215, 0, 0.3)",
-    zIndex: isWinner ? 200 : isRolling ? 120 : isHovering ? 50 : isYourTurn ? 30 : 10,
-    position: "relative" as const,
-    transform: isWinner 
-      ? "scale(1.8)" 
-      : isHovering && !isRolling && onClick && !disabled 
-        ? "scale(1.1)"
-        : isRolling 
-          ? "scale(1.5)"
-          : "scale(1)", 
-    transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)", // Bouncy effect
-    border: isWinner 
-      ? '8px solid gold' 
-      : isRolling 
-        ? '6px solid gold'
-        : isYourTurn
-          ? '4px solid rgba(255, 255, 255, 0.8)'
-          : isHovering && !disabled && onClick
-            ? '3px solid gold'
-            : undefined,
-    outline: isWinner 
-      ? '5px solid red' 
-      : isRolling 
-        ? '4px solid #ff9500'
-        : undefined,
-    background: isSpecial 
-      ? 'radial-gradient(circle, #FFD700 30%, #f59e0b 100%)' 
-      : isSuper 
-        ? 'radial-gradient(circle, #f87171 30%, #b91c1c 100%)'
-        : isRolling
-          ? 'radial-gradient(circle at 30% 30%, #1e40af 20%, #1e3a8a 50%, #172554 100%)' 
-          : 'radial-gradient(circle, #1e3a8a 30%, #172554 100%)',
-    filter: isRolling 
-      ? "brightness(1.4) contrast(1.2)" 
-      : disabled 
-        ? "grayscale(0.7) opacity(0.7)" 
-        : undefined,
-  };
-  
-  // Handle stone click with feedback
-  const handleClick = () => {
-    if (onClick && !disabled && !isRolling && !isWinner) {
-      // Add haptic feedback if supported
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
+  // Simulate stone rolling with random numbers
+  const rollStone = () => {
+    // Skip if already rolling
+    if (rollAnimation) return;
+    
+    // Start roll animation and play sound
+    setRollAnimation(true);
+    playSound('STONE_ROLL', 0.5);
+    
+    // Potential roll values (can be adjusted based on game rules)
+    const potentialRolls = [
+      500, 1000, 3355, 6624, // Special values
+      ...Array.from({ length: 15 }, (_, i) => 100 + i * 100) // Regular values 100-1500
+    ];
+    
+    // Reset roll count
+    rollCountRef.current = 0;
+    
+    // Function to show a random number during animation
+    const showRandomNumber = () => {
+      rollCountRef.current++;
+      
+      // If we've hit our max rolls, stop and show actual result
+      if (rollCountRef.current >= maxRolls) {
+        setDisplayNumber(number);
+        setRollAnimation(false);
+        
+        // Play landing sound
+        playSound('STONE_LAND', 0.6);
+        
+        // Notify parent component that roll is complete
+        if (onRollComplete) {
+          onRollComplete(number);
+        }
+        
+        // Clear the timeout
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        
+        return;
       }
       
-      onClick();
-    }
-  };
-
-  // Keyboard accessibility
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.key === 'Enter' || e.key === ' ') && onClick && !disabled) {
-      e.preventDefault();
-      handleClick();
-    }
-  };
-
-  return (
-    <div 
-      ref={stoneRef}
-      id={id || `stone-${number}`}
-      className={cn(
-        "game-stone rounded-full border-2 flex items-center justify-center transition-all",
-        sizeClasses,
-        isSpecial 
-          ? "border-4 border-secondary bg-secondary" 
-          : isSuper
-            ? "border-4 border-yellow-300 bg-red-500"
-            : "bg-primary border-secondary",
-        isRolling && "stone-roll-animation",
-        isWinner && "winner-stone-animation",
-        isYourTurn && "stone-your-turn",
-        isSuper && !isRolling && "stone-super-special",
-        getAnimationClass(),
-        interactiveClasses,
-        disabled && "cursor-not-allowed",
-        className
-      )}
-      style={stoneStyle}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-      aria-label={`Stone number ${number}${isSpecial ? ', special stone' : ''}${isSuper ? ', super stone' : ''}${isYourTurn ? ', your turn' : ''}`}
-      role={onClick ? "button" : "presentation"}
-      aria-disabled={disabled}
-    >
-      <span 
-        className={cn(
-          "font-mono font-bold select-none",
-          isSpecial || isSuper ? "text-primary" : "text-white",
-          isWinner && "winner-text-animation"
-        )}
-      >
-        {number}
-      </span>
+      // Show a random number from potential rolls
+      const randomIndex = Math.floor(Math.random() * potentialRolls.length);
+      setDisplayNumber(potentialRolls[randomIndex]);
       
-      {/* Add visual indicator for your turn */}
-      {isYourTurn && (
-        <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-primary text-xs px-2 py-0.5 rounded-full animate-pulse shadow-md">
-          Your Turn
-        </div>
+      // Wait a decreasing amount of time between changes
+      // This makes the animation slow down as it reaches the end
+      const delay = 75 + Math.floor(rollCountRef.current * 15);
+      
+      // Schedule the next change
+      timeoutRef.current = setTimeout(showRandomNumber, delay);
+    };
+    
+    // Start the animation sequence
+    showRandomNumber();
+  };
+  
+  // Start roll animation when isRolling prop changes to true
+  useEffect(() => {
+    if (isRolling && !rollAnimation) {
+      rollStone();
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [isRolling]);
+  
+  return (
+    <div className={cn("relative", className)}>
+      {showLabel && (
+        <Badge variant="outline" className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10 text-xs px-1 py-0">
+          {isUserTurn ? 'Your Turn' : 'Stone'}
+        </Badge>
       )}
+      
+      <motion.div
+        className={cn(
+          'rounded-lg border-2 flex items-center justify-center shadow-md relative overflow-hidden',
+          getSizeClasses(),
+          getStoneStyle(displayNumber),
+          getWinnerClasses(),
+          { 'cursor-pointer hover:border-primary': isUserTurn && !rollAnimation }
+        )}
+        onClick={() => isUserTurn && !rollAnimation && rollStone()}
+        whileHover={isUserTurn && !rollAnimation ? { scale: 1.05 } : {}}
+        animate={{
+          rotate: rollAnimation ? [0, -10, 10, -10, 0] : 0,
+          scale: rollAnimation ? [1, 1.1, 0.95, 1.05, 1] : 1
+        }}
+        transition={{
+          duration: rollAnimation ? 0.5 : 0.2,
+          repeat: rollAnimation ? Infinity : 0,
+          repeatType: 'reverse'
+        }}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={displayNumber}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.1 }}
+            className="font-bold"
+          >
+            {rollAnimation ? displayNumber : number}
+          </motion.div>
+        </AnimatePresence>
+        
+        {/* Rolling indicator */}
+        {rollAnimation && (
+          <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
+            <LucideLoader2 className="h-6 w-6 text-primary animate-spin" />
+          </div>
+        )}
+        
+        {/* Winner indicator overlay */}
+        {isWinner && (
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 animate-gradient-x" />
+        )}
+      </motion.div>
     </div>
   );
-};
-
-export default GameStone;
+}
