@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import { runMigration } from "./utils/migrate-email-fields";
 import { initializeEmailTransport } from "./utils/email";
+import { addTransactionDescriptionField } from "./migrations/add-transaction-description";
 
 // Create a demo user function for testing
 async function createDemoUser() {
