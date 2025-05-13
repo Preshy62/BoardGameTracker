@@ -11,6 +11,7 @@ import DemoNewPage from "@/pages/demo-new";
 import LandingPage from "@/pages/landing-page";
 import WalletPage from "@/pages/wallet-page";
 import Checkout from "@/pages/checkout";
+import SettingsPage from "@/pages/settings-page";
 import VoiceChatTest from "@/pages/voice-chat-test";
 import VoiceRecorderTest from "@/pages/voice-recorder-test";
 import SimpleVoiceChat from "@/pages/simple-voice-chat";
@@ -60,6 +61,7 @@ function Router() {
       <ProtectedRoute path="/create-game" component={CreateGame} />
       <ProtectedRoute path="/game/:id" component={GamePage} />
       <ProtectedRoute path="/wallet" component={WalletPage} />
+      <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/checkout/:amount" component={Checkout} />
       
       {/* Admin routes - hidden from regular navigation */}
