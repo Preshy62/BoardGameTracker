@@ -14,12 +14,17 @@ interface User {
   username: string;
   email: string;
   walletBalance: number;
-  preferredCurrency: string;
-  countryCode: string;
-  avatarInitials: string;
+  preferredCurrency?: string;
+  countryCode?: string;
+  avatarInitials?: string;
   emailVerified: boolean | null;
   isActive: boolean;
   isAdmin: boolean;
+  language?: string | null;
+  createdAt?: Date | string | null;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  emailNotifications?: boolean;
 }
 
 // Page Header component since we don't want to pull in the common component yet
@@ -152,7 +157,7 @@ const SettingsPage = () => {
         <TabsContent value="currency" className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Currency Preference */}
-            <CurrencyPreference user={user as any} />
+            <CurrencyPreference user={user} />
             
             {/* Currency Converter */}
             <CurrencyConverter />

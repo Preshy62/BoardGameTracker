@@ -36,11 +36,17 @@ interface User {
   username: string;
   email: string;
   walletBalance: number;
-  preferredCurrency: string;
-  countryCode: string;
-  avatarInitials: string;
-  emailVerified: boolean;
+  preferredCurrency?: string;
+  countryCode?: string;
+  avatarInitials?: string;
+  emailVerified: boolean | null;
+  isActive: boolean;
   isAdmin: boolean;
+  language?: string | null;
+  createdAt?: Date | string | null;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  emailNotifications?: boolean;
 }
 
 const CurrencyPreference = ({ user }: { user: User }) => {
@@ -95,7 +101,11 @@ const CurrencyPreference = ({ user }: { user: User }) => {
 
   // Handle currency change
   const handleSaveCurrency = () => {
-    if (selectedCurrency === user?.preferredCurrency) {
+    // Safe comparison with fallback for user.preferredCurrency 
+    // in case it's undefined
+    const currentPreferredCurrency = user?.preferredCurrency || 'NGN';
+    
+    if (selectedCurrency === currentPreferredCurrency) {
       toast({
         title: 'No Changes',
         description: 'The selected currency is already your preferred currency',
