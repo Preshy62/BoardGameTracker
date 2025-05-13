@@ -60,15 +60,6 @@ interface AccountVerification {
   bankCode: string;
   bankName: string;
 }
-  code: string;
-}
-
-interface AccountVerification {
-  accountNumber: string;
-  accountName: string;
-  bankCode: string;
-  bankName: string;
-}
 
 export default function FundManagement({ user }: FundManagementProps) {
   const [depositAmount, setDepositAmount] = useState("");
