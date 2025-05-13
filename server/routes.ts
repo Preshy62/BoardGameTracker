@@ -384,6 +384,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Update user profile
+  app.patch("/api/user/profile", authenticate, async (req, res) => {
+    try {
+      // Validate user exists
+      ensureUserIdExists(req.session.userId);
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Create a schema for profile updates
+      const userProfileSchema = z.object({
+        username: z.string().min(3, { message: "Username must be at least 3 characters" }).optional(),
+        email: z.string().email({ message: "Please enter a valid email address" }).optional(),
+        avatarInitials: z.string().max(2, { message: "Avatar initials must be max 2 characters" }).optional(),
+        emailNotifications: z.boolean().optional(),
+      });
+      
+      // Validate request body
+      const validationResult = userProfileSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Invalid profile data",
+          errors: validationResult.error.format()
+        });
+      }
+      
+      // Check if username is being changed and if it's already taken
+      if (
+        validationResult.data.username && 
+        validationResult.data.username !== user.username
+      ) {
+        const existingUser = await storage.getUserByUsername(validationResult.data.username);
+        if (existingUser && existingUser.id !== user.id) {
+          return res.status(400).json({
+            message: "Username already exists",
+          });
+        }
+      }
+      
+      // Check if email is being changed and if it's already taken
+      if (
+        validationResult.data.email && 
+        validationResult.data.email !== user.email
+      ) {
+        const existingUser = await storage.getUserByEmail(validationResult.data.email);
+        if (existingUser && existingUser.id !== user.id) {
+          return res.status(400).json({
+            message: "Email already exists",
+          });
+        }
+      }
+      
+      // Update user profile
+      const updatedUser = await storage.updateUserProfile(
+        req.session.userId, 
+        validationResult.data
+      );
+      
+      // Remove password from response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json({
+        ...userWithoutPassword,
+        message: "Profile updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
   // Email verification routes - both GET (for link clicks) and POST (for API calls)
   const handleEmailVerification = async (token: string, res: Response) => {
     try {

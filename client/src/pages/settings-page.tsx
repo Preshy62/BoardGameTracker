@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Settings, UserCog, Globe, Languages } from 'lucide-react';
@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import CurrencyPreference from '@/components/settings/CurrencyPreference';
 import LanguagePreference from '@/components/settings/LanguagePreference';
 import CurrencyConverter from '@/components/wallet/CurrencyConverter';
+import ProfileEditForm from '@/components/settings/ProfileEditForm';
 import { Button } from '@/components/ui/button';
 import { getQueryFn } from '@/lib/queryClient';
 
@@ -55,6 +56,7 @@ function PageHeader({ title, description, icon }: PageHeaderProps) {
 
 const SettingsPage = () => {
   const { toast } = useToast();
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   // Fetch user data
   const { data: user, isLoading } = useQuery<User | null>({
@@ -120,28 +122,44 @@ const SettingsPage = () => {
 
         <TabsContent value="account" className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {/* Profile information card would go here */}
+            {/* Profile information card */}
             <div className="bg-card p-6 rounded-lg border shadow-sm">
               <h3 className="text-lg font-medium mb-4">Profile Information</h3>
-              <div className="space-y-2">
-                <p className="text-sm">
-                  <span className="font-medium">Username:</span> {user?.username || 'N/A'}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Email:</span> {user?.email || 'N/A'}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Account Status:</span>{' '}
-                  {user?.isActive ? 'Active' : 'Inactive'}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Email Verified:</span>{' '}
-                  {user?.emailVerified ? 'Yes' : 'No'}
-                </p>
-              </div>
-              <Button className="mt-4" variant="outline" size="sm">
-                Edit Profile
-              </Button>
+              
+              {isEditingProfile ? (
+                <ProfileEditForm 
+                  user={user} 
+                  onCancel={() => setIsEditingProfile(false)} 
+                  onSuccess={() => setIsEditingProfile(false)}
+                />
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <p className="text-sm">
+                      <span className="font-medium">Username:</span> {user?.username || 'N/A'}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Email:</span> {user?.email || 'N/A'}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Account Status:</span>{' '}
+                      {user?.isActive ? 'Active' : 'Inactive'}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Email Verified:</span>{' '}
+                      {user?.emailVerified ? 'Yes' : 'No'}
+                    </p>
+                  </div>
+                  <Button 
+                    className="mt-4" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsEditingProfile(true)}
+                  >
+                    Edit Profile
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Security settings card would go here */}
