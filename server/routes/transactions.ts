@@ -39,7 +39,7 @@ router.get('/users/:userId/transactions/summary', async (req, res) => {
   }
 });
 
-// Get user transactions 
+// Get user transactions with optional filtering
 router.get('/users/:userId/transactions', async (req, res) => {
   try {
     // Check if user is authorized to access this data
@@ -50,15 +50,219 @@ router.get('/users/:userId/transactions', async (req, res) => {
         message: 'Not authorized to access this user\'s transactions'
       });
     }
-
+    
+    // Extract filter parameters from query
+    const {
+      startDate,
+      endDate,
+      type,
+      status,
+      minAmount,
+      maxAmount,
+      currency
+    } = req.query;
+    
+    // Build filter object
+    const filter: Record<string, any> = {};
+    
+    // Parse date strings to Date objects if provided
+    if (startDate && typeof startDate === 'string') {
+      filter.startDate = new Date(startDate);
+    }
+    
+    if (endDate && typeof endDate === 'string') {
+      // Set endDate to end of the day
+      const date = new Date(endDate);
+      date.setHours(23, 59, 59, 999);
+      filter.endDate = date;
+    }
+    
+    // Add other filters if provided
+    if (type && typeof type === 'string') {
+      filter.type = type;
+    }
+    
+    if (status && typeof status === 'string') {
+      filter.status = status;
+    }
+    
+    if (minAmount && typeof minAmount === 'string') {
+      filter.minAmount = parseFloat(minAmount);
+    }
+    
+    if (maxAmount && typeof maxAmount === 'string') {
+      filter.maxAmount = parseFloat(maxAmount);
+    }
+    
+    if (currency && typeof currency === 'string') {
+      filter.currency = currency;
+    }
+    
+    // Apply filters to get transactions
     const transactions = await storage.getUserTransactions(userId);
     
-    res.json(transactions);
+    // Filter transactions in memory since we haven't updated the storage interface yet
+    const filteredTransactions = transactions.filter(transaction => {
+      // Apply date range filter
+      if (filter.startDate && new Date(transaction.createdAt) < filter.startDate) {
+        return false;
+      }
+      
+      if (filter.endDate && new Date(transaction.createdAt) > filter.endDate) {
+        return false;
+      }
+      
+      // Apply type filter
+      if (filter.type && transaction.type !== filter.type) {
+        return false;
+      }
+      
+      // Apply status filter
+      if (filter.status && transaction.status !== filter.status) {
+        return false;
+      }
+      
+      // Apply amount range filter
+      if (filter.minAmount && transaction.amount < filter.minAmount) {
+        return false;
+      }
+      
+      if (filter.maxAmount && transaction.amount > filter.maxAmount) {
+        return false;
+      }
+      
+      // Apply currency filter
+      if (filter.currency && transaction.currency !== filter.currency) {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    // Include summary metrics for filtered transactions
+    const totalDeposits = filteredTransactions
+      .filter(t => t.type === 'deposit' && t.status === 'completed')
+      .reduce((sum, t) => sum + t.amount, 0);
+      
+    const totalWithdrawals = filteredTransactions
+      .filter(t => t.type === 'withdrawal' && t.status === 'completed')
+      .reduce((sum, t) => sum + t.amount, 0);
+      
+    const totalWinnings = filteredTransactions
+      .filter(t => t.type === 'winnings' && t.status === 'completed')
+      .reduce((sum, t) => sum + t.amount, 0);
+      
+    const totalStakes = filteredTransactions
+      .filter(t => t.type === 'stake')
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    res.json({
+      transactions: filteredTransactions,
+      count: filteredTransactions.length,
+      summary: {
+        totalDeposits,
+        totalWithdrawals,
+        totalWinnings,
+        totalStakes,
+        netBalance: totalDeposits + totalWinnings - totalWithdrawals - totalStakes
+      },
+      filter: Object.keys(filter).length > 0 ? filter : null
+    });
   } catch (error) {
     console.error('Error getting transactions:', error);
     res.status(500).json({
       success: false,
       message: `Error getting transactions: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+});
+
+// Export transactions to CSV
+router.get('/users/:userId/transactions/export', async (req, res) => {
+  try {
+    // Check if user is authorized to access this data
+    const userId = parseInt(req.params.userId);
+    if ((req.session as any).userId !== userId && !req.isAuthenticated?.()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access this user\'s transactions'
+      });
+    }
+    
+    // Use the same filtering logic as in the GET route
+    const {
+      startDate,
+      endDate,
+      type,
+      status,
+      minAmount,
+      maxAmount,
+      currency
+    } = req.query;
+    
+    // Build filter object
+    const filter: Record<string, any> = {};
+    
+    if (startDate && typeof startDate === 'string') {
+      filter.startDate = new Date(startDate);
+    }
+    
+    if (endDate && typeof endDate === 'string') {
+      const date = new Date(endDate);
+      date.setHours(23, 59, 59, 999);
+      filter.endDate = date;
+    }
+    
+    if (type && typeof type === 'string') filter.type = type;
+    if (status && typeof status === 'string') filter.status = status;
+    if (minAmount && typeof minAmount === 'string') filter.minAmount = parseFloat(minAmount);
+    if (maxAmount && typeof maxAmount === 'string') filter.maxAmount = parseFloat(maxAmount);
+    if (currency && typeof currency === 'string') filter.currency = currency;
+    
+    // Get transactions
+    const transactions = await storage.getUserTransactions(userId);
+    
+    // Filter transactions
+    const filteredTransactions = transactions.filter(transaction => {
+      if (filter.startDate && transaction.createdAt && 
+          new Date(transaction.createdAt as string) < filter.startDate) return false;
+      if (filter.endDate && transaction.createdAt && 
+          new Date(transaction.createdAt as string) > filter.endDate) return false;
+      if (filter.type && transaction.type !== filter.type) return false;
+      if (filter.status && transaction.status !== filter.status) return false;
+      if (filter.minAmount && transaction.amount < filter.minAmount) return false;
+      if (filter.maxAmount && transaction.amount > filter.maxAmount) return false;
+      if (filter.currency && transaction.currency !== filter.currency) return false;
+      return true;
+    });
+    
+    // Format date for filename
+    const dateStr = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+    
+    // Set response headers for CSV download
+    res.setHeader('Content-Disposition', `attachment; filename=transactions-${dateStr}.csv`);
+    res.setHeader('Content-Type', 'text/csv');
+    
+    // Create CSV header
+    let csv = 'ID,Date,Type,Status,Amount,Currency,Description,Reference\n';
+    
+    // Add each transaction as a CSV row
+    filteredTransactions.forEach(transaction => {
+      const date = new Date(transaction.createdAt).toISOString().split('T')[0];
+      const description = transaction.description || '';
+      const formattedDescription = description.replace(/"/g, '""'); // Escape quotes for CSV
+      
+      // Build CSV row
+      csv += `${transaction.id},${date},${transaction.type},${transaction.status},${transaction.amount},${transaction.currency},"${formattedDescription}",${transaction.reference || ''}\n`;
+    });
+    
+    // Send the CSV data
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting transactions:', error);
+    res.status(500).json({
+      success: false,
+      message: `Error exporting transactions: ${error instanceof Error ? error.message : String(error)}`
     });
   }
 });
