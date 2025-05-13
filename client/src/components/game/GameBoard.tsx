@@ -39,8 +39,8 @@ export default function GameBoard({
   const [winningStone, setWinningStone] = useState<number | null>(null);
   const [isRolling, setIsRolling] = useState(false);
   
-  // Find current user in players
-  const currentPlayer = players.find(p => p.userId === currentUserId);
+  // Find current user in players - userId field might be id in some cases
+  const currentPlayer = players.find(p => p.userId === currentUserId || p.id === currentUserId);
   
   // Is it current user's turn?
   const isUserTurn = game.status === 'in_progress' && currentPlayer && !currentPlayer.hasRolled;
