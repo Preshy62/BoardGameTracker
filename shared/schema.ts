@@ -69,6 +69,9 @@ export const transactions = pgTable("transactions", {
   conversionRate: doublePrecision("conversion_rate"),
   amountInUSD: doublePrecision("amount_in_usd"),
   
+  // Transaction description
+  description: text("description"),
+  
   // Payment details
   paymentMethod: text("payment_method"),
   paymentDetails: jsonb("payment_details"),

@@ -465,6 +465,7 @@ export class MemStorage implements IStorage {
       currency: insertTransaction.currency || 'NGN',
       conversionRate: insertTransaction.conversionRate || null,
       amountInUSD: insertTransaction.amountInUSD || null,
+      description: insertTransaction.description || null,
       
       // Payment details
       paymentMethod: insertTransaction.paymentMethod || null,
