@@ -5,8 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dices, Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Game, GamePlayer } from '@shared/schema';
+import { Game, GamePlayer, User } from '@shared/schema';
 import { playWinSound } from '@/lib/sounds';
+import GameResultModal from '@/components/modals/GameResultModal';
 
 interface GameBoardProps {
   game: Game;
@@ -38,6 +39,7 @@ export default function GameBoard({
   const [currentUserStone, setCurrentUserStone] = useState<number | null>(null);
   const [winningStone, setWinningStone] = useState<number | null>(null);
   const [isRolling, setIsRolling] = useState(false);
+  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   
   // Find current user in players - userId field might be id in some cases
   const currentPlayer = players.find(p => p.userId === currentUserId || p.id === currentUserId);
@@ -47,6 +49,14 @@ export default function GameBoard({
   
   // Determine if game has a winner
   const hasWinner = game.status === 'completed' && game.winningNumber !== null;
+  
+  // Get the game winners
+  const gameWinners = players
+    .filter(p => p.isWinner)
+    .map(p => ({ ...p.user, id: p.userId })) as User[];
+  
+  // Calculate total pot
+  const potAmount = game.stake * players.length;
   
   // Handle stone roll completion
   const handleRollComplete = (number: number) => {
@@ -81,8 +91,13 @@ export default function GameBoard({
     // Set winning stone if game is completed
     if (game.status === 'completed' && game.winningNumber !== null) {
       setWinningStone(game.winningNumber);
+      
+      // Show game result modal when game is completed
+      if (gameWinners.length > 0) {
+        setIsResultModalOpen(true);
+      }
     }
-  }, [game, currentPlayer]);
+  }, [game, currentPlayer, gameWinners.length]);
   
   return (
     <Card className={cn("overflow-hidden", className)}>
@@ -229,5 +244,22 @@ export default function GameBoard({
         </div>
       </CardContent>
     </Card>
+    
+    {/* Game Result Modal */}
+    {gameWinners.length > 0 && (
+      <GameResultModal
+        open={isResultModalOpen}
+        onClose={() => setIsResultModalOpen(false)}
+        onPlayAgain={() => {
+          setIsResultModalOpen(false);
+          // Any play again logic would go here
+        }}
+        winAmount={potAmount * (1 - game.commissionPercentage)} // Total pot minus commission
+        winningNumber={game.winningNumber || 0}
+        winners={gameWinners}
+        standings={players}
+        currentUserId={currentUserId}
+      />
+    )}
   );
 }
