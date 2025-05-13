@@ -60,11 +60,14 @@ const CurrencyPreference = ({ user }: { user: User }) => {
     queryKey: ['/api/currencies'],
     queryFn: async () => {
       try {
+        console.log('Fetching currencies...');
         const response = await fetch('/api/currencies');
         if (!response.ok) {
           throw new Error(`Failed to fetch currencies: ${response.status} ${response.statusText}`);
         }
-        return response.json();
+        const data = await response.json();
+        console.log('Currencies data received:', data);
+        return data;
       } catch (error) {
         console.error('Error fetching currencies:', error);
         throw new Error('Failed to fetch currencies. Please try again later.');
