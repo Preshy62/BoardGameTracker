@@ -181,7 +181,7 @@ const SettingsPage = () => {
             <CurrencyPreference user={user} />
             
             {/* Currency Converter */}
-            <CurrencyConverter />
+            <CurrencyConverter user={user} />
           </div>
         </TabsContent>
 
