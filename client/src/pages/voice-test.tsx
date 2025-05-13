@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import VoiceChat from "@/components/game/VoiceChat";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { Check, Crown } from "lucide-react";
+import { Check, Crown, Music, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { playSound, playWinSound, playRandomTone, SOUND_EFFECTS } from "@/lib/sounds";
 
 export default function VoiceTest() {
   const { user } = useAuth();
@@ -133,6 +134,91 @@ export default function VoiceTest() {
               players={mockPlayers as any}
               currentUserId={user.id}
             />
+          </div>
+          
+          <Separator />
+          
+          <div className="p-4 rounded-lg border bg-white">
+            <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+              <Music className="h-4 w-4 text-primary" />
+              <span>Sound Effects Testing</span>
+            </h3>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => playSound('VOICE_CONNECTED')}
+              >
+                <Volume2 className="h-3.5 w-3.5" />
+                <span>Connected</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => playSound('VOICE_MUTE')}
+              >
+                <Volume2 className="h-3.5 w-3.5" />
+                <span>Mute</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => playSound('VOICE_UNMUTE')}
+              >
+                <Volume2 className="h-3.5 w-3.5" />
+                <span>Unmute</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => playSound('STONE_ROLL')}
+              >
+                <Volume2 className="h-3.5 w-3.5" />
+                <span>Stone Roll</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => playSound('STONE_LAND')}
+              >
+                <Volume2 className="h-3.5 w-3.5" />
+                <span>Stone Land</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => playWinSound()}
+              >
+                <Volume2 className="h-3.5 w-3.5" />
+                <span>Win Sound</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2 col-span-2 sm:col-span-3"
+                onClick={() => {
+                  for (let i = 0; i < 5; i++) {
+                    setTimeout(() => playRandomTone(), i * 200);
+                  }
+                }}
+              >
+                <Volume2 className="h-3.5 w-3.5" />
+                <span>Random Tones</span>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

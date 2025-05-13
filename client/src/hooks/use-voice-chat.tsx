@@ -1,321 +1,253 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import AgoraRTC, {
+  IAgoraRTCClient,
+  IAgoraRTCRemoteUser,
+  IMicrophoneAudioTrack
+} from 'agora-rtc-sdk-ng';
+import { Game } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
-import {
-  agoraVoice,
-  AgoraVoiceManager,
-  VoiceConnectionState,
-  IAgoraRTCRemoteUser
-} from '@/lib/agora-voice';
+import { playSound } from '@/lib/sounds';
 
-// For debugging - log more details about the App ID
-const appId = import.meta.env.VITE_AGORA_APP_ID as string;
-console.log('Agora App ID available:', !!appId);
-console.log('Agora App ID length:', appId?.length);
-console.log('Agora App ID first/last char:', appId ? `${appId.charAt(0)}...${appId.charAt(appId.length-1)}` : 'N/A');
-console.log('Agora App ID format valid:', appId ? /^[a-zA-Z0-9]{1,100}$/.test(appId) : false);
-
-export interface VoiceChatOptions {
-  channelName: string;
-  uid?: string;
-  microphoneId?: string;
-  onUserJoined?: (user: IAgoraRTCRemoteUser) => void;
-  onUserLeft?: (user: IAgoraRTCRemoteUser) => void;
-  onError?: (error: Error) => void;
+interface UseVoiceChatProps {
+  game: Game;
+  currentUserId: number;
+  autoJoin?: boolean; // Automatically join voice chat when component mounts
 }
 
-export function useVoiceChat() {
+interface UseVoiceChatReturn {
+  isJoined: boolean;
+  isMuted: boolean;
+  isClientReady: boolean;
+  activeUsers: Record<string, boolean>;
+  speakingUsers: Record<string, number>;
+  isPremiumUI: boolean;
+  joinChannel: () => Promise<void>;
+  leaveChannel: () => Promise<void>;
+  toggleMute: () => Promise<void>;
+}
+
+export function useVoiceChat({
+  game,
+  currentUserId,
+  autoJoin = false
+}: UseVoiceChatProps): UseVoiceChatReturn {
   const { toast } = useToast();
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [connectionState, setConnectionState] = useState<VoiceConnectionState>('disconnected');
-  const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
-  const [audioLevel, setAudioLevel] = useState(0);
-  const [remoteAudioLevels, setRemoteAudioLevels] = useState<{[uid: string]: number}>({});
-  const [channelName, setChannelName] = useState('');
-  const [microphoneList, setMicrophoneList] = useState<MediaDeviceInfo[]>([]);
-  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState('');
-  const [isMonitoringAudio, setIsMonitoringAudio] = useState(false);
-
-  // Initialize Agora voice client
+  const [isClientReady, setIsClientReady] = useState(false);
+  const [activeUsers, setActiveUsers] = useState<Record<string, boolean>>({});
+  const [speakingUsers, setSpeakingUsers] = useState<Record<string, number>>({});
+  const [isPremiumUI, setIsPremiumUI] = useState(game.stake >= 50000);
+  
+  // Use refs to maintain references across renders
+  const clientRef = useRef<IAgoraRTCClient | null>(null);
+  const localTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
+  const audioLevelIntervalsRef = useRef<Record<string, number>>({});
+  
+  // Handle app ID securely
+  const appId = import.meta.env.VITE_AGORA_APP_ID;
+  if (!appId) {
+    console.error('VITE_AGORA_APP_ID is not defined');
+  }
+  
+  // Check if voice chat is supported for this game (high stakes only)
+  const isVoiceChatSupported = game.stake >= 20000;
+  
+  // Set up Agora client
   useEffect(() => {
-    const isSupported = AgoraVoiceManager.isSupported();
+    if (!appId || !game?.id || !isVoiceChatSupported) return;
     
-    if (!isSupported) {
-      toast({
-        title: 'Voice Chat Not Supported',
-        description: 'Your browser does not support voice chat features',
-        variant: 'destructive'
+    // Set premium UI for very high-stakes games (≥₦50,000)
+    setIsPremiumUI(game.stake >= 50000);
+    
+    // Create and configure the client
+    try {
+      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      clientRef.current = client;
+      setIsClientReady(true);
+      
+      // Listen for remote users joining
+      client.on('user-published', async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
+        await client.subscribe(user, mediaType);
+        if (mediaType === 'audio') {
+          user.audioTrack?.play();
+          setActiveUsers(prev => ({ ...prev, [user.uid.toString()]: true }));
+          
+          // Start monitoring audio levels for this user
+          if (user.audioTrack) {
+            const interval = window.setInterval(() => {
+              const level = user.audioTrack?.getVolumeLevel() || 0;
+              setSpeakingUsers(prev => ({ ...prev, [user.uid.toString()]: level * 100 }));
+            }, 100);
+            audioLevelIntervalsRef.current[user.uid.toString()] = interval;
+          }
+        }
       });
-      return;
-    }
-
-    const initialized = agoraVoice.init();
-    setIsInitialized(initialized);
-
-    if (!initialized) {
+      
+      // Handle remote users leaving
+      client.on('user-unpublished', (user: IAgoraRTCRemoteUser) => {
+        if (audioLevelIntervalsRef.current[user.uid.toString()]) {
+          clearInterval(audioLevelIntervalsRef.current[user.uid.toString()]);
+          delete audioLevelIntervalsRef.current[user.uid.toString()];
+        }
+        
+        setActiveUsers(prev => {
+          const updated = { ...prev };
+          delete updated[user.uid.toString()];
+          return updated;
+        });
+        
+        setSpeakingUsers(prev => {
+          const updated = { ...prev };
+          delete updated[user.uid.toString()];
+          return updated;
+        });
+      });
+      
+      // Auto-join if requested and supported
+      if (autoJoin && isVoiceChatSupported) {
+        joinChannel();
+      }
+      
+      // Clean up when component unmounts
+      return () => {
+        leaveChannel();
+        client.removeAllListeners();
+      };
+    } catch (error) {
+      console.error('Error creating Agora client:', error);
       toast({
         title: 'Voice Chat Error',
-        description: 'Failed to initialize voice chat client',
-        variant: 'destructive'
+        description: 'Could not initialize voice chat. Please refresh and try again.',
+        variant: 'destructive',
       });
-      return;
     }
-
-    // Load available microphones
-    loadMicrophones();
-
-    // Set up event handlers
-    agoraVoice.on('user-joined', handleUserJoined);
-    agoraVoice.on('user-left', handleUserLeft);
-    agoraVoice.on('connection-state-change', handleConnectionStateChange);
-    agoraVoice.on('error', handleError);
-
-    return () => {
-      // Clean up event handlers
-      agoraVoice.off('user-joined', handleUserJoined);
-      agoraVoice.off('user-left', handleUserLeft);
-      agoraVoice.off('connection-state-change', handleConnectionStateChange);
-      agoraVoice.off('error', handleError);
-
-      // Leave voice channel if still connected
-      if (isJoined) {
-        agoraVoice.leave();
-      }
-
-      // Stop audio monitoring
-      stopAudioMonitoring();
-    };
-  }, [toast]);
-
-  // Handle user joined event
-  const handleUserJoined = useCallback((user: IAgoraRTCRemoteUser) => {
-    setRemoteUsers(prev => {
-      // Add user if not already in the list
-      if (!prev.find(u => u.uid === user.uid)) {
-        return [...prev, user];
-      }
-      return prev;
-    });
-  }, []);
-
-  // Handle user left event
-  const handleUserLeft = useCallback((user: IAgoraRTCRemoteUser) => {
-    setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
-    setRemoteAudioLevels(prev => {
-      const newLevels = { ...prev };
-      delete newLevels[user.uid as string];
-      return newLevels;
-    });
-  }, []);
-
-  // Handle connection state change
-  const handleConnectionStateChange = useCallback((event: { current: VoiceConnectionState, previous: VoiceConnectionState }) => {
-    setConnectionState(event.current);
+  }, [appId, game?.id, game?.stake, isVoiceChatSupported, autoJoin]);
+  
+  // Monitor local audio level
+  useEffect(() => {
+    if (!isJoined || !localTrackRef.current) return;
     
-    if (event.current === 'connected') {
-      setIsJoined(true);
-      setChannelName(agoraVoice.getChannelName());
-      startAudioMonitoring();
-    } else if (event.current === 'disconnected') {
-      setIsJoined(false);
-      setRemoteUsers([]);
-      setChannelName('');
-      stopAudioMonitoring();
-    }
-  }, []);
-
-  // Handle errors
-  const handleError = useCallback((error: Error) => {
-    toast({
-      title: 'Voice Chat Error',
-      description: error.message,
-      variant: 'destructive'
-    });
-  }, [toast]);
-
-  // Load available microphones
-  const loadMicrophones = async () => {
-    try {
-      const devices = await AgoraVoiceManager.getAudioDevices();
-      setMicrophoneList(devices);
-      
-      // Select first microphone by default if available
-      if (devices.length > 0 && !selectedMicrophoneId) {
-        setSelectedMicrophoneId(devices[0].deviceId);
-      }
-    } catch (error) {
-      console.error('Error loading microphones:', error);
-    }
-  };
-
-  // Join a voice channel
-  const joinChannel = async (options: VoiceChatOptions) => {
-    if (!isInitialized) {
-      toast({
-        title: 'Voice Chat Error',
-        description: 'Voice chat client not initialized',
-        variant: 'destructive'
-      });
-      return false;
-    }
-
-    if (!options.channelName) {
-      toast({
-        title: 'Missing Channel Name',
-        description: 'Please provide a channel name to join',
-        variant: 'destructive'
-      });
-      return false;
-    }
-
-    try {
-      const success = await agoraVoice.join({
-        channelName: options.channelName,
-        uid: options.uid,
-        microphoneId: options.microphoneId || selectedMicrophoneId
-      });
-
-      if (success) {
-        setChannelName(options.channelName);
-        toast({
-          title: 'Joined Voice Channel',
-          description: `Connected to ${options.channelName}`
-        });
-      }
-
-      return success;
-    } catch (error) {
-      toast({
-        title: 'Join Channel Failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive'
-      });
-      return false;
-    }
-  };
-
-  // Leave the current voice channel
-  const leaveChannel = async () => {
-    if (!isJoined) return true;
-
-    try {
-      const success = await agoraVoice.leave();
-      
-      if (success) {
-        setIsJoined(false);
-        setRemoteUsers([]);
-        setChannelName('');
-        stopAudioMonitoring();
-        
-        toast({
-          title: 'Left Voice Channel',
-          description: `Disconnected from ${channelName}`
-        });
-      }
-
-      return success;
-    } catch (error) {
-      toast({
-        title: 'Leave Channel Failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive'
-      });
-      return false;
-    }
-  };
-
-  // Toggle mute/unmute
-  const toggleMute = async () => {
-    if (!isJoined) return false;
-
-    try {
-      const success = await agoraVoice.setMuted(!isMuted);
-      
-      if (success) {
-        setIsMuted(!isMuted);
-        
-        toast({
-          title: isMuted ? 'Microphone Unmuted' : 'Microphone Muted',
-          description: isMuted ? 'Others can now hear you' : 'Others cannot hear you'
-        });
-      }
-
-      return success;
-    } catch (error) {
-      toast({
-        title: 'Toggle Mute Failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive'
-      });
-      return false;
-    }
-  };
-
-  // Start monitoring audio levels
-  const startAudioMonitoring = () => {
-    if (isMonitoringAudio) return;
-
-    const intervalId = setInterval(() => {
-      // Update local audio level
-      setAudioLevel(agoraVoice.getAudioLevel());
-
-      // Update remote audio levels
-      const newLevels: {[uid: string]: number} = {};
-      remoteUsers.forEach(user => {
-        newLevels[user.uid as string] = agoraVoice.getRemoteAudioLevel(user);
-      });
-      setRemoteAudioLevels(newLevels);
+    const interval = setInterval(() => {
+      const level = localTrackRef.current?.getVolumeLevel() || 0;
+      setSpeakingUsers(prev => ({ ...prev, 'local': level * 100 }));
     }, 100);
-
-    // @ts-ignore - we know this is a NodeJS.Timeout
-    window.voiceChatAudioMonitorInterval = intervalId;
-    setIsMonitoringAudio(true);
-  };
-
-  // Stop monitoring audio levels
-  const stopAudioMonitoring = () => {
-    if (!isMonitoringAudio) return;
-
-    if (window.voiceChatAudioMonitorInterval) {
-      clearInterval(window.voiceChatAudioMonitorInterval);
-      // @ts-ignore
-      window.voiceChatAudioMonitorInterval = null;
+    
+    return () => clearInterval(interval);
+  }, [isJoined]);
+  
+  // Join voice channel
+  const joinChannel = useCallback(async () => {
+    if (!appId || !clientRef.current || !game?.id || !isVoiceChatSupported) return;
+    
+    try {
+      // Use game ID as channel name
+      const channelName = `game_${game.id}`;
+      // Use user ID as UID to identify speakers
+      const uid = currentUserId;
+      
+      // Request join token from server - in a real app, this would be a secure token
+      // For this demo, we're using a simple approach for testing
+      const token = null; // Use null for testing environments with App ID Authentication enabled
+      
+      // Join the channel
+      await clientRef.current.join(appId, channelName, token, uid);
+      
+      // Create and publish local audio track
+      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      localTrackRef.current = audioTrack;
+      await clientRef.current.publish([audioTrack]);
+      
+      setIsJoined(true);
+      setActiveUsers(prev => ({ ...prev, 'local': true }));
+      
+      // Play connected sound
+      playSound('VOICE_CONNECTED');
+      
+      toast({
+        title: 'Voice Chat Connected',
+        description: 'You can now talk with other players',
+      });
+    } catch (error) {
+      console.error('Error joining channel:', error);
+      toast({
+        title: 'Connection Failed',
+        description: 'Could not connect to voice chat. Please try again.',
+        variant: 'destructive',
+      });
     }
-
-    setIsMonitoringAudio(false);
-    setAudioLevel(0);
-    setRemoteAudioLevels({});
-  };
-
+  }, [appId, game?.id, currentUserId, isVoiceChatSupported]);
+  
+  // Leave voice channel
+  const leaveChannel = useCallback(async () => {
+    if (!clientRef.current) return;
+    
+    try {
+      // Stop and close local track
+      if (localTrackRef.current) {
+        localTrackRef.current.stop();
+        localTrackRef.current.close();
+        localTrackRef.current = null;
+      }
+      
+      // Leave the channel
+      await clientRef.current.leave();
+      
+      // Clear states
+      setIsJoined(false);
+      setIsMuted(false);
+      
+      setActiveUsers(prev => {
+        const updated = { ...prev };
+        delete updated['local'];
+        return updated;
+      });
+      
+      setSpeakingUsers(prev => {
+        const updated = { ...prev };
+        delete updated['local'];
+        return updated;
+      });
+      
+      // Clear all audio level intervals
+      Object.values(audioLevelIntervalsRef.current).forEach(interval => {
+        clearInterval(interval);
+      });
+      audioLevelIntervalsRef.current = {};
+      
+    } catch (error) {
+      console.error('Error leaving channel:', error);
+    }
+  }, []);
+  
+  // Toggle mute/unmute
+  const toggleMute = useCallback(async () => {
+    if (!localTrackRef.current) return;
+    
+    try {
+      if (isMuted) {
+        await localTrackRef.current.setEnabled(true);
+        setIsMuted(false);
+        playSound('VOICE_UNMUTE');
+      } else {
+        await localTrackRef.current.setEnabled(false);
+        setIsMuted(true);
+        playSound('VOICE_MUTE');
+      }
+    } catch (error) {
+      console.error('Error toggling mute:', error);
+    }
+  }, [isMuted]);
+  
   return {
-    // State
-    isInitialized,
     isJoined,
     isMuted,
-    connectionState,
-    remoteUsers,
-    audioLevel,
-    remoteAudioLevels,
-    channelName,
-    microphoneList,
-    selectedMicrophoneId,
-    
-    // Actions
+    isClientReady,
+    activeUsers,
+    speakingUsers,
+    isPremiumUI,
     joinChannel,
     leaveChannel,
-    toggleMute,
-    setSelectedMicrophoneId,
-    
-    // Utility functions
-    loadMicrophones,
-    isSupported: AgoraVoiceManager.isSupported
+    toggleMute
   };
-}
-
-// Add window augmentation for TypeScript
-declare global {
-  interface Window {
-    voiceChatAudioMonitorInterval?: NodeJS.Timeout;
-  }
 }
