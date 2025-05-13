@@ -14,6 +14,7 @@ import { paymentProcessing } from "./utils/payment";
 import Stripe from "stripe";
 import paystackRoutes from "./routes/paystack";
 import transactionRoutes from "./routes/transactions";
+import currencyRoutes from "./routes/currency";
 import { addMinutes, addHours, addDays } from "date-fns";
 import { 
   generateVerificationToken, 
@@ -64,6 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register payment and transaction routes
   app.use('/api/payment', paystackRoutes);
   app.use('/api/transactions', transactionRoutes);
+  app.use('/api/currencies', currencyRoutes);
   
   // Initialize game manager
   const gameManager = new GameManager(storage);

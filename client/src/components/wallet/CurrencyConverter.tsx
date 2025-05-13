@@ -1,0 +1,264 @@
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, RefreshCw, ArrowRightLeft } from 'lucide-react';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+
+// Currency details type from server
+interface CurrencyDetails {
+  code: string;
+  symbol: string;
+  name: string;
+  decimalPlaces: number;
+  isoCode: string;
+  rate: number;
+}
+
+// Currency conversion response type
+interface ConversionResponse {
+  success: boolean;
+  originalAmount: {
+    value: number;
+    formatted: string;
+    currency: string;
+  };
+  convertedAmount: {
+    value: number;
+    formatted: string;
+    currency: string;
+  };
+  exchangeRate: number;
+  timestamp: string;
+}
+
+const CurrencyConverter = () => {
+  const { toast } = useToast();
+  const [amount, setAmount] = useState<number>(100);
+  const [fromCurrency, setFromCurrency] = useState<string>('NGN');
+  const [toCurrency, setToCurrency] = useState<string>('USD');
+  const [result, setResult] = useState<ConversionResponse | null>(null);
+  
+  // Fetch available currencies
+  const { data: currencyData, isLoading: currenciesLoading } = useQuery({
+    queryKey: ['/api/currencies'],
+    queryFn: async () => {
+      const response = await fetch('/api/currencies');
+      if (!response.ok) {
+        throw new Error('Failed to fetch currencies');
+      }
+      return response.json();
+    }
+  });
+  
+  // Conversion mutation
+  const convertMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/currencies/convert', {
+        amount,
+        fromCurrency,
+        toCurrency
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to convert currency');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setResult(data);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Conversion Failed',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  });
+  
+  // Swap currencies
+  const handleSwap = () => {
+    setFromCurrency(toCurrency);
+    setToCurrency(fromCurrency);
+    // Clear result when swapping
+    setResult(null);
+  };
+  
+  // Convert on button click
+  const handleConvert = () => {
+    if (amount <= 0) {
+      toast({
+        title: 'Invalid Amount',
+        description: 'Please enter a positive amount to convert',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    if (fromCurrency === toCurrency) {
+      toast({
+        title: 'Same Currency',
+        description: 'Please select different currencies to convert',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    convertMutation.mutate();
+  };
+  
+  // Get currency symbol
+  const getCurrencySymbol = (code: string): string => {
+    if (!currencyData?.currencies) return '';
+    const currency = currencyData.currencies.find((c: CurrencyDetails) => c.code === code);
+    return currency?.symbol || code;
+  };
+  
+  return (
+    <Card className="w-full max-w-lg mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ArrowRightLeft className="h-5 w-5" />
+          Currency Converter
+        </CardTitle>
+        <CardDescription>
+          Convert between different currencies using real-time exchange rates
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent>
+        <div className="space-y-4">
+          {/* Amount Input */}
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-2.5 text-muted-foreground">
+                  {getCurrencySymbol(fromCurrency)}
+                </span>
+                <Input
+                  id="amount"
+                  type="number"
+                  min="0"
+                  step="any"
+                  className="pl-7"
+                  value={amount}
+                  onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Currency Selection */}
+          <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-2">
+            {/* From Currency */}
+            <div className="space-y-2">
+              <Label htmlFor="fromCurrency">From</Label>
+              <Select 
+                value={fromCurrency} 
+                onValueChange={setFromCurrency}
+                disabled={currenciesLoading}
+              >
+                <SelectTrigger id="fromCurrency">
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencyData?.currencies?.map((currency: CurrencyDetails) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      {currency.symbol} {currency.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Swap Button */}
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="mt-8"
+              onClick={handleSwap}
+              disabled={convertMutation.isPending}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            
+            {/* To Currency */}
+            <div className="space-y-2">
+              <Label htmlFor="toCurrency">To</Label>
+              <Select 
+                value={toCurrency} 
+                onValueChange={setToCurrency}
+                disabled={currenciesLoading}
+              >
+                <SelectTrigger id="toCurrency">
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencyData?.currencies?.map((currency: CurrencyDetails) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      {currency.symbol} {currency.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Conversion Result */}
+          {result && (
+            <div className="mt-4 p-3 border rounded-md bg-muted/50">
+              <p className="text-sm text-muted-foreground">
+                {result.originalAmount.formatted} = {result.convertedAmount.formatted}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Exchange rate: 1 {result.originalAmount.currency} = {result.exchangeRate.toFixed(6)} {result.convertedAmount.currency}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Last updated: {new Date(result.timestamp).toLocaleString()}
+              </p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+      
+      <CardFooter>
+        <Button 
+          className="w-full" 
+          onClick={handleConvert}
+          disabled={convertMutation.isPending || currenciesLoading}
+        >
+          {convertMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Converting...
+            </>
+          ) : (
+            'Convert'
+          )}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+};
+
+export default CurrencyConverter;
