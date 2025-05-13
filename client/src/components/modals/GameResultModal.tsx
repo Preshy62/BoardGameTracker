@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { playWinnerSound } from "@/lib/sounds";
 import { User, GamePlayer } from "@shared/schema";
 
 interface GameResultModalProps {
@@ -12,7 +11,7 @@ interface GameResultModalProps {
   onPlayAgain: () => void;
   winAmount: number;
   winningNumber: number;
-  winner: User;
+  winners: User[]; // Changed from single winner to array of winners
   standings: (GamePlayer & { user: User })[];
   currentUserId: number;
 }
@@ -23,7 +22,7 @@ const GameResultModal = ({
   onPlayAgain,
   winAmount,
   winningNumber,
-  winner,
+  winners,
   standings,
   currentUserId
 }: GameResultModalProps) => {
@@ -48,8 +47,8 @@ const GameResultModal = ({
   // Play winner sound when the modal opens with Web Audio API
   useEffect(() => {
     if (open) {
-      // Log the winner for debugging
-      console.log(`Game winner: ${winner.username} with ${winningNumber}`);
+      // Log the winners for debugging
+      console.log(`Game winners: ${winners.map(w => w.username).join(', ')} with ${winningNumber}`);
       
       let soundPlayed = false;
       
@@ -64,10 +63,24 @@ const GameResultModal = ({
           // First ensure audio context is initialized
           initAudioContext();
           
-          // Custom speech message for announcing winner
-          const customMessage = winner.id === currentUserId 
-            ? `Congratulations! You won with ${winningNumber}!` 
-            : `${winner.username} won with ${winningNumber}!`;
+          // Create a message based on number of winners and if current user is among them
+          let customMessage = '';
+          const currentUserIsWinner = winners.some(w => w.id === currentUserId);
+          
+          if (winners.length === 1) {
+            // Single winner
+            customMessage = winners[0].id === currentUserId 
+              ? `Congratulations! You won with ${winningNumber}!` 
+              : `${winners[0].username} won with ${winningNumber}!`;
+          } else {
+            // Multiple winners (tie)
+            const winnerNames = winners.map(w => w.id === currentUserId ? 'You' : w.username).join(' and ');
+            const prizePerWinner = winAmount / winners.length;
+            
+            customMessage = currentUserIsWinner
+              ? `Congratulations! It's a tie! ${winnerNames} all rolled ${winningNumber} and share the prize of ${formatCurrency(prizePerWinner)} each!`
+              : `It's a tie! ${winnerNames} all rolled ${winningNumber} and share the prize!`;
+          }
           
           // Both traditional sound effect and speech synthesis
           console.log('Announcing winner with custom message:', customMessage);
@@ -114,15 +127,14 @@ const GameResultModal = ({
           }
           
           // Fall back to standard sound if speech synthesis fails
-          const { playWinnerSound } = await import('@/lib/sounds');
-          console.log('Attempting to play winner sound...');
-          const played = await playWinnerSound();
-          console.log('Winner sound played:', played);
-          
-          if (played) {
+          try {
+            const { playWinSound } = await import('@/lib/sounds');
+            console.log('Attempting to play winner sound...');
+            await playWinSound();
+            console.log('Winner sound played successfully');
             soundPlayed = true;
-          } else {
-            console.warn('Failed to play winner sound, will retry on user interaction');
+          } catch (error) {
+            console.warn('Failed to play winner sound, will retry on user interaction', error);
           }
         } catch (error) {
           console.error('Error playing winner sound:', error);
@@ -170,7 +182,7 @@ const GameResultModal = ({
         documentElement.removeEventListener('touchstart', handleUserInteraction);
       };
     }
-  }, [open, winner, winningNumber]);
+  }, [open, winners, winningNumber]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -194,10 +206,30 @@ const GameResultModal = ({
           </div>
           
           <div className="text-center mb-6">
-            <h3 className="text-xl font-bold text-primary">
-              {winner.username} {winner.id === currentUserId ? "(You)" : ""}
-            </h3>
-            <p className="text-gray-500">Winner with the highest roll</p>
+            {winners.length === 1 ? (
+              <>
+                <h3 className="text-xl font-bold text-primary">
+                  {winners[0].username} {winners[0].id === currentUserId ? "(You)" : ""}
+                </h3>
+                <p className="text-gray-500">Winner with the highest roll</p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-xl font-bold text-primary">
+                  Tie! Multiple Winners
+                </h3>
+                <div className="flex flex-wrap justify-center gap-2 mt-2">
+                  {winners.map(winner => (
+                    <span key={winner.id} className="px-3 py-1 bg-secondary text-primary rounded-full font-medium text-sm">
+                      {winner.username} {winner.id === currentUserId ? "(You)" : ""}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-gray-500 mt-2">
+                  Each winner receives {formatCurrency(winAmount / winners.length)}
+                </p>
+              </>
+            )}
           </div>
           
           <div className="bg-gray-100 rounded-lg p-4 mb-6">
