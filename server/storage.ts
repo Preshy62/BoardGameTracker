@@ -1012,22 +1012,106 @@ export class DatabaseStorage implements IStorage {
   }
 
   async convertCurrency(amount: number, fromCurrency: string, toCurrency: string): Promise<{ amount: number, rate: number }> {
-    // In a real implementation, this would call an external API
-    // For now, we'll use a simple mapping
-    const rates: Record<string, number> = {
-      'NGN_USD': 0.00066, // 1 NGN = 0.00066 USD (approx)
-      'USD_NGN': 1515.00, // 1 USD = 1515 NGN (approx)
-      'GBP_NGN': 1950.00, // 1 GBP = 1950 NGN (approx)
-      'EUR_NGN': 1640.00, // 1 EUR = 1640 NGN (approx)
-    };
-    
-    const key = `${fromCurrency}_${toCurrency}`;
-    const rate = rates[key] || 1;
-    
-    return {
-      amount: amount * rate,
-      rate
-    };
+    try {
+      // If currencies are the same, return the original amount with rate of 1
+      if (fromCurrency === toCurrency) {
+        return {
+          amount,
+          rate: 1
+        };
+      }
+      
+      // Define base exchange rates in relation to NGN
+      // These would ideally come from an external API like Open Exchange Rates, Fixer.io, CurrencyLayer, etc.
+      // For now, we'll use a more comprehensive mapping with more currency pairs
+      const baseRates: Record<string, number> = {
+        // NGN base rates (1 NGN to X)
+        'NGN_USD': 0.00066,  // 1 NGN = 0.00066 USD
+        'NGN_EUR': 0.00061,  // 1 NGN = 0.00061 EUR
+        'NGN_GBP': 0.00051,  // 1 NGN = 0.00051 GBP
+        
+        // USD base rates (1 USD to X)
+        'USD_NGN': 1515.00,  // 1 USD = 1515 NGN
+        'USD_EUR': 0.92,     // 1 USD = 0.92 EUR
+        'USD_GBP': 0.78,     // 1 USD = 0.78 GBP
+        
+        // EUR base rates (1 EUR to X)
+        'EUR_NGN': 1640.00,  // 1 EUR = 1640 NGN
+        'EUR_USD': 1.09,     // 1 EUR = 1.09 USD
+        'EUR_GBP': 0.85,     // 1 EUR = 0.85 GBP
+        
+        // GBP base rates (1 GBP to X)
+        'GBP_NGN': 1950.00,  // 1 GBP = 1950 NGN
+        'GBP_USD': 1.29,     // 1 GBP = 1.29 USD
+        'GBP_EUR': 1.18,     // 1 GBP = 1.18 EUR
+      };
+      
+      // Check for direct conversion rate
+      const directKey = `${fromCurrency}_${toCurrency}`;
+      if (baseRates[directKey]) {
+        const rate = baseRates[directKey];
+        return {
+          amount: amount * rate,
+          rate
+        };
+      }
+      
+      // If no direct conversion is available, try to convert through NGN
+      // First convert from source currency to NGN if not already NGN
+      let amountInNGN = amount;
+      if (fromCurrency !== 'NGN') {
+        const toNGNKey = `${fromCurrency}_NGN`;
+        if (!baseRates[toNGNKey]) {
+          // If we can't convert to NGN directly, handle the error
+          throw new Error(`No conversion rate available from ${fromCurrency} to NGN`);
+        }
+        amountInNGN = amount * baseRates[toNGNKey];
+      }
+      
+      // Then convert from NGN to target currency if not already NGN
+      let finalAmount = amountInNGN;
+      let effectiveRate = 1;
+      
+      if (toCurrency !== 'NGN') {
+        const fromNGNKey = `NGN_${toCurrency}`;
+        if (!baseRates[fromNGNKey]) {
+          // If we can't convert from NGN to target, handle the error
+          throw new Error(`No conversion rate available from NGN to ${toCurrency}`);
+        }
+        finalAmount = amountInNGN * baseRates[fromNGNKey];
+        // Calculate effective rate from original currency to target
+        effectiveRate = finalAmount / amount;
+      } else {
+        // If target is NGN, calculate the rate differently
+        effectiveRate = amountInNGN / amount;
+      }
+      
+      // Add random fluctuation (+/- 0.5%) to simulate changing exchange rates
+      const fluctuation = 1 + (Math.random() * 0.01 - 0.005);
+      finalAmount = finalAmount * fluctuation;
+      effectiveRate = effectiveRate * fluctuation;
+      
+      return {
+        amount: finalAmount,
+        rate: effectiveRate
+      };
+    } catch (error) {
+      console.error('Error converting currency:', error);
+      // Fallback to a direct conversion or 1:1 if all else fails
+      const key = `${fromCurrency}_${toCurrency}`;
+      const fallbackRates: Record<string, number> = {
+        'NGN_USD': 0.00066,
+        'USD_NGN': 1515.00,
+        'GBP_NGN': 1950.00,
+        'EUR_NGN': 1640.00,
+      };
+      const fallbackRate = fallbackRates[key] || 1;
+      
+      return {
+        amount: amount * fallbackRate,
+        rate: fallbackRate
+      };
+    }
   }
 }
 
