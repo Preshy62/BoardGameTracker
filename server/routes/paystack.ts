@@ -155,7 +155,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
               status: 'completed',
               currency: 'NGN',
               reference,
-              metadata: {
+              bankDetails: {
                 paymentProvider: 'paystack',
                 paymentMethod: data.channel || 'card',
                 paymentId: data.id,
@@ -163,7 +163,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
             });
             
             // Update user's wallet balance
-            await storage.updateUserBalance(Number(userId), user.wallet_balance + amount);
+            await storage.updateUserBalance(Number(userId), user.walletBalance + amount);
           }
         }
         break;
