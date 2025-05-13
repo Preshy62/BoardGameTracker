@@ -103,7 +103,7 @@ router.get('/verify', async (req: Request, res: Response) => {
       status: 'completed',
       currency: 'NGN',
       reference: ref,
-      metadata: {
+      bankDetails: {
         paymentProvider: 'paystack',
         paymentMethod: paymentDetails.channel || 'card',
         paymentId: paymentDetails.id,
@@ -111,7 +111,7 @@ router.get('/verify', async (req: Request, res: Response) => {
     });
     
     // Update user's wallet balance
-    await storage.updateUserBalance(Number(userId), user.wallet_balance + amount);
+    await storage.updateUserBalance(Number(userId), user.walletBalance + amount);
     
     // Redirect to success page
     res.redirect(`/?payment=success&amount=${amount}`);
