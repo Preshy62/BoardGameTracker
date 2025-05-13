@@ -596,75 +596,11 @@ export default function FundManagement({ user }: FundManagementProps) {
                 </h3>
               </div>
               
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="bank">Bank</Label>
-                  <Select
-                    value={selectedBank}
-                    onValueChange={setSelectedBank}
-                    disabled={loadingBanks}
-                  >
-                    <SelectTrigger id="bank" className="w-full">
-                      <SelectValue placeholder={loadingBanks ? "Loading banks..." : "Select bank"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bankList.map((bank) => (
-                        <SelectItem key={bank.code} value={bank.code}>
-                          {bank.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="account-number">Account Number</Label>
-                  <Input
-                    id="account-number"
-                    type="text"
-                    placeholder="Enter 10-digit account number"
-                    value={accountNumber}
-                    onChange={(e) => {
-                      // Only allow numbers
-                      const value = e.target.value.replace(/\D/g, '');
-                      // Limit to 10 digits (Nigeria bank account numbers)
-                      if (value.length <= 10) {
-                        setAccountNumber(value);
-                        setVerifiedAccount(null); // Clear verification when account changes
-                      }
-                    }}
-                    disabled={!selectedBank}
-                  />
-                </div>
-                
-                {!verifiedAccount && accountNumber && selectedBank && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={handleVerifyAccount}
-                    disabled={verifyAccountMutation.isPending || accountNumber.length < 10}
-                  >
-                    {verifyAccountMutation.isPending ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Info className="h-4 w-4 mr-2" />
-                    )}
-                    Verify Account
-                  </Button>
-                )}
-                
-                {verifiedAccount && (
-                  <div className="bg-green-50 p-3 rounded-md">
-                    <p className="text-sm font-medium text-green-800">Account Verified</p>
-                    <p className="text-sm text-green-700">{verifiedAccount.accountName}</p>
-                    <p className="text-xs text-green-600 mt-1">
-                      {verifiedAccount.bankName} - {verifiedAccount.accountNumber}
-                    </p>
-                  </div>
-                )}
-              </div>
+              <BankAccountForm 
+                onAccountVerified={(accountDetails) => {
+                  setVerifiedAccount(accountDetails);
+                }}
+              />
             </div>
             
             {/* Withdraw buttons */}
