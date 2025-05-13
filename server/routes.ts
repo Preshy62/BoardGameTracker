@@ -1001,6 +1001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "completed",
         reference: paymentResult.reference,
         currency: "NGN",
+        description: `Quick deposit of ${amount} NGN`,
         paymentMethod: "quick_deposit",
         paymentDetails: { source: "demo" }
       });
@@ -1145,7 +1146,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: "withdrawal",
         status: "completed",
         reference: withdrawalResult.reference,
-        currency: "NGN"
+        currency: "NGN",
+        description: `Withdrawal of ${amount} NGN to bank account`
       });
       
       // Update user balance
