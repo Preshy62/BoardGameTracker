@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Check, Crown, Music, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { playSound, playWinSound, playRandomTone, SOUND_EFFECTS } from "@/lib/sounds";
+import { playSound, playWinSound, playRandomTone, SOUND_FILES } from "@/lib/sounds";
 
 export default function VoiceTest() {
   const { user } = useAuth();

@@ -166,5 +166,55 @@ export function createControlledSound(soundPath: string, initialVolume = 0.5): S
   };
 }
 
+// Play a random tone for testing/demo purposes
+export function playRandomTone(minFreq = 200, maxFreq = 800, duration = 300, volume = 0.5) {
+  if (!soundEnabled || typeof window === 'undefined') return;
+  
+  try {
+    // Initialize audio context if needed
+    const ctx = initAudioContext();
+    if (!ctx) return;
+    
+    // Create an oscillator
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    // Generate a random frequency
+    const randomFreq = Math.floor(Math.random() * (maxFreq - minFreq) + minFreq);
+    
+    // Configure oscillator
+    oscillator.type = 'sine';
+    oscillator.frequency.value = randomFreq;
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    // Set volume
+    gainNode.gain.value = volume;
+    
+    // Play the tone
+    oscillator.start();
+    
+    // Stop after duration
+    setTimeout(() => {
+      oscillator.stop();
+      oscillator.disconnect();
+      gainNode.disconnect();
+    }, duration);
+  } catch (err) {
+    console.error(`Error playing random tone:`, err);
+  }
+}
+
+// Play a winning sound sequence
+export function playWinSound() {
+  if (!soundEnabled || typeof window === 'undefined') return;
+  
+  try {
+    playSound(SOUND_FILES.SUCCESS, 0.5);
+  } catch (err) {
+    console.error('Error playing win sound:', err);
+  }
+}
+
 // Export by default a simplified version that just references the SOUND_FILES
 export default SOUND_FILES;
