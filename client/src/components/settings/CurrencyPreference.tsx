@@ -202,10 +202,12 @@ const CurrencyPreference = ({ user }: { user: User }) => {
         <Button
           onClick={handleSaveCurrency}
           disabled={
-            updateCurrencyMutation.isPending || 
-            currenciesLoading || 
-            (!user?.preferredCurrency && selectedCurrency === 'NGN') ||
-            (user?.preferredCurrency && selectedCurrency === user.preferredCurrency)
+            Boolean(
+              updateCurrencyMutation.isPending || 
+              currenciesLoading || 
+              (!user?.preferredCurrency && selectedCurrency === 'NGN') ||
+              (user?.preferredCurrency && selectedCurrency === user.preferredCurrency)
+            )
           }
           className="w-full"
         >

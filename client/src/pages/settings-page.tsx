@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2, Settings, UserCog, Globe, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CurrencyPreference from '@/components/settings/CurrencyPreference';
+import LanguagePreference from '@/components/settings/LanguagePreference';
 import CurrencyConverter from '@/components/wallet/CurrencyConverter';
 import { Button } from '@/components/ui/button';
 import { getQueryFn } from '@/lib/queryClient';
@@ -165,14 +166,22 @@ const SettingsPage = () => {
         </TabsContent>
 
         <TabsContent value="language" className="space-y-6">
-          <div className="bg-card p-6 rounded-lg border shadow-sm">
-            <h3 className="text-lg font-medium mb-4">Language Settings</h3>
-            <p className="text-sm mb-4 text-muted-foreground">
-              Language settings will be available in a future update.
-            </p>
-            <Button variant="outline" disabled>
-              Change Language
-            </Button>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* Language Preference */}
+            <LanguagePreference user={user} />
+            
+            {/* Additional language-related section could go here */}
+            <div className="bg-card p-6 rounded-lg border shadow-sm">
+              <h3 className="text-lg font-medium mb-4">Language Support Information</h3>
+              <p className="text-sm mb-4 text-muted-foreground">
+                We're working on adding more languages to our platform. Your preferred language setting 
+                will be applied to all text throughout the application once this feature is fully implemented.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                If you'd like to help with translations or have suggestions for languages to add,
+                please contact our support team.
+              </p>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
