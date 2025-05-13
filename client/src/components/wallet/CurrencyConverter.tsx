@@ -57,31 +57,47 @@ const CurrencyConverter = () => {
   const [result, setResult] = useState<ConversionResponse | null>(null);
   
   // Fetch available currencies
-  const { data: currencyData, isLoading: currenciesLoading } = useQuery({
+  const { data: currencyData, isLoading: currenciesLoading, error: currenciesError } = useQuery({
     queryKey: ['/api/currencies'],
     queryFn: async () => {
-      const response = await fetch('/api/currencies');
-      if (!response.ok) {
-        throw new Error('Failed to fetch currencies');
+      try {
+        const response = await fetch('/api/currencies');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch currencies: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      } catch (error) {
+        console.error('Error fetching currencies:', error);
+        throw new Error('Failed to fetch currencies. Please try again later.');
       }
-      return response.json();
     }
   });
   
   // Conversion mutation
   const convertMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/currencies/convert', {
-        amount,
-        fromCurrency,
-        toCurrency
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to convert currency');
+      try {
+        const response = await apiRequest('POST', '/api/currencies/convert', {
+          amount,
+          fromCurrency,
+          toCurrency
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || 
+            `Failed to convert currency: ${response.status} ${response.statusText}`
+          );
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error('Currency conversion error:', error);
+        throw error instanceof Error 
+          ? error 
+          : new Error('Failed to convert currency. Please try again later.');
       }
-      
-      return response.json();
     },
     onSuccess: (data) => {
       setResult(data);
@@ -126,10 +142,29 @@ const CurrencyConverter = () => {
     convertMutation.mutate();
   };
   
-  // Get currency symbol
+  // Get currency symbol with better error handling
   const getCurrencySymbol = (code: string): string => {
-    if (!currencyData?.currencies) return '';
+    // Handle missing currency data
+    if (!currencyData?.currencies || !Array.isArray(currencyData.currencies)) {
+      // Default currency symbols for common currencies
+      const defaultSymbols: Record<string, string> = {
+        'NGN': '₦',
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'JPY': '¥',
+        'CNY': '¥',
+        'AUD': 'A$',
+        'CAD': 'C$',
+        'INR': '₹'
+      };
+      return defaultSymbols[code] || code;
+    }
+    
+    // Find the currency in the available currencies
     const currency = currencyData.currencies.find((c: CurrencyDetails) => c.code === code);
+    
+    // Return symbol if found, otherwise return code as fallback
     return currency?.symbol || code;
   };
   
@@ -182,11 +217,26 @@ const CurrencyConverter = () => {
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
-                  {currencyData?.currencies?.map((currency: CurrencyDetails) => (
-                    <SelectItem key={currency.code} value={currency.code}>
-                      {currency.symbol} {currency.name}
-                    </SelectItem>
-                  ))}
+                  {currenciesLoading ? (
+                    <div className="flex items-center justify-center p-2">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <span>Loading currencies...</span>
+                    </div>
+                  ) : currenciesError ? (
+                    <div className="p-2 text-destructive">
+                      Failed to load currencies
+                    </div>
+                  ) : !currencyData?.currencies?.length ? (
+                    <div className="p-2 text-muted-foreground">
+                      No currencies available
+                    </div>
+                  ) : (
+                    currencyData.currencies.map((currency: CurrencyDetails) => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        {currency.symbol} {currency.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -214,30 +264,56 @@ const CurrencyConverter = () => {
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
-                  {currencyData?.currencies?.map((currency: CurrencyDetails) => (
-                    <SelectItem key={currency.code} value={currency.code}>
-                      {currency.symbol} {currency.name}
-                    </SelectItem>
-                  ))}
+                  {currenciesLoading ? (
+                    <div className="flex items-center justify-center p-2">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <span>Loading currencies...</span>
+                    </div>
+                  ) : currenciesError ? (
+                    <div className="p-2 text-destructive">
+                      Failed to load currencies
+                    </div>
+                  ) : !currencyData?.currencies?.length ? (
+                    <div className="p-2 text-muted-foreground">
+                      No currencies available
+                    </div>
+                  ) : (
+                    currencyData.currencies.map((currency: CurrencyDetails) => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        {currency.symbol} {currency.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
           </div>
           
           {/* Conversion Result */}
-          {result && (
-            <div className="mt-4 p-3 border rounded-md bg-muted/50">
-              <p className="text-sm text-muted-foreground">
-                {result.originalAmount.formatted} = {result.convertedAmount.formatted}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Exchange rate: 1 {result.originalAmount.currency} = {result.exchangeRate.toFixed(6)} {result.convertedAmount.currency}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Last updated: {new Date(result.timestamp).toLocaleString()}
-              </p>
-            </div>
-          )}
+          <div className="mt-4 p-3 border rounded-md bg-muted/50 min-h-[90px] flex flex-col justify-center">
+            {convertMutation.isPending ? (
+              <div className="flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                <span>Converting...</span>
+              </div>
+            ) : result ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  {result.originalAmount.formatted} = {result.convertedAmount.formatted}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Exchange rate: 1 {result.originalAmount.currency} = {result.exchangeRate.toFixed(6)} {result.convertedAmount.currency}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Last updated: {new Date(result.timestamp).toLocaleString()}
+                </p>
+              </>
+            ) : (
+              <div className="text-center text-muted-foreground text-sm">
+                Enter an amount and select currencies to convert
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
       
