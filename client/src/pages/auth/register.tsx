@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, ArrowRight } from "lucide-react";
+import { CheckCircle, ArrowRight, Star, Home } from "lucide-react";
 import { useLocation } from "wouter";
 import { 
   Card, 
@@ -24,9 +24,22 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Select, 
+  SelectContent, 
+  SelectGroup, 
+  SelectItem, 
+  SelectLabel,
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { getInitials } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  getPrimaryCurrencyForCountry, 
+  groupCurrencies, 
+  countryToCurrency 
+} from "@/lib/countryData";
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -59,8 +72,8 @@ const countries = [
   { code: "JP", name: "Japan" },
 ];
 
-// Currency options list
-const currencies = [
+// Currency options list 
+const currencyOptions = [
   { code: "NGN", name: "Nigerian Naira (₦)" },
   { code: "USD", name: "US Dollar ($)" },
   { code: "GBP", name: "British Pound (£)" },
@@ -102,6 +115,20 @@ export default function Register() {
       timeZone: "", // Will be set automatically
     },
   });
+  
+  // Update preferred currency when country changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'countryCode' && value.countryCode) {
+        const recommendedCurrency = getPrimaryCurrencyForCountry(value.countryCode as string);
+        if (recommendedCurrency) {
+          form.setValue('preferredCurrency', recommendedCurrency);
+        }
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const onSubmit = (data: RegisterFormValues) => {
     // Calculate initials from username
@@ -312,32 +339,63 @@ export default function Register() {
                 <FormField
                   control={form.control}
                   name="preferredCurrency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preferred Currency</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your currency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {currencies.map((currency) => (
-                            <SelectItem key={currency.code} value={currency.code}>
-                              {currency.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Currency used for deposits, stakes, and withdrawals
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    // Get the current country selection
+                    const selectedCountry = form.getValues("countryCode");
+                    
+                    // Get recommendation groups based on the selected country
+                    const grouped = groupCurrencies(currencyOptions, selectedCountry);
+                    const primaryCurrency = getPrimaryCurrencyForCountry(selectedCountry);
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel>Preferred Currency</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your currency" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {/* Recommended Currencies Group */}
+                            <SelectGroup>
+                              <SelectLabel>Recommended Currencies</SelectLabel>
+                              {grouped.recommended.map((currency) => (
+                                <SelectItem key={currency.code} value={currency.code}>
+                                  <div className="flex items-center">
+                                    {currency.code === primaryCurrency && (
+                                      <Home className="mr-2 h-3.5 w-3.5 text-primary" />
+                                    )}
+                                    {currency.code !== primaryCurrency && (
+                                      <Star className="mr-2 h-3.5 w-3.5 text-yellow-500" />
+                                    )}
+                                    {currency.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                            
+                            {/* Other Currencies Group */}
+                            <SelectGroup>
+                              <SelectLabel>Other Currencies</SelectLabel>
+                              {grouped.other.map((currency) => (
+                                <SelectItem key={currency.code} value={currency.code}>
+                                  {currency.name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Currency used for deposits, stakes, and withdrawals
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 
                 <FormField
