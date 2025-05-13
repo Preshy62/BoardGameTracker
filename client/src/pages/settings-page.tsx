@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Settings, UserCog, Globe, Languages } from 'lucide-react';
@@ -6,16 +6,54 @@ import { useToast } from '@/hooks/use-toast';
 import CurrencyPreference from '@/components/settings/CurrencyPreference';
 import CurrencyConverter from '@/components/wallet/CurrencyConverter';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/common/PageHeader';
 import { getQueryFn } from '@/lib/queryClient';
+
+// User type definition based on what our API returns
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  walletBalance: number;
+  preferredCurrency: string;
+  countryCode: string;
+  avatarInitials: string;
+  emailVerified: boolean | null;
+  isActive: boolean;
+  isAdmin: boolean;
+}
+
+// Page Header component since we don't want to pull in the common component yet
+interface PageHeaderProps {
+  title: string;
+  description?: string;
+  icon?: ReactNode;
+}
+
+function PageHeader({ title, description, icon }: PageHeaderProps) {
+  return (
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div className="flex items-center gap-3">
+        {icon && (
+          <div className="rounded-lg bg-primary/10 p-2 text-primary">
+            {icon}
+          </div>
+        )}
+        <div>
+          <h1 className="text-2xl font-bold">{title}</h1>
+          {description && <p className="text-muted-foreground">{description}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const SettingsPage = () => {
   const { toast } = useToast();
 
   // Fetch user data
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading } = useQuery<User | null>({
     queryKey: ['/api/user'],
-    queryFn: getQueryFn()
+    queryFn: getQueryFn({ on401: "returnNull" })
   });
 
   if (isLoading) {
@@ -79,18 +117,18 @@ const SettingsPage = () => {
               <h3 className="text-lg font-medium mb-4">Profile Information</h3>
               <div className="space-y-2">
                 <p className="text-sm">
-                  <span className="font-medium">Username:</span> {user.username}
+                  <span className="font-medium">Username:</span> {user?.username || 'N/A'}
                 </p>
                 <p className="text-sm">
-                  <span className="font-medium">Email:</span> {user.email}
+                  <span className="font-medium">Email:</span> {user?.email || 'N/A'}
                 </p>
                 <p className="text-sm">
                   <span className="font-medium">Account Status:</span>{' '}
-                  {user.isActive ? 'Active' : 'Inactive'}
+                  {user?.isActive ? 'Active' : 'Inactive'}
                 </p>
                 <p className="text-sm">
                   <span className="font-medium">Email Verified:</span>{' '}
-                  {user.emailVerified ? 'Yes' : 'No'}
+                  {user?.emailVerified ? 'Yes' : 'No'}
                 </p>
               </div>
               <Button className="mt-4" variant="outline" size="sm">
@@ -114,7 +152,7 @@ const SettingsPage = () => {
         <TabsContent value="currency" className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Currency Preference */}
-            <CurrencyPreference user={user} />
+            <CurrencyPreference user={user as any} />
             
             {/* Currency Converter */}
             <CurrencyConverter />

@@ -15,6 +15,7 @@ import Stripe from "stripe";
 import paystackRoutes from "./routes/paystack";
 import transactionRoutes from "./routes/transactions";
 import currencyRoutes from "./routes/currency";
+import { AVAILABLE_CURRENCIES } from "./routes/currency";
 import { addMinutes, addHours, addDays } from "date-fns";
 import { 
   generateVerificationToken, 
@@ -320,6 +321,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(userWithoutPassword);
     } catch (error) {
       console.error('Error fetching user:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Update user preferences
+  app.patch("/api/user/preferences", authenticate, async (req, res) => {
+    try {
+      // Validate user exists
+      ensureUserIdExists(req.session.userId);
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Create a schema for user preferences updates
+      const userPreferencesSchema = z.object({
+        preferredCurrency: z.string().min(3).max(3).optional(),
+        countryCode: z.string().min(2).max(2).optional(),
+        language: z.string().min(2).max(5).optional(),
+        emailNotifications: z.boolean().optional(),
+      });
+      
+      // Validate request body
+      const validationResult = userPreferencesSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Invalid preferences data",
+          errors: validationResult.error.format()
+        });
+      }
+      
+      // Check if currency is valid when provided
+      if (
+        validationResult.data.preferredCurrency && 
+        !Object.keys(AVAILABLE_CURRENCIES).includes(validationResult.data.preferredCurrency)
+      ) {
+        return res.status(400).json({
+          message: `Currency ${validationResult.data.preferredCurrency} is not supported`
+        });
+      }
+      
+      // Update user with new preferences
+      const updatedUser = await storage.updateUserProfile(
+        req.session.userId, 
+        validationResult.data
+      );
+      
+      // Remove password from response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json({
+        ...userWithoutPassword,
+        message: "Preferences updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating user preferences:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
