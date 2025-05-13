@@ -39,18 +39,27 @@ export async function verifyTransaction(transactionId: number): Promise<Verifica
       };
     }
 
-    // Check payment provider reference exists
-    if (!transaction.providerReference) {
+    // Check transaction reference exists
+    if (!transaction.reference) {
       return {
         success: false,
-        message: `Transaction ${transactionId} has no payment provider reference`,
+        message: `Transaction ${transactionId} has no reference`,
         transaction
       };
     }
 
     // Verify with the appropriate payment provider
-    if (transaction.provider === 'paystack') {
-      const verificationResult = await verifyPaystackTransaction(transaction.providerReference);
+    // Check payment details to identify the provider
+    const paymentDetails = transaction.paymentDetails ? 
+      (typeof transaction.paymentDetails === 'string' ? 
+        JSON.parse(transaction.paymentDetails as string) : 
+        transaction.paymentDetails) : 
+      {};
+    
+    const provider = paymentDetails.provider || 'paystack';
+    
+    if (provider === 'paystack') {
+      const verificationResult = await verifyPaystackTransaction(transaction.reference);
       
       if (verificationResult.success) {
         // Update transaction status based on verification
@@ -64,10 +73,10 @@ export async function verifyTransaction(transactionId: number): Promise<Verifica
           const user = await storage.getUser(updatedTransaction.userId);
           if (user) {
             // Add transaction amount to user balance
-            const newBalance = (user.balance || 0) + updatedTransaction.amount;
+            const newBalance = (user.walletBalance || 0) + updatedTransaction.amount;
             await storage.updateUserBalance(user.id, newBalance);
             
-            log(`Updated balance for user ${user.username} from ${user.balance} to ${newBalance}`, 'transaction');
+            log(`Updated balance for user ${user.username} from ${user.walletBalance} to ${newBalance}`, 'transaction');
           }
         }
 

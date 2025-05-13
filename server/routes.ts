@@ -61,8 +61,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize server
   const httpServer = createServer(app);
   
-  // Register Paystack payment routes
+  // Register payment and transaction routes
   app.use('/api/payment', paystackRoutes);
+  app.use('/api/transactions', transactionRoutes);
   
   // Initialize game manager
   const gameManager = new GameManager(storage);
