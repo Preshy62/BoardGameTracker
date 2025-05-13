@@ -146,10 +146,10 @@ export async function processTransactionStatusUpdate(
       if (transaction.type === 'deposit' && transaction.userId) {
         const user = await storage.getUser(transaction.userId);
         if (user) {
-          const newBalance = (user.balance || 0) + transaction.amount;
+          const newBalance = (user.walletBalance || 0) + transaction.amount;
           await storage.updateUserBalance(user.id, newBalance);
           
-          log(`Deposit completed: Updated balance for user ${user.username} from ${user.balance} to ${newBalance}`, 'transaction');
+          log(`Deposit completed: Updated balance for user ${user.username} from ${user.walletBalance} to ${newBalance}`, 'transaction');
         }
       }
       
@@ -159,7 +159,7 @@ export async function processTransactionStatusUpdate(
       if (transaction.type === 'withdrawal' && transaction.userId) {
         const user = await storage.getUser(transaction.userId);
         if (user) {
-          const newBalance = (user.balance || 0) + transaction.amount;
+          const newBalance = (user.walletBalance || 0) + transaction.amount;
           await storage.updateUserBalance(user.id, newBalance);
           
           log(`Withdrawal failed: Refunded ${transaction.amount} to user ${user.username}`, 'transaction');
@@ -202,11 +202,8 @@ export async function trackTransaction(
       type,
       status: 'pending',
       currency,
-      description: description || `${type} transaction of ${amount} ${currency}`,
-      metadata: metadata ? JSON.stringify(metadata) : null,
-      provider: metadata?.provider || null,
-      providerReference: metadata?.reference || null,
-      createdAt: new Date()
+      reference: metadata?.reference || generateTransactionReference(userId, type),
+      paymentDetails: metadata ? JSON.stringify(metadata) : null
     });
     
     log(`Created ${type} transaction of ${amount} ${currency} for user ${userId}`, 'transaction');
@@ -216,15 +213,13 @@ export async function trackTransaction(
       // For withdrawals, immediately deduct from user balance
       const user = await storage.getUser(userId);
       if (user) {
-        if ((user.balance || 0) < amount) {
+        if ((user.walletBalance || 0) < amount) {
           // If insufficient balance, fail the transaction
-          return await processTransactionStatusUpdate(transaction.id, 'failed', {
-            reason: 'Insufficient balance'
-          });
+          return await processTransactionStatusUpdate(transaction.id, 'failed');
         }
         
         // Deduct amount from user balance
-        const newBalance = (user.balance || 0) - amount;
+        const newBalance = (user.walletBalance || 0) - amount;
         await storage.updateUserBalance(userId, newBalance);
         
         log(`Withdrawal pending: Deducted ${amount} from user ${user.username}`, 'transaction');
@@ -233,15 +228,13 @@ export async function trackTransaction(
       // For stakes, immediately deduct from user balance
       const user = await storage.getUser(userId);
       if (user) {
-        if ((user.balance || 0) < amount) {
+        if ((user.walletBalance || 0) < amount) {
           // If insufficient balance, fail the transaction
-          return await processTransactionStatusUpdate(transaction.id, 'failed', {
-            reason: 'Insufficient balance'
-          });
+          return await processTransactionStatusUpdate(transaction.id, 'failed');
         }
         
         // Deduct amount from user balance
-        const newBalance = (user.balance || 0) - amount;
+        const newBalance = (user.walletBalance || 0) - amount;
         await storage.updateUserBalance(userId, newBalance);
         
         // Mark stake transactions as completed immediately
