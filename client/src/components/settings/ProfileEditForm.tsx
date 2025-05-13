@@ -53,6 +53,7 @@ const profileFormSchema = z.object({
   avatarInitials: z.string().max(2, { message: "Avatar initials must be max 2 characters" }).optional(),
   emailNotifications: z.boolean().optional(),
   countryCode: z.string().min(2, { message: "Please select a country" }),
+  preferredCurrency: z.string().min(3).max(3).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;

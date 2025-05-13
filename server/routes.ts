@@ -402,6 +402,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: z.string().email({ message: "Please enter a valid email address" }).optional(),
         avatarInitials: z.string().max(2, { message: "Avatar initials must be max 2 characters" }).optional(),
         emailNotifications: z.boolean().optional(),
+        countryCode: z.string().min(2).max(2).optional(),
+        preferredCurrency: z.string().min(3).max(3).optional(),
       });
       
       // Validate request body
@@ -436,6 +438,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existingUser && existingUser.id !== user.id) {
           return res.status(400).json({
             message: "Email already exists",
+          });
+        }
+      }
+      
+      // Check if preferredCurrency is valid when provided
+      if (validationResult.data.preferredCurrency) {
+        const { AVAILABLE_CURRENCIES } = await import('./routes/currency');
+        if (!AVAILABLE_CURRENCIES[validationResult.data.preferredCurrency]) {
+          return res.status(400).json({
+            message: `Currency ${validationResult.data.preferredCurrency} is not supported`
           });
         }
       }
