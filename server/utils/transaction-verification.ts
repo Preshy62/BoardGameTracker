@@ -1,7 +1,18 @@
 import { Transaction, TransactionStatus, TransactionType } from '@shared/schema';
 import { storage } from '../storage';
-import { verifyPaystackTransaction } from './paystack';
+import { verifyPaystackTransaction, generateReference } from './paystack';
 import { log } from '../vite';
+
+/**
+ * Generate a unique reference for tracking transactions
+ * @param userId User ID to include in the reference
+ * @param type Transaction type 
+ * @returns Unique reference string
+ */
+function generateTransactionReference(userId: number, type: string): string {
+  const prefix = type.substring(0, 3).toUpperCase();
+  return `${prefix}_${generateReference(userId)}`;
+}
 
 /**
  * Transaction verification result
@@ -82,7 +93,7 @@ export async function verifyTransaction(transactionId: number): Promise<Verifica
 
         return {
           success: true,
-          message: `Transaction ${transactionId} verified successfully with ${transaction.provider}`,
+          message: `Transaction ${transactionId} verified successfully`,
           transaction: updatedTransaction,
           verifiedAmount: verificationResult.amount,
           metadata: verificationResult.metadata
@@ -93,14 +104,14 @@ export async function verifyTransaction(transactionId: number): Promise<Verifica
         
         return {
           success: false,
-          message: verificationResult.message || `Transaction verification failed with ${transaction.provider}`,
+          message: verificationResult.message || `Transaction verification failed`,
           transaction: updatedTransaction
         };
       }
     } else {
       return {
         success: false,
-        message: `Unsupported payment provider: ${transaction.provider}`,
+        message: `Unsupported payment provider`,
         transaction
       };
     }
