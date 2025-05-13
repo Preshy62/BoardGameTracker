@@ -88,6 +88,9 @@ app.use((req, res, next) => {
       log("Database migration failed. Proceeding with caution...", "startup");
     }
     
+    // Run transaction description field migration
+    await addTransactionDescriptionField();
+    
     // Initialize email transport
     log("Initializing email transport...", "startup");
     await initializeEmailTransport();

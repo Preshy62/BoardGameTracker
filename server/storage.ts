@@ -991,6 +991,10 @@ export class DatabaseStorage implements IStorage {
   async createWithdrawalRequest(userId: number, amount: number, currency: string, bankDetails: any): Promise<Transaction> {
     const reference = `WITHDRAWAL-${Date.now()}-${userId}`;
     
+    // Get bank name or account details for the description
+    const bankName = bankDetails?.bankName || "bank account";
+    const description = `Withdrawal to ${bankName}`;
+    
     const [transaction] = await db.insert(transactions).values({
       userId,
       amount,
@@ -998,6 +1002,7 @@ export class DatabaseStorage implements IStorage {
       status: "pending",
       reference,
       currency,
+      description,
       withdrawalStatus: "pending",
       withdrawalMethod: "bank_transfer",
       bankDetails

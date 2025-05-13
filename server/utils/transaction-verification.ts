@@ -213,6 +213,7 @@ export async function trackTransaction(
       type,
       status: 'pending',
       currency,
+      description: description || `${type.charAt(0).toUpperCase() + type.slice(1)} transaction`,
       reference: metadata?.reference || generateTransactionReference(userId, type),
       paymentDetails: metadata ? JSON.stringify(metadata) : null
     });
