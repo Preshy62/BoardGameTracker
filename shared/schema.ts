@@ -201,8 +201,8 @@ export type Message = typeof messages.$inferSelect;
 
 // Domain specific types
 export type GameStatus = 'waiting' | 'in_progress' | 'completed';
-export type TransactionType = 'deposit' | 'withdrawal' | 'winnings' | 'stake';
-export type TransactionStatus = 'pending' | 'completed' | 'failed';
+export type TransactionType = 'deposit' | 'withdrawal' | 'winnings' | 'stake' | 'refund';
+export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'disputed';
 export type MessageType = 'chat' | 'system';
 
 // WebSocket message types

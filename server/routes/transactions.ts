@@ -1,5 +1,5 @@
 import { Router, Request } from 'express';
-import { verifyTransaction, trackTransaction, getUserTransactionSummary } from '../utils/transaction-verification';
+import { verifyTransaction, trackTransaction, getUserTransactionSummary, processTransactionStatusUpdate } from '../utils/transaction-verification';
 import { storage } from '../storage';
 import { log } from '../vite';
 import { initializePaystackTransaction } from '../utils/paystack';
@@ -188,18 +188,28 @@ router.post('/paystack/webhook', async (req, res) => {
     
     // In a production environment, verify the signature
     // This is a simplified implementation
+    // const secret = process.env.PAYSTACK_SECRET_KEY;
+    // const computedHash = crypto.createHmac('sha512', secret).update(JSON.stringify(req.body)).digest('hex');
+    // if (computedHash !== hash) {
+    //   log('Invalid webhook signature', 'paystack');
+    //   return res.status(401).json({ status: 'error', message: 'Invalid signature' });
+    // }
     
     const event = req.body;
+    log(`Received Paystack webhook event: ${event.event}`, 'paystack');
     
-    // Handle event
-    if (event.event === 'charge.success') {
-      const data = event.data;
-      const reference = data.reference;
-      
-      // Since we don't have a direct method to find by reference, we'll check
-      // if we can find the transaction manually through user transactions
+    // Extract common data
+    const data = event.data || {};
+    const reference = data.reference;
+    const amount = data.amount ? data.amount / 100 : 0; // Convert from kobo to naira
+    
+    // Find existing transaction by reference
+    let transaction = null;
+    let userId = data.metadata?.userId;
+    
+    if (!userId && reference) {
+      // Search for transaction by reference if userId not in metadata
       const users = await storage.getAllUsers();
-      let transaction = null;
       
       // Search through all users' transactions for the reference
       for (const user of users) {
@@ -207,24 +217,135 @@ router.post('/paystack/webhook', async (req, res) => {
         const found = userTransactions.find(t => t.reference === reference);
         if (found) {
           transaction = found;
+          userId = user.id;
           break;
         }
       }
-      
-      if (transaction) {
-        // Verify the transaction
-        await verifyTransaction(transaction.id);
-        log(`Paystack webhook processed for transaction ${transaction.id}`, 'paystack');
-      } else {
-        log(`Paystack webhook received for unknown reference: ${reference}`, 'paystack');
-      }
+    } else if (userId) {
+      // If userId is available, check that user's transactions
+      const userTransactions = await storage.getUserTransactions(Number(userId));
+      transaction = userTransactions.find(t => t.reference === reference);
+    }
+    
+    // Handle different event types
+    switch (event.event) {
+      case 'charge.success':
+        // Process successful payment
+        if (transaction) {
+          // Update existing transaction
+          await processTransactionStatusUpdate(transaction.id, 'completed');
+          log(`Updated transaction ${transaction.id} to completed via webhook`, 'paystack');
+        } else if (userId) {
+          // Create new transaction if it doesn't exist
+          const user = await storage.getUser(Number(userId));
+          
+          if (user) {
+            // Record the transaction
+            const newTransaction = await storage.createTransaction({
+              userId: Number(userId),
+              amount,
+              type: 'deposit',
+              status: 'completed',
+              currency: 'NGN',
+              description: `Paystack payment of ${amount} NGN via ${data.channel || 'card'}`,
+              reference,
+              paymentDetails: JSON.stringify({
+                paymentProvider: 'paystack',
+                paymentMethod: data.channel || 'card',
+                paymentId: data.id,
+                customerCode: data.customer?.customer_code,
+                email: data.customer?.email,
+                authorizationCode: data.authorization?.authorization_code,
+                cardLast4: data.authorization?.last4,
+                cardType: data.authorization?.card_type
+              })
+            });
+            
+            // Update user's wallet balance
+            await storage.updateUserBalance(Number(userId), user.walletBalance + amount);
+            log(`Created new transaction ${newTransaction.id} via webhook`, 'paystack');
+          }
+        } else {
+          log(`Paystack webhook received for unknown reference: ${reference}`, 'paystack');
+        }
+        break;
+        
+      case 'transfer.success':
+        // Process successful withdrawal/transfer
+        if (transaction) {
+          await processTransactionStatusUpdate(transaction.id, 'completed');
+          log(`Completed withdrawal ${transaction.id} via webhook`, 'paystack');
+        }
+        break;
+        
+      case 'transfer.failed':
+        // Process failed withdrawal/transfer
+        if (transaction) {
+          await processTransactionStatusUpdate(transaction.id, 'failed');
+          log(`Failed withdrawal ${transaction.id} via webhook`, 'paystack');
+        }
+        break;
+        
+      case 'charge.dispute.create':
+        // Handle new dispute
+        if (transaction) {
+          // Mark transaction as disputed in payment details
+          const paymentDetails = transaction.paymentDetails ? 
+            JSON.parse(transaction.paymentDetails as string) : {};
+          
+          const updatedDetails = {
+            ...paymentDetails,
+            disputed: true,
+            disputeId: data.id,
+            disputeStatus: data.status,
+            disputeReason: data.reason
+          };
+          
+          // Update transaction payment details
+          // Note: Need to add an updateTransactionDetails method to storage
+          log(`Transaction ${transaction.id} has been disputed: ${data.reason}`, 'paystack');
+        }
+        break;
+        
+      case 'charge.refund.processed':
+        // Handle processed refund
+        if (transaction) {
+          // Create a new refund transaction linked to the original
+          const user = await storage.getUser(Number(transaction.userId));
+          if (user) {
+            await storage.createTransaction({
+              userId: user.id,
+              amount: data.amount / 100,
+              type: 'refund',
+              status: 'completed',
+              currency: 'NGN',
+              description: `Refund for transaction #${transaction.id}`,
+              reference: `refund_${reference}`,
+              paymentDetails: JSON.stringify({
+                originalTransactionId: transaction.id,
+                refundId: data.id,
+                refundChannel: data.channel,
+                refundReason: data.reason
+              })
+            });
+            
+            log(`Created refund for transaction ${transaction.id}`, 'paystack');
+          }
+        }
+        break;
+        
+      default:
+        // Log other events
+        log(`Unhandled Paystack webhook event: ${event.event}`, 'paystack');
     }
     
     // Return success to acknowledge receipt
     res.status(200).json({ status: 'success' });
   } catch (error) {
     console.error('Error processing Paystack webhook:', error);
-    res.status(500).json({
+    log(`Webhook processing error: ${error instanceof Error ? error.message : String(error)}`, 'paystack');
+    res.status(200).json({ 
+      // Always return 200 to avoid webhook retries, but include error details
       status: 'error',
       message: `Error processing webhook: ${error instanceof Error ? error.message : String(error)}`
     });
