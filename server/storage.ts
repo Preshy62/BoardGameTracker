@@ -17,6 +17,7 @@ export interface IStorage {
   updateUserBalance(userId: number, newBalance: number): Promise<User>;
   updateUserProfile(userId: number, updates: Partial<User>): Promise<User>;
   updateUserBankDetails(userId: number, bankDetails: any): Promise<User>;
+  getAllUsers(): Promise<User[]>;
   
   // Game operations
   getGame(id: number): Promise<Game | undefined>;
@@ -97,6 +98,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(
       (user) => user.email.toLowerCase() === email.toLowerCase()
     );
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
   }
 
   async createUser(insertUser: InsertUser & { avatarInitials: string }): Promise<User> {
@@ -574,6 +579,11 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    const allUsers = await db.select().from(users);
+    return allUsers;
   }
 
   async createUser(insertUser: InsertUser & { avatarInitials: string }): Promise<User> {

@@ -1,8 +1,17 @@
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import { verifyTransaction, trackTransaction, getUserTransactionSummary } from '../utils/transaction-verification';
 import { storage } from '../storage';
 import { log } from '../vite';
 import { initializePaystackTransaction } from '../utils/paystack';
+
+// Add request type extension for auth functions
+declare global {
+  namespace Express {
+    interface Request {
+      isAuthenticated?: () => boolean;
+    }
+  }
+}
 
 const router = Router();
 
