@@ -1029,6 +1029,16 @@ export class DatabaseStorage implements IStorage {
         'NGN_USD': 0.00066,  // 1 NGN = 0.00066 USD
         'NGN_EUR': 0.00061,  // 1 NGN = 0.00061 EUR
         'NGN_GBP': 0.00051,  // 1 NGN = 0.00051 GBP
+        'NGN_ZAR': 0.012,    // 1 NGN = 0.012 ZAR
+        'NGN_GHS': 0.0086,   // 1 NGN = 0.0086 GHS
+        'NGN_KES': 0.088,    // 1 NGN = 0.088 KES
+        'NGN_SLL': 0.014,    // 1 NGN = 0.014 SLL
+        'NGN_CAD': 0.00089,  // 1 NGN = 0.00089 CAD
+        'NGN_AUD': 0.00098,  // 1 NGN = 0.00098 AUD
+        'NGN_JPY': 0.10,     // 1 NGN = 0.10 JPY
+        'NGN_INR': 0.055,    // 1 NGN = 0.055 INR
+        'NGN_BRL': 0.0034,   // 1 NGN = 0.0034 BRL
+        'NGN_RUB': 0.062,    // 1 NGN = 0.062 RUB
         
         // USD base rates (1 USD to X)
         'USD_NGN': 1515.00,  // 1 USD = 1515 NGN
@@ -1075,12 +1085,40 @@ export class DatabaseStorage implements IStorage {
       if (toCurrency !== 'NGN') {
         const fromNGNKey = `NGN_${toCurrency}`;
         if (!baseRates[fromNGNKey]) {
-          // If we can't convert from NGN to target, handle the error
-          throw new Error(`No conversion rate available from NGN to ${toCurrency}`);
+          console.warn(`No conversion rate available from NGN to ${toCurrency}, using approximation`);
+          // Use approximate fallback rates if specific rate is not available
+          // Based on USD equivalents (1 unit of currency ≈ X USD)
+          const fallbackRatesViaUSD: Record<string, number> = {
+            'ZAR': 0.055,   // 1 ZAR ≈ 0.055 USD
+            'GHS': 0.077,   // 1 GHS ≈ 0.077 USD
+            'KES': 0.0077,  // 1 KES ≈ 0.0077 USD
+            'SLL': 0.044,   // 1 SLL ≈ 0.044 USD
+            'CAD': 0.74,    // 1 CAD ≈ 0.74 USD
+            'AUD': 0.67,    // 1 AUD ≈ 0.67 USD
+            'JPY': 0.0066,  // 1 JPY ≈ 0.0066 USD
+            'INR': 0.012,   // 1 INR ≈ 0.012 USD
+            'BRL': 0.19,    // 1 BRL ≈ 0.19 USD
+            'RUB': 0.011,   // 1 RUB ≈ 0.011 USD
+          };
+          
+          if (fallbackRatesViaUSD[toCurrency]) {
+            // First convert NGN to USD
+            const ngnToUsd = baseRates['NGN_USD'];
+            // Then convert USD to target currency using fallback rates
+            const usdAmount = amountInNGN * ngnToUsd;
+            finalAmount = usdAmount / fallbackRatesViaUSD[toCurrency];
+            // Calculate effective rate
+            effectiveRate = finalAmount / amount;
+          } else {
+            // If all else fails, use 1:1 as last resort
+            finalAmount = amountInNGN;
+            effectiveRate = amountInNGN / amount;
+          }
+        } else {
+          finalAmount = amountInNGN * baseRates[fromNGNKey];
+          // Calculate effective rate from original currency to target
+          effectiveRate = finalAmount / amount;
         }
-        finalAmount = amountInNGN * baseRates[fromNGNKey];
-        // Calculate effective rate from original currency to target
-        effectiveRate = finalAmount / amount;
       } else {
         // If target is NGN, calculate the rate differently
         effectiveRate = amountInNGN / amount;
@@ -1097,15 +1135,57 @@ export class DatabaseStorage implements IStorage {
       };
     } catch (error) {
       console.error('Error converting currency:', error);
-      // Fallback to a direct conversion or 1:1 if all else fails
+      // Fallback to a direct conversion or estimate if all else fails
       const key = `${fromCurrency}_${toCurrency}`;
       const fallbackRates: Record<string, number> = {
+        // Basic rates
         'NGN_USD': 0.00066,
         'USD_NGN': 1515.00,
         'GBP_NGN': 1950.00,
         'EUR_NGN': 1640.00,
+        
+        // Added fallback rates for new currencies
+        'NGN_ZAR': 0.012,
+        'NGN_GHS': 0.0086,
+        'NGN_KES': 0.088,
+        'NGN_SLL': 0.014,
+        'NGN_CAD': 0.00089,
+        'NGN_AUD': 0.00098,
+        'NGN_JPY': 0.10,
+        'NGN_INR': 0.055,
+        'NGN_BRL': 0.0034,
+        'NGN_RUB': 0.062,
+        
+        // Opposite direction
+        'ZAR_NGN': 83.33,
+        'GHS_NGN': 116.28,
+        'KES_NGN': 11.36,
+        'SLL_NGN': 71.43,
+        'CAD_NGN': 1123.60,
+        'AUD_NGN': 1020.41,
+        'JPY_NGN': 10.00,
+        'INR_NGN': 18.18,
+        'BRL_NGN': 294.12,
+        'RUB_NGN': 16.13,
       };
-      const fallbackRate = fallbackRates[key] || 1;
+      
+      // Try to get direct fallback rate
+      let fallbackRate = fallbackRates[key];
+      
+      // If no direct fallback rate, try to get via USD
+      if (!fallbackRate && fromCurrency !== 'USD' && toCurrency !== 'USD') {
+        const fromToUsd = fallbackRates[`${fromCurrency}_USD`] || 
+                          (baseRates[`${fromCurrency}_USD`] || (1/baseRates[`USD_${fromCurrency}`]));
+        const usdToTarget = fallbackRates[`USD_${toCurrency}`] || 
+                           (baseRates[`USD_${toCurrency}`] || (1/baseRates[`${toCurrency}_USD`]));
+        
+        if (fromToUsd && usdToTarget) {
+          fallbackRate = fromToUsd * usdToTarget;
+        }
+      }
+      
+      // If still no rate, use 1:1 as absolute last resort
+      fallbackRate = fallbackRate || 1;
       
       return {
         amount: amount * fallbackRate,
