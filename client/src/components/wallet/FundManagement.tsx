@@ -493,18 +493,7 @@ export default function FundManagement({ user }: FundManagementProps) {
             
             {/* Deposit buttons */}
             <div className="grid grid-cols-1 gap-3 pt-2">
-              <Button 
-                onClick={handleQuickDeposit}
-                disabled={depositMutation.isPending}
-                className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
-              >
-                {depositMutation.isPending ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Banknote className="h-4 w-4 mr-2" />
-                )}
-                Quick Deposit
-              </Button>
+              {/* Quick Deposit button removed as requested */}
               
               {user.email ? (
                 <PaystackButton
@@ -541,7 +530,7 @@ export default function FundManagement({ user }: FundManagementProps) {
             
             <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800 flex items-start">
               <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <p>Choose Quick Deposit for simulated payments or Pay with Paystack for real payment processing with cards, bank transfers, and mobile money in Nigeria and across Africa.</p>
+              <p>Pay with Paystack for real payment processing with cards, bank transfers, and mobile money in Nigeria and across Africa.</p>
             </div>
             
             {!user.email && (
