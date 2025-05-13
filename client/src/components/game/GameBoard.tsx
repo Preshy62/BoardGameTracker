@@ -53,7 +53,16 @@ export default function GameBoard({
   // Get the game winners
   const gameWinners = players
     .filter(p => p.isWinner)
-    .map(p => ({ ...p.user, id: p.userId })) as User[];
+    .map(p => ({
+      id: p.userId,
+      username: p.user.username,
+      password: "",  // Include required fields with placeholder values
+      email: "",
+      walletBalance: 0,
+      avatarInitials: p.user.avatarInitials || p.user.username.charAt(0).toUpperCase(),
+      isAdmin: false,
+      isActive: true,
+    })) as User[];
   
   // Calculate total pot
   const potAmount = game.stake * players.length;
@@ -100,166 +109,196 @@ export default function GameBoard({
   }, [game, currentPlayer, gameWinners.length]);
   
   return (
-    <Card className={cn("overflow-hidden", className)}>
-      <CardHeader className="pb-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Dices className="h-5 w-5 text-primary" />
-              Game Board
-            </CardTitle>
-            <CardDescription>
-              Roll your stone and try to match the winning positions
-            </CardDescription>
+    <>
+      <Card className={cn("overflow-hidden", className)}>
+        <CardHeader className="pb-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Dices className="h-5 w-5 text-primary" />
+                Game Board
+              </CardTitle>
+              <CardDescription>
+                Roll your stone and try to match the winning positions
+              </CardDescription>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="gap-1">
+                <Users className="h-3.5 w-3.5" />
+                <span>{players.length}/{game.maxPlayers}</span>
+              </Badge>
+              
+              <Badge 
+                variant={game.status === 'waiting' ? "outline" : 
+                        game.status === 'in_progress' ? "default" : 
+                        "secondary"}
+              >
+                {game.status === 'waiting' ? 'Waiting' : 
+                 game.status === 'in_progress' ? 'In Progress' : 
+                 'Completed'}
+              </Badge>
+              
+              <Badge variant="outline" className="gap-1">
+                ₦{game.stake.toLocaleString()}
+              </Badge>
+            </div>
           </div>
+        </CardHeader>
+        
+        <CardContent className="pt-5">
+          {/* Game status message */}
+          {game.status === 'waiting' && (
+            <div className="bg-slate-50 p-3 rounded-md mb-4 text-center text-sm">
+              Waiting for more players to join...
+            </div>
+          )}
           
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="gap-1">
-              <Users className="h-3.5 w-3.5" />
-              <span>{players.length}/{game.maxPlayers}</span>
-            </Badge>
-            
-            <Badge 
-              variant={game.status === 'waiting' ? "outline" : 
-                      game.status === 'in_progress' ? "default" : 
-                      "secondary"}
-            >
-              {game.status === 'waiting' ? 'Waiting' : 
-               game.status === 'in_progress' ? 'In Progress' : 
-               'Completed'}
-            </Badge>
-            
-            <Badge variant="outline" className="gap-1">
-              ₦{game.stake.toLocaleString()}
-            </Badge>
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pt-5">
-        {/* Game status message */}
-        {game.status === 'waiting' && (
-          <div className="bg-slate-50 p-3 rounded-md mb-4 text-center text-sm">
-            Waiting for more players to join...
-          </div>
-        )}
-        
-        {hasWinner && (
-          <div className="bg-green-50 p-3 rounded-md mb-4 text-center">
-            <div className="flex items-center justify-center gap-2 text-green-700 font-medium">
-              <Trophy className="h-5 w-5 text-amber-500" />
-              <span>Game Completed! Winning Stone: {game.winningNumber}</span>
-            </div>
-          </div>
-        )}
-        
-        {/* User's stone section */}
-        {(isUserTurn || currentUserStone !== null) && (
-          <div className="mb-6">
-            <h3 className="text-sm font-medium mb-3">Your Stone</h3>
-            <div className="flex justify-center">
-              <GameStone
-                number={currentUserStone || 0}
-                isRolling={isRolling}
-                isUserTurn={isUserTurn}
-                isWinner={hasWinner && currentUserStone === winningStone}
-                onRollComplete={handleRollComplete}
-                size="lg"
-                showLabel={true}
-              />
-            </div>
-            
-            {isUserTurn && !isRolling && !currentUserStone && (
-              <div className="mt-4 text-center">
-                <Button onClick={startRolling}>
-                  Roll Your Stone
-                </Button>
+          {hasWinner && (
+            <div className="bg-green-50 p-3 rounded-md mb-4 text-center">
+              <div className="flex items-center justify-center gap-2 text-green-700 font-medium">
+                <Trophy className="h-5 w-5 text-amber-500" />
+                <span>Game Completed! Winning Stone: {game.winningNumber}</span>
               </div>
-            )}
-          </div>
-        )}
-        
-        {/* Board positions grid */}
-        <div className="mt-6">
-          <h3 className="text-sm font-medium mb-3">Board Positions</h3>
-          <div className="grid grid-cols-5 gap-2">
-            {ALL_STONE_POSITIONS.map(position => (
-              <div key={position} className="flex justify-center">
-                <GameStone 
-                  number={position}
-                  isWinner={hasWinner && position === winningStone}
-                  size="sm"
+            </div>
+          )}
+          
+          {/* User's stone section */}
+          {(isUserTurn || currentUserStone !== null) && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium mb-3">Your Stone</h3>
+              <div className="flex justify-center">
+                <GameStone
+                  number={currentUserStone || 0}
+                  isRolling={isRolling}
+                  isUserTurn={isUserTurn}
+                  isWinner={hasWinner && currentUserStone === winningStone}
+                  onRollComplete={handleRollComplete}
+                  size="lg"
+                  showLabel={true}
                 />
               </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* Players section */}
-        <div className="mt-6">
-          <h3 className="text-sm font-medium mb-3">Players</h3>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {players.map(player => (
-              <div 
-                key={player.userId} 
-                className={cn(
-                  "flex items-center justify-between p-2 rounded-md",
-                  player.userId === currentUserId ? "bg-blue-50" : "bg-slate-50",
-                  hasWinner && player.isWinner ? "border border-amber-500" : "border border-transparent"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center font-medium text-sm",
-                    player.userId === currentUserId ? "bg-blue-100" : "bg-slate-200"
-                  )}>
-                    {player.user.avatarInitials || player.user.username.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {player.user.username}
-                      {player.userId === currentUserId && " (You)"}
-                    </p>
-                  </div>
+              
+              {isUserTurn && !isRolling && !currentUserStone && (
+                <div className="mt-4 text-center">
+                  <Button onClick={startRolling}>
+                    Roll Your Stone
+                  </Button>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  {player.rolledNumber !== null ? (
-                    <Badge variant={hasWinner && player.isWinner ? "default" : "outline"}>
-                      {player.rolledNumber}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-slate-400">
-                      Not Rolled
-                    </Badge>
+              )}
+            </div>
+          )}
+          
+          {/* Board positions grid */}
+          <div className="mt-6">
+            <h3 className="text-sm font-medium mb-3">Board Positions</h3>
+            <div className="grid grid-cols-5 gap-2">
+              {ALL_STONE_POSITIONS.map(position => (
+                <div key={position} className="flex justify-center">
+                  <GameStone 
+                    number={position}
+                    isWinner={hasWinner && position === winningStone}
+                    size="sm"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Players section */}
+          <div className="mt-6">
+            <h3 className="text-sm font-medium mb-3">Players</h3>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {players.map(player => (
+                <div 
+                  key={player.userId} 
+                  className={cn(
+                    "flex items-center justify-between p-2 rounded-md",
+                    player.userId === currentUserId ? "bg-blue-50" : "bg-slate-50",
+                    hasWinner && player.isWinner ? "border border-amber-500" : "border border-transparent"
                   )}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "h-8 w-8 rounded-full flex items-center justify-center font-medium text-sm",
+                      player.userId === currentUserId ? "bg-blue-100" : "bg-slate-200"
+                    )}>
+                      {player.user.avatarInitials || player.user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">
+                        {player.user.username}
+                        {player.userId === currentUserId && " (You)"}
+                      </p>
+                    </div>
+                  </div>
                   
-                  {hasWinner && player.isWinner && (
-                    <Trophy className="h-4 w-4 text-amber-500" />
-                  )}
+                  <div className="flex items-center gap-2">
+                    {player.rolledNumber !== null ? (
+                      <Badge variant={hasWinner && player.isWinner ? "default" : "outline"}>
+                        {player.rolledNumber}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-slate-400">
+                        Not Rolled
+                      </Badge>
+                    )}
+                    
+                    {hasWinner && player.isWinner && (
+                      <Trophy className="h-4 w-4 text-amber-500" />
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-    
-    {/* Game Result Modal */}
-    {gameWinners.length > 0 && (
-      <GameResultModal
-        open={isResultModalOpen}
-        onClose={() => setIsResultModalOpen(false)}
-        onPlayAgain={() => {
-          setIsResultModalOpen(false);
-          // Any play again logic would go here
-        }}
-        winAmount={potAmount * (1 - game.commissionPercentage)} // Total pot minus commission
-        winningNumber={game.winningNumber || 0}
-        winners={gameWinners}
-        standings={players}
-        currentUserId={currentUserId}
-      />
-    )}
+        </CardContent>
+      </Card>
+      
+      {/* Game Result Modal */}
+      {gameWinners.length > 0 && (
+        <GameResultModal
+          open={isResultModalOpen}
+          onClose={() => setIsResultModalOpen(false)}
+          onPlayAgain={() => {
+            setIsResultModalOpen(false);
+            // Any play again logic would go here
+          }}
+          winAmount={potAmount * (1 - game.commissionPercentage)} // Total pot minus commission
+          winningNumber={game.winningNumber || 0}
+          winners={gameWinners}
+          standings={players.map(player => ({
+            ...player,
+            user: {
+              id: player.userId,
+              username: player.user.username,
+              password: "",
+              email: "",
+              walletBalance: 0,
+              avatarInitials: player.user.avatarInitials || player.user.username.charAt(0).toUpperCase(),
+              isAdmin: false,
+              isActive: true,
+              createdAt: null,
+              emailVerified: null,
+              verificationToken: null,
+              verificationTokenExpires: null,
+              resetPasswordToken: null,
+              resetPasswordTokenExpires: null,
+              emailNotifications: null,
+              countryCode: null,
+              preferredCurrency: null,
+              language: null,
+              timeZone: null,
+              bankDetails: null,
+              isVerified: false,
+              verificationLevel: 0,
+              stripeCustomerId: null,
+              stripeSubscriptionId: null
+            }
+          }))}
+          currentUserId={currentUserId}
+        />
+      )}
+    </>
   );
 }
