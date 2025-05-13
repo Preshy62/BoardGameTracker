@@ -61,6 +61,8 @@ const SettingsPage = () => {
     queryKey: ['/api/user'],
     queryFn: getQueryFn({ on401: "returnNull" })
   });
+  
+  console.log('SettingsPage: User data:', user);
 
   if (isLoading) {
     return (

@@ -61,13 +61,17 @@ const CurrencyConverter = () => {
     queryKey: ['/api/currencies'],
     queryFn: async () => {
       try {
+        console.log('CurrencyConverter: Fetching currencies...');
         const response = await fetch('/api/currencies');
         if (!response.ok) {
+          console.error(`CurrencyConverter: Failed to fetch currencies: ${response.status} ${response.statusText}`);
           throw new Error(`Failed to fetch currencies: ${response.status} ${response.statusText}`);
         }
-        return response.json();
+        const data = await response.json();
+        console.log('CurrencyConverter: Currencies data received:', data);
+        return data;
       } catch (error) {
-        console.error('Error fetching currencies:', error);
+        console.error('CurrencyConverter: Error fetching currencies:', error);
         throw new Error('Failed to fetch currencies. Please try again later.');
       }
     }
