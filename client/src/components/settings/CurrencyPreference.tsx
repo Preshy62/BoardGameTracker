@@ -13,13 +13,16 @@ import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Globe } from 'lucide-react';
+import { Loader2, Globe, Home, Star } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { groupCurrencies } from '@/lib/countryData';
 
 // Currency details type from server
 interface CurrencyDetails {
@@ -175,11 +178,56 @@ const CurrencyPreference = ({ user }: { user: User }) => {
                     No currencies available
                   </div>
                 ) : (
-                  currencyData.currencies.map((currency: CurrencyDetails) => (
-                    <SelectItem key={currency.code} value={currency.code}>
-                      {currency.symbol} {currency.name}
-                    </SelectItem>
-                  ))
+                  <>
+                    {/* Group currencies by relevance to user's country */}
+                    {(() => {
+                      // Transform API data to format needed by groupCurrencies
+                      const formattedCurrencies = currencyData.currencies.map((c: CurrencyDetails) => ({
+                        code: c.code,
+                        name: c.name,
+                        symbol: c.symbol
+                      }));
+                      
+                      // Group currencies based on user's country
+                      const { recommended, others } = groupCurrencies(
+                        formattedCurrencies, 
+                        user?.countryCode
+                      );
+                      
+                      return (
+                        <>
+                          {/* Recommended currencies group */}
+                          <SelectGroup>
+                            <SelectLabel className="flex items-center gap-1">
+                              <Star className="h-3 w-3 text-yellow-500" />
+                              Recommended
+                            </SelectLabel>
+                            {recommended.map(currency => (
+                              <SelectItem key={currency.code} value={currency.code} className="pl-6">
+                                {/* Show home icon for user's local currency */}
+                                {user?.countryCode && currency.code === recommended[0].code && (
+                                  <Home className="h-3 w-3 mr-1 inline-block text-blue-500" />
+                                )}
+                                {currency.symbol} {currency.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                          
+                          {/* Other currencies group - only show if there are others */}
+                          {others.length > 0 && (
+                            <SelectGroup>
+                              <SelectLabel>Other Currencies</SelectLabel>
+                              {others.map(currency => (
+                                <SelectItem key={currency.code} value={currency.code}>
+                                  {currency.symbol} {currency.name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </>
                 )}
               </SelectContent>
             </Select>
