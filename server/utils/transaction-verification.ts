@@ -255,7 +255,7 @@ export async function trackTransaction(
       // For winnings, immediately add to user balance and mark as completed
       const user = await storage.getUser(userId);
       if (user) {
-        const newBalance = (user.balance || 0) + amount;
+        const newBalance = (user.walletBalance || 0) + amount;
         await storage.updateUserBalance(userId, newBalance);
         
         log(`Winnings: Added ${amount} to user ${user.username}`, 'transaction');

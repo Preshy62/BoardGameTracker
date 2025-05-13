@@ -11,7 +11,7 @@ router.get('/users/:userId/transactions/summary', async (req, res) => {
   try {
     // Check if user is authorized to access this data
     const userId = parseInt(req.params.userId);
-    if (req.session.userId !== userId && !req.user?.isAdmin) {
+    if ((req.session as any).userId !== userId && !req.isAuthenticated?.()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this user\'s transactions'
@@ -35,7 +35,7 @@ router.get('/users/:userId/transactions', async (req, res) => {
   try {
     // Check if user is authorized to access this data
     const userId = parseInt(req.params.userId);
-    if (req.session.userId !== userId && !req.user?.isAdmin) {
+    if ((req.session as any).userId !== userId && !req.isAuthenticated?.()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this user\'s transactions'
@@ -69,7 +69,7 @@ router.post('/transactions/:transactionId/verify', async (req, res) => {
     }
     
     // Check if user is authorized to verify this transaction
-    if (req.session.userId !== transaction.userId && !req.user?.isAdmin) {
+    if ((req.session as any).userId !== transaction.userId && !req.isAuthenticated?.()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to verify this transaction'
@@ -187,9 +187,20 @@ router.post('/paystack/webhook', async (req, res) => {
       const data = event.data;
       const reference = data.reference;
       
-      // Find transaction with this reference
-      const transactions = await storage.getAllTransactions();
-      const transaction = transactions.find(t => t.reference === reference);
+      // Since we don't have a direct method to find by reference, we'll check
+      // if we can find the transaction manually through user transactions
+      const users = await storage.getAllUsers();
+      let transaction = null;
+      
+      // Search through all users' transactions for the reference
+      for (const user of users) {
+        const userTransactions = await storage.getUserTransactions(user.id);
+        const found = userTransactions.find(t => t.reference === reference);
+        if (found) {
+          transaction = found;
+          break;
+        }
+      }
       
       if (transaction) {
         // Verify the transaction
