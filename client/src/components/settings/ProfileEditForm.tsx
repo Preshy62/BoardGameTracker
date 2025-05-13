@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -15,8 +15,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { countries, getPrimaryCurrencyForCountry } from '@/lib/countryData';
 
 // User type definition that matches our components
 interface User {
@@ -43,6 +52,7 @@ const profileFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   avatarInitials: z.string().max(2, { message: "Avatar initials must be max 2 characters" }).optional(),
   emailNotifications: z.boolean().optional(),
+  countryCode: z.string().min(2, { message: "Please select a country" }),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -55,6 +65,7 @@ interface ProfileEditFormProps {
 
 const ProfileEditForm = ({ user, onCancel, onSuccess }: ProfileEditFormProps) => {
   const { toast } = useToast();
+  const [showCurrencyUpdatePrompt, setShowCurrencyUpdatePrompt] = useState(false);
   
   // Initialize form with user data
   const form = useForm<ProfileFormValues>({
@@ -64,14 +75,43 @@ const ProfileEditForm = ({ user, onCancel, onSuccess }: ProfileEditFormProps) =>
       email: user.email,
       avatarInitials: user.avatarInitials || user.username.substring(0, 2).toUpperCase(),
       emailNotifications: user.emailNotifications || false,
+      countryCode: user.countryCode || 'NG', // Default to Nigeria if not set
     },
   });
 
+  // Watch country changes to handle currency updates
+  const countryCode = form.watch('countryCode');
+  
+  useEffect(() => {
+    const previousCountry = user.countryCode;
+    // If country changed and user had the local currency as preferred
+    if (previousCountry && countryCode !== previousCountry) {
+      const previousCurrency = getPrimaryCurrencyForCountry(previousCountry);
+      const newCurrency = getPrimaryCurrencyForCountry(countryCode);
+      
+      // If their preferred currency was their local one, offer to update it
+      if (user.preferredCurrency === previousCurrency) {
+        setShowCurrencyUpdatePrompt(true);
+      }
+    }
+  }, [countryCode, user.countryCode, user.preferredCurrency]);
+
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: async (values: ProfileFormValues) => {
+    mutationFn: async (values: ProfileFormValues & { updateCurrency?: boolean }) => {
       try {
-        const response = await apiRequest('PATCH', '/api/user/profile', values);
+        // If updating currency preference as well
+        const dataToSend = { ...values };
+        
+        // If the currency update was approved, update it
+        if (values.updateCurrency) {
+          dataToSend.preferredCurrency = getPrimaryCurrencyForCountry(values.countryCode);
+        }
+        
+        // Remove the temporary updateCurrency field
+        delete dataToSend.updateCurrency;
+        
+        const response = await apiRequest('PATCH', '/api/user/profile', dataToSend);
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -113,7 +153,25 @@ const ProfileEditForm = ({ user, onCancel, onSuccess }: ProfileEditFormProps) =>
 
   // Form submission handler
   const onSubmit = (values: ProfileFormValues) => {
-    updateProfileMutation.mutate(values);
+    // If currency update prompt is shown and country changed
+    if (showCurrencyUpdatePrompt) {
+      const confirmed = window.confirm(
+        `Would you like to update your preferred currency to match your new country (${
+          countries.find(c => c.code === values.countryCode)?.name
+        })?`
+      );
+      
+      // Submit with the updateCurrency flag
+      updateProfileMutation.mutate({
+        ...values,
+        updateCurrency: confirmed
+      });
+      
+      // Reset the prompt
+      setShowCurrencyUpdatePrompt(false);
+    } else {
+      updateProfileMutation.mutate(values);
+    }
   };
 
   return (
@@ -161,6 +219,37 @@ const ProfileEditForm = ({ user, onCancel, onSuccess }: ProfileEditFormProps) =>
                   value={field.value || ''}
                 />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="countryCode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Country</FormLabel>
+              <Select 
+                value={field.value} 
+                onValueChange={field.onChange}
+              >
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select your country" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {countries.map((country) => (
+                    <SelectItem key={country.code} value={country.code}>
+                      {country.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Your country helps us personalize currency options
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
