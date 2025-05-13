@@ -101,16 +101,19 @@ const ProfileEditForm = ({ user, onCancel, onSuccess }: ProfileEditFormProps) =>
   const updateProfileMutation = useMutation({
     mutationFn: async (values: ProfileFormValues & { updateCurrency?: boolean }) => {
       try {
-        // If updating currency preference as well
-        const dataToSend = { ...values };
+        // Create a new object with all the values
+        const dataToSend: Record<string, any> = { ...values };
         
-        // If the currency update was approved, update it
+        // If the currency update was approved or the country changed, update the currency
         if (values.updateCurrency) {
           dataToSend.preferredCurrency = getPrimaryCurrencyForCountry(values.countryCode);
+          console.log('Updating currency to match country:', dataToSend.preferredCurrency);
         }
         
-        // Remove the temporary updateCurrency field
+        // Remove the temporary updateCurrency field as it's not part of the API
         delete dataToSend.updateCurrency;
+        
+        console.log('Sending profile update:', dataToSend);
         
         const response = await apiRequest('PATCH', '/api/user/profile', dataToSend);
         
@@ -156,10 +159,12 @@ const ProfileEditForm = ({ user, onCancel, onSuccess }: ProfileEditFormProps) =>
   const onSubmit = (values: ProfileFormValues) => {
     // If currency update prompt is shown and country changed
     if (showCurrencyUpdatePrompt) {
+      const countryName = countries.find(c => c.code === values.countryCode)?.name || values.countryCode;
+      const currencyCode = getPrimaryCurrencyForCountry(values.countryCode);
+      const currencyName = currencies.find(c => c.code === currencyCode)?.name || currencyCode;
+      
       const confirmed = window.confirm(
-        `Would you like to update your preferred currency to match your new country (${
-          countries.find(c => c.code === values.countryCode)?.name
-        })?`
+        `Would you like to update your preferred currency to ${currencyName} (${currencyCode}) to match your new country (${countryName})?`
       );
       
       // Submit with the updateCurrency flag

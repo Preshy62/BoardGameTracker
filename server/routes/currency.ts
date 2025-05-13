@@ -47,6 +47,66 @@ export const AVAILABLE_CURRENCIES: Record<string, CurrencyDetails> = {
     name: 'Euro',
     decimalPlaces: 2,
     isoCode: 'EUR'
+  },
+  'ZAR': {
+    symbol: 'R',
+    name: 'South African Rand',
+    decimalPlaces: 2,
+    isoCode: 'ZAR'
+  },
+  'GHS': {
+    symbol: 'GH₵',
+    name: 'Ghanaian Cedi',
+    decimalPlaces: 2,
+    isoCode: 'GHS'
+  },
+  'KES': {
+    symbol: 'KSh',
+    name: 'Kenyan Shilling',
+    decimalPlaces: 2,
+    isoCode: 'KES'
+  },
+  'SLL': {
+    symbol: 'Le',
+    name: 'Sierra Leonean Leone',
+    decimalPlaces: 2,
+    isoCode: 'SLL'
+  },
+  'CAD': {
+    symbol: 'C$',
+    name: 'Canadian Dollar',
+    decimalPlaces: 2,
+    isoCode: 'CAD'
+  },
+  'AUD': {
+    symbol: 'A$',
+    name: 'Australian Dollar',
+    decimalPlaces: 2,
+    isoCode: 'AUD'
+  },
+  'JPY': {
+    symbol: '¥',
+    name: 'Japanese Yen',
+    decimalPlaces: 0,
+    isoCode: 'JPY'
+  },
+  'INR': {
+    symbol: '₹',
+    name: 'Indian Rupee',
+    decimalPlaces: 2,
+    isoCode: 'INR'
+  },
+  'BRL': {
+    symbol: 'R$',
+    name: 'Brazilian Real',
+    decimalPlaces: 2,
+    isoCode: 'BRL'
+  },
+  'RUB': {
+    symbol: '₽',
+    name: 'Russian Ruble',
+    decimalPlaces: 2,
+    isoCode: 'RUB'
   }
 };
 

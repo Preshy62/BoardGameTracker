@@ -9,9 +9,14 @@ export const countries = [
   { code: "ZA", name: "South Africa" },
   { code: "GH", name: "Ghana" },
   { code: "KE", name: "Kenya" },
+  { code: "SL", name: "Sierra Leone" },
   { code: "DE", name: "Germany" },
   { code: "FR", name: "France" },
   { code: "JP", name: "Japan" },
+  { code: "AU", name: "Australia" },
+  { code: "IN", name: "India" },
+  { code: "BR", name: "Brazil" },
+  { code: "RU", name: "Russia" },
 ];
 
 // Available currencies
@@ -23,6 +28,13 @@ export const currencies = [
   { code: "ZAR", name: "South African Rand", symbol: "R" },
   { code: "GHS", name: "Ghanaian Cedi", symbol: "GH₵" },
   { code: "KES", name: "Kenyan Shilling", symbol: "KSh" },
+  { code: "SLL", name: "Sierra Leonean Leone", symbol: "Le" },
+  { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
+  { code: "AUD", name: "Australian Dollar", symbol: "A$" },
+  { code: "JPY", name: "Japanese Yen", symbol: "¥" },
+  { code: "INR", name: "Indian Rupee", symbol: "₹" },
+  { code: "BRL", name: "Brazilian Real", symbol: "R$" },
+  { code: "RUB", name: "Russian Ruble", symbol: "₽" },
 ];
 
 // Map of country codes to their default currencies
@@ -34,9 +46,14 @@ export const countryToCurrency: Record<string, string> = {
   "ZA": "ZAR", // South Africa -> South African Rand
   "GH": "GHS", // Ghana -> Ghanaian Cedi
   "KE": "KES", // Kenya -> Kenyan Shilling
+  "SL": "SLL", // Sierra Leone -> Sierra Leonean Leone
   "DE": "EUR", // Germany -> Euro
   "FR": "EUR", // France -> Euro
   "JP": "JPY", // Japan -> Japanese Yen
+  "AU": "AUD", // Australia -> Australian Dollar
+  "IN": "INR", // India -> Indian Rupee
+  "BR": "BRL", // Brazil -> Brazilian Real
+  "RU": "RUB", // Russia -> Russian Ruble
 };
 
 // Get a user's recommended currencies based on their country
