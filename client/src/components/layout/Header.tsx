@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import WalletButton from "../WalletButton";
 import ProfileButton from "../ProfileButton";
 import { User } from "@shared/schema";
-import { Home, LayoutDashboard, LogOut, Wallet, User as UserIcon, Shield } from "lucide-react";
+import { Home, LayoutDashboard, LogOut, Wallet, User as UserIcon, Shield, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
 
@@ -43,6 +43,10 @@ const Header = ({ user }: HeaderProps) => {
               <Wallet className="h-4 w-4 mr-1" />
               Wallet
             </Link>
+            <Link href="/settings" className="flex items-center text-white hover:text-secondary transition-colors">
+              <Settings className="h-4 w-4 mr-1" />
+              Settings
+            </Link>
             {isAdmin && (
               <Link href="/admin" className="flex items-center text-white hover:text-secondary transition-colors">
                 <Shield className="h-4 w-4 mr-1" />
@@ -76,6 +80,11 @@ const Header = ({ user }: HeaderProps) => {
                 <Link href="/wallet" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   <Wallet className="h-4 w-4 mr-2" />
                   Wallet
+                </Link>
+                
+                <Link href="/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
                 </Link>
                 
                 {isAdmin && (
