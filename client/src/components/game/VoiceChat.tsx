@@ -358,12 +358,18 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                         isPremiumUI 
                           ? 'bg-amber-500 hover:bg-amber-600 text-white' 
                           : 'hover:bg-green-50 border-green-300 text-green-600'
-                      }`}
+                      } relative`}
                       onClick={joinChannel}
                       disabled={!isClientReady}
                     >
                       <Phone className="h-3.5 w-3.5 mr-1" />
                       <span className="text-xs font-medium">Join</span>
+                      {!isClientReady && (
+                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-300"></span>
+                        </span>
+                      )}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -530,11 +536,21 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                     </div>
                   </div>
                   
-                  {/* Status indicator */}
+                  {/* Enhanced status indicator */}
                   {isMuted ? (
-                    <MicOff className="h-3.5 w-3.5 text-red-500" />
+                    <div className="relative">
+                      <MicOff className="h-3.5 w-3.5 text-red-500" />
+                      <div className="absolute -right-1.5 -top-1.5 bg-red-100 text-red-600 text-[8px] px-1 rounded-full border border-red-200">
+                        muted
+                      </div>
+                    </div>
                   ) : (
-                    <Mic className="h-3.5 w-3.5 text-green-500" />
+                    <div className="relative">
+                      <Mic className="h-3.5 w-3.5 text-green-500" />
+                      {speakingUsers['local'] > 50 && (
+                        <div className="absolute -top-1 -right-1 h-1.5 w-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
