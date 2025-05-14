@@ -308,17 +308,33 @@ export default function TransactionHistory({
     }
   };
   
+  // Add custom styling based on transaction status
+  const getStatusStyle = (status: string): string => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'failed':
+        return 'bg-red-100 text-red-800 border-red-300';
+      case 'disputed':
+        return 'bg-orange-100 text-orange-800 border-orange-300';
+      default:
+        return '';
+    }
+  };
+  
   // Get badge variant based on transaction status
   const getStatusBadgeVariant = (status: string): "default" | "destructive" | "outline" | "secondary" => {
     switch (status) {
       case 'completed':
-        return 'secondary'; // Using secondary instead of success
+        return 'default';
       case 'pending':
         return 'outline';
       case 'failed':
         return 'destructive';
       case 'disputed':
-        return 'outline'; // Using outline instead of warning
+        return 'outline';
       default:
         return 'secondary';
     }
@@ -858,7 +874,7 @@ export default function TransactionHistory({
                       <TableCell>
                         <Badge 
                           variant={getStatusBadgeVariant(transaction.status)}
-                          className="inline-flex items-center gap-1"
+                          className={cn("inline-flex items-center gap-1", getStatusStyle(transaction.status))}
                         >
                           {getStatusIcon(transaction.status)}
                           <span className="capitalize">{transaction.status}</span>
@@ -983,7 +999,7 @@ export default function TransactionHistory({
                             {transaction.type === 'withdrawal' || transaction.type === 'stake' ? '-' : ''}
                             {formatCurrency(transaction.amount, transaction.currency)}
                           </div>
-                          <Badge variant={getStatusBadgeVariant(transaction.status)} className="text-xs">
+                          <Badge variant={getStatusBadgeVariant(transaction.status)} className={cn("text-xs", getStatusStyle(transaction.status))}>
                             {transaction.status}
                           </Badge>
                         </div>
