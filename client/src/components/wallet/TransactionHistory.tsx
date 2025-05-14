@@ -40,6 +40,7 @@ import {
   Filter,
   Search,
   Trophy,
+  X,
   XCircle
 } from 'lucide-react';
 import {
@@ -51,7 +52,17 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
+import { 
+  format, 
+  formatDistanceToNow, 
+  startOfWeek, 
+  endOfWeek, 
+  startOfMonth, 
+  endOfMonth, 
+  isToday, 
+  isThisWeek, 
+  isThisMonth 
+} from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Popover,
@@ -348,7 +359,6 @@ export default function TransactionHistory({
           </TabsList>
         </div>
         
-        {/* Control panel */}
         {showControls && (
           <div className="px-6 py-4 space-y-4">
             {/* Search and basic filters */}
@@ -527,86 +537,259 @@ export default function TransactionHistory({
               </div>
             </div>
             
-            {/* Date range filters and export button */}
-            <div className="flex flex-col sm:flex-row gap-2 justify-between">
-              <div className="flex flex-wrap gap-2 items-center">
+            {/* Quick date filters and active filters display */}
+            <div className="flex items-center justify-between flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button 
                       variant="outline" 
-                      className="w-[150px] justify-start text-left font-normal"
+                      className={`bg-white ${startDate || endDate ? 'border-blue-200 text-blue-600' : ''}`}
+                      size="sm"
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, 'PP') : 'Start date'}
+                      <Calendar className={`mr-2 h-4 w-4 ${startDate || endDate ? 'text-blue-500' : ''}`} />
+                      <span>Custom Range</span>
+                      {(startDate || endDate) && (
+                        <Badge 
+                          variant="secondary" 
+                          className="ml-2 h-5 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
+                        >
+                          Active
+                        </Badge>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <CalendarComponent
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      initialFocus
-                    />
+                    <div className="p-3">
+                      <h4 className="font-medium mb-2">Select Date Range</h4>
+                      <div className="flex gap-4 flex-col sm:flex-row">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Start Date</p>
+                          <CalendarComponent
+                            mode="single"
+                            selected={startDate}
+                            onSelect={setStartDate}
+                            initialFocus
+                          />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">End Date</p>
+                          <CalendarComponent
+                            mode="single"
+                            selected={endDate}
+                            onSelect={setEndDate}
+                            disabled={(date) => startDate ? date < startDate : false}
+                            initialFocus
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between border-t p-3">
+                      <Button
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setStartDate(undefined);
+                          setEndDate(undefined);
+                        }}
+                      >
+                        Reset
+                      </Button>
+                      <Button
+                        size="sm"
+                      >
+                        Apply
+                      </Button>
+                    </div>
                   </PopoverContent>
                 </Popover>
                 
-                <span className="text-sm text-muted-foreground">to</span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className={`bg-white ${isToday(startDate || new Date()) && !endDate ? 'border-blue-200 text-blue-600' : ''}`}
+                  onClick={() => {
+                    const today = new Date();
+                    setStartDate(today);
+                    setEndDate(undefined);
+                  }}
+                >
+                  Today
+                </Button>
                 
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      className="w-[150px] justify-start text-left font-normal"
-                    >
-                      <Calendar className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, 'PP') : 'End date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <CalendarComponent
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Button 
+                  variant="outline"
+                  size="sm" 
+                  className="bg-white"
+                  onClick={() => {
+                    const today = new Date();
+                    const startOfWeekDate = startOfWeek(today, { weekStartsOn: 1 });
+                    const endOfWeekDate = endOfWeek(today, { weekStartsOn: 1 });
+                    setStartDate(startOfWeekDate);
+                    setEndDate(endOfWeekDate);
+                  }}
+                >
+                  This Week
+                </Button>
                 
-                {(startDate || endDate) && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => {
-                      setStartDate(undefined);
-                      setEndDate(undefined);
-                    }}
-                    className="h-8 px-2"
-                  >
-                    Clear
-                  </Button>
-                )}
+                <Button 
+                  variant="outline"
+                  size="sm" 
+                  className="bg-white"
+                  onClick={() => {
+                    const today = new Date();
+                    const startOfMonthDate = startOfMonth(today);
+                    const endOfMonthDate = endOfMonth(today);
+                    setStartDate(startOfMonthDate);
+                    setEndDate(endOfMonthDate);
+                  }}
+                >
+                  This Month
+                </Button>
               </div>
               
-              <div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="gap-2" 
-                        onClick={exportTransactions}
-                        disabled={isExporting || !getFilteredTransactions().length}
-                      >
-                        <Download className="h-4 w-4" />
-                        {isExporting ? 'Exporting...' : 'Export CSV'}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Export filtered transactions to CSV</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              {/* Clear date filters button */}
+              {(startDate || endDate) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => {
+                    setStartDate(undefined);
+                    setEndDate(undefined);
+                  }}
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Clear Dates
+                </Button>
+              )}
+            </div>
+            
+            {/* Active filters display */}
+            {(typeFilter !== 'all' || statusFilter !== 'all' || currencyFilter !== 'all' || startDate || endDate || searchQuery) && (
+              <div className="w-full bg-slate-50 p-2 mt-3 mb-2 rounded-md flex flex-wrap gap-2 items-center border border-slate-100">
+                <span className="text-xs text-slate-500 mr-1">Active filters:</span>
+                
+                {typeFilter !== 'all' && (
+                  <Badge variant="outline" className="flex items-center gap-1 bg-white">
+                    <span className="font-normal">Type:</span> {typeFilter}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-4 w-4 ml-1 hover:bg-slate-100" 
+                      onClick={() => setTypeFilter('all')}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                
+                {statusFilter !== 'all' && (
+                  <Badge variant="outline" className="flex items-center gap-1 bg-white">
+                    <span className="font-normal">Status:</span> {statusFilter}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-4 w-4 ml-1 hover:bg-slate-100" 
+                      onClick={() => setStatusFilter('all')}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                
+                {currencyFilter !== 'all' && (
+                  <Badge variant="outline" className="flex items-center gap-1 bg-white">
+                    <span className="font-normal">Currency:</span> {currencyFilter}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-4 w-4 ml-1 hover:bg-slate-100" 
+                      onClick={() => setCurrencyFilter('all')}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                
+                {(startDate || endDate) && (
+                  <Badge variant="outline" className="flex items-center gap-1 bg-white">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    <span className="font-normal">Date:</span>
+                    {startDate && endDate 
+                      ? `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`
+                      : startDate 
+                        ? `From ${format(startDate, 'MMM d')}`
+                        : `Until ${format(endDate!, 'MMM d')}`
+                    }
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-4 w-4 ml-1 hover:bg-slate-100" 
+                      onClick={() => {
+                        setStartDate(undefined);
+                        setEndDate(undefined);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                
+                {searchQuery && (
+                  <Badge variant="outline" className="flex items-center gap-1 bg-white">
+                    <Search className="h-3 w-3 mr-1" />
+                    <span className="font-normal">Search:</span> 
+                    <span className="max-w-[100px] truncate">{searchQuery}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-4 w-4 ml-1 hover:bg-slate-100" 
+                      onClick={() => setSearchQuery('')}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="ml-auto text-xs h-7 hover:bg-slate-200"
+                  onClick={() => {
+                    setTypeFilter('all');
+                    setStatusFilter('all');
+                    setCurrencyFilter('all');
+                    setStartDate(undefined);
+                    setEndDate(undefined);
+                    setSearchQuery('');
+                  }}
+                >
+                  Clear all filters
+                </Button>
               </div>
+            )}
+            
+            <div className="flex justify-end">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="gap-2" 
+                      onClick={exportTransactions}
+                      disabled={isExporting || !getFilteredTransactions().length}
+                    >
+                      <Download className="h-4 w-4" />
+                      {isExporting ? 'Exporting...' : 'Export CSV'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Export filtered transactions to CSV</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         )}
@@ -649,49 +832,58 @@ export default function TransactionHistory({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  getFilteredTransactions().map(transaction => (
+                  getFilteredTransactions().map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-2">
                           {getTransactionIcon(transaction.type)}
                           <span className="capitalize">{transaction.type}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell>
                         {transaction.description || `${transaction.type} transaction`}
                       </TableCell>
-                      <TableCell className={cn(
-                        transaction.type === 'deposit' || transaction.type === 'winnings' 
+                      <TableCell>
+                        <span className={transaction.type === 'deposit' || transaction.type === 'winnings' || transaction.type === 'refund' 
                           ? 'text-green-600' 
-                          : 'text-red-600'
-                      )}>
-                        {transaction.type === 'deposit' || transaction.type === 'winnings' ? '+' : '-'}
-                        {formatCurrency(transaction.amount, transaction.currency)}
+                          : transaction.type === 'withdrawal' || transaction.type === 'stake'
+                          ? 'text-red-600' 
+                          : ''
+                        }>
+                          {transaction.type === 'deposit' || transaction.type === 'winnings' || transaction.type === 'refund' ? '+' : ''}
+                          {transaction.type === 'withdrawal' || transaction.type === 'stake' ? '-' : ''}
+                          {formatCurrency(transaction.amount, transaction.currency)}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <Badge 
-                          variant={getStatusBadgeVariant(transaction.status) as any} 
-                          className="capitalize flex gap-1 items-center w-fit"
+                          variant={getStatusBadgeVariant(transaction.status)}
+                          className="inline-flex items-center gap-1"
                         >
                           {getStatusIcon(transaction.status)}
-                          <span>{transaction.status}</span>
+                          <span className="capitalize">{transaction.status}</span>
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {transaction.createdAt ? (
-                          <span title={new Date(transaction.createdAt).toLocaleString()}>
-                            {formatDistanceToNow(new Date(transaction.createdAt), { addSuffix: true })}
-                          </span>
-                        ) : (
-                          'Unknown'
-                        )}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-default">
+                                {transaction.createdAt ? formatDistanceToNow(new Date(transaction.createdAt.toString()), { addSuffix: true }) : 'Unknown'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {transaction.createdAt ? format(new Date(transaction.createdAt.toString()), 'PPpp') : 'Unknown date'}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-right">
-                        {transaction.status === 'pending' && transaction.type === 'deposit' && (
+                        {transaction.type === 'deposit' && transaction.status === 'pending' && (
                           <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => verifyTransaction(transaction.id)}
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => verifyTransaction(transaction.id!)}
                           >
                             Verify
                           </Button>
@@ -705,8 +897,8 @@ export default function TransactionHistory({
           </div>
         </TabsContent>
         
-        <TabsContent value="summary">
-          <CardContent className="space-y-4">
+        <TabsContent value="summary" className="p-6">
+          <CardContent className="space-y-6 p-0">
             {isLoading ? (
               <div className="text-center py-4">Loading summary...</div>
             ) : isError ? (
@@ -714,30 +906,27 @@ export default function TransactionHistory({
                 Error loading transaction summary
               </div>
             ) : (
-              <>
+              <div className="space-y-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-slate-50 p-3 rounded-lg">
+                  <div className="bg-green-50 p-3 rounded-lg">
                     <div className="text-sm text-muted-foreground">Total Deposits</div>
                     <div className="text-2xl font-bold text-green-600">
                       ₦{transactionData?.totalDeposits.toLocaleString() || '0'}
                     </div>
                   </div>
-                  
-                  <div className="bg-slate-50 p-3 rounded-lg">
+                  <div className="bg-red-50 p-3 rounded-lg">
                     <div className="text-sm text-muted-foreground">Total Withdrawals</div>
                     <div className="text-2xl font-bold text-red-600">
                       ₦{transactionData?.totalWithdrawals.toLocaleString() || '0'}
                     </div>
                   </div>
-                  
-                  <div className="bg-slate-50 p-3 rounded-lg">
+                  <div className="bg-amber-50 p-3 rounded-lg">
                     <div className="text-sm text-muted-foreground">Total Winnings</div>
                     <div className="text-2xl font-bold text-amber-600">
                       ₦{transactionData?.totalWinnings.toLocaleString() || '0'}
                     </div>
                   </div>
-                  
-                  <div className="bg-slate-50 p-3 rounded-lg">
+                  <div className="bg-blue-50 p-3 rounded-lg">
                     <div className="text-sm text-muted-foreground">Total Stakes</div>
                     <div className="text-2xl font-bold text-blue-600">
                       ₦{transactionData?.totalStakes.toLocaleString() || '0'}
@@ -745,77 +934,64 @@ export default function TransactionHistory({
                   </div>
                 </div>
                 
-                <Separator />
-                
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="bg-orange-50 p-3 rounded-lg">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-amber-50 p-3 rounded-lg">
                     <div className="text-sm text-muted-foreground">Pending Deposits</div>
-                    <div className="text-xl font-bold text-orange-600">
+                    <div className="text-2xl font-bold text-amber-600">
                       ₦{transactionData?.pendingDeposits.toLocaleString() || '0'}
                     </div>
                   </div>
-                  
-                  <div className="bg-orange-50 p-3 rounded-lg">
+                  <div className="bg-amber-50 p-3 rounded-lg">
                     <div className="text-sm text-muted-foreground">Pending Withdrawals</div>
-                    <div className="text-xl font-bold text-orange-600">
+                    <div className="text-2xl font-bold text-amber-600">
                       ₦{transactionData?.pendingWithdrawals.toLocaleString() || '0'}
                     </div>
                   </div>
-                  
                   <div className="bg-red-50 p-3 rounded-lg">
                     <div className="text-sm text-muted-foreground">Failed Transactions</div>
-                    <div className="text-xl font-bold text-red-600">
-                      {transactionData?.failedTransactions || '0'}
+                    <div className="text-2xl font-bold text-red-600">
+                      ₦{transactionData?.failedTransactions.toLocaleString() || '0'}
                     </div>
                   </div>
                 </div>
                 
-                <div className="mt-4">
-                  <h3 className="text-sm font-medium mb-2">Recent Transactions</h3>
-                  {transactionData?.recentTransactions.length === 0 ? (
-                    <div className="text-center py-2 text-muted-foreground">
-                      No recent transactions
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {transactionData?.recentTransactions.slice(0, 5).map(transaction => (
-                        <div key={transaction.id} className="flex justify-between items-center p-2 bg-slate-50 rounded-md">
-                          <div className="flex items-center gap-2">
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Recent Transactions</h3>
+                  <div className="space-y-2">
+                    {transactionData?.recentTransactions.map((transaction) => (
+                      <div key={transaction.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-md">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-full bg-white p-2">
                             {getTransactionIcon(transaction.type)}
-                            <div>
-                              <div className="text-sm font-medium capitalize">{transaction.type}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {transaction.createdAt ? (
-                                  formatDistanceToNow(new Date(transaction.createdAt), { addSuffix: true })
-                                ) : 'Unknown date'}
-                              </div>
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium capitalize">{transaction.type}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {transaction.createdAt ? format(new Date(transaction.createdAt.toString()), 'PPp') : 'Unknown date'}
                             </div>
                           </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              "text-sm font-medium",
-                              transaction.type === 'deposit' || transaction.type === 'winnings' 
-                                ? 'text-green-600' 
-                                : 'text-red-600'
-                            )}>
-                              {transaction.type === 'deposit' || transaction.type === 'winnings' ? '+' : '-'}
-                              {formatCurrency(transaction.amount, transaction.currency)}
-                            </span>
-                            
-                            <Badge 
-                              variant={getStatusBadgeVariant(transaction.status) as any}
-                              className="capitalize"
-                            >
-                              {transaction.status}
-                            </Badge>
-                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <div className="text-right">
+                          <div className={`text-sm font-semibold ${
+                            transaction.type === 'deposit' || transaction.type === 'winnings' || transaction.type === 'refund' 
+                              ? 'text-green-600' 
+                              : transaction.type === 'withdrawal' || transaction.type === 'stake'
+                              ? 'text-red-600' 
+                              : ''
+                          }`}>
+                            {transaction.type === 'deposit' || transaction.type === 'winnings' || transaction.type === 'refund' ? '+' : ''}
+                            {transaction.type === 'withdrawal' || transaction.type === 'stake' ? '-' : ''}
+                            {formatCurrency(transaction.amount, transaction.currency)}
+                          </div>
+                          <Badge variant={getStatusBadgeVariant(transaction.status)} className="text-xs">
+                            {transaction.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </>
+              </div>
             )}
           </CardContent>
         </TabsContent>
@@ -837,10 +1013,9 @@ export default function TransactionHistory({
                       ₦{transactionData?.totalDeposits.toLocaleString() || '0'}
                     </div>
                   </div>
-                  
-                  <div className="bg-orange-50 p-3 rounded-lg">
+                  <div className="bg-amber-50 p-3 rounded-lg">
                     <div className="text-sm text-muted-foreground">Pending Deposits</div>
-                    <div className="text-xl font-bold text-orange-600">
+                    <div className="text-2xl font-bold text-amber-600">
                       ₦{transactionData?.pendingDeposits.toLocaleString() || '0'}
                     </div>
                   </div>
@@ -850,48 +1025,32 @@ export default function TransactionHistory({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Description</TableHead>
                         <TableHead>Amount</TableHead>
+                        <TableHead>Date</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Date</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {transactionData?.allTransactions
-                        .filter(t => t.type === 'deposit')
-                        .map(transaction => (
+                      {transactionData?.allTransactions.filter(t => t.type === 'deposit').map(transaction => (
                         <TableRow key={transaction.id}>
                           <TableCell className="font-medium">
-                            {transaction.description || 'Deposit transaction'}
-                          </TableCell>
-                          <TableCell className="text-green-600">
-                            +{formatCurrency(transaction.amount, transaction.currency)}
+                            {formatCurrency(transaction.amount, transaction.currency)}
                           </TableCell>
                           <TableCell>
-                            <Badge 
-                              variant={getStatusBadgeVariant(transaction.status) as any} 
-                              className="capitalize flex gap-1 items-center w-fit"
-                            >
-                              {getStatusIcon(transaction.status)}
-                              <span>{transaction.status}</span>
-                            </Badge>
+                            {transaction.createdAt ? format(new Date(transaction.createdAt.toString()), 'PP') : 'Unknown'}
                           </TableCell>
-                          <TableCell className="text-right">
-                            {transaction.createdAt ? (
-                              <span title={new Date(transaction.createdAt).toLocaleString()}>
-                                {formatDistanceToNow(new Date(transaction.createdAt), { addSuffix: true })}
-                              </span>
-                            ) : (
-                              'Unknown'
-                            )}
+                          <TableCell>
+                            <Badge variant={getStatusBadgeVariant(transaction.status)}>
+                              {transaction.status}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             {transaction.status === 'pending' && (
                               <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => verifyTransaction(transaction.id)}
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => verifyTransaction(transaction.id!)}
                               >
                                 Verify
                               </Button>
@@ -932,10 +1091,9 @@ export default function TransactionHistory({
                       ₦{transactionData?.totalWithdrawals.toLocaleString() || '0'}
                     </div>
                   </div>
-                  
-                  <div className="bg-orange-50 p-3 rounded-lg">
+                  <div className="bg-amber-50 p-3 rounded-lg">
                     <div className="text-sm text-muted-foreground">Pending Withdrawals</div>
-                    <div className="text-xl font-bold text-orange-600">
+                    <div className="text-2xl font-bold text-amber-600">
                       ₦{transactionData?.pendingWithdrawals.toLocaleString() || '0'}
                     </div>
                   </div>
@@ -945,41 +1103,27 @@ export default function TransactionHistory({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Description</TableHead>
                         <TableHead>Amount</TableHead>
+                        <TableHead>Date</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Date</TableHead>
+                        <TableHead>Description</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {transactionData?.allTransactions
-                        .filter(t => t.type === 'withdrawal')
-                        .map(transaction => (
+                      {transactionData?.allTransactions.filter(t => t.type === 'withdrawal').map(transaction => (
                         <TableRow key={transaction.id}>
-                          <TableCell className="font-medium">
-                            {transaction.description || 'Withdrawal transaction'}
-                          </TableCell>
-                          <TableCell className="text-red-600">
+                          <TableCell className="font-medium text-red-600">
                             -{formatCurrency(transaction.amount, transaction.currency)}
                           </TableCell>
                           <TableCell>
-                            <Badge 
-                              variant={getStatusBadgeVariant(transaction.status) as any} 
-                              className="capitalize flex gap-1 items-center w-fit"
-                            >
-                              {getStatusIcon(transaction.status)}
-                              <span>{transaction.status}</span>
+                            {transaction.createdAt ? format(new Date(transaction.createdAt.toString()), 'PP') : 'Unknown'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusBadgeVariant(transaction.status)}>
+                              {transaction.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right">
-                            {transaction.createdAt ? (
-                              <span title={new Date(transaction.createdAt).toLocaleString()}>
-                                {formatDistanceToNow(new Date(transaction.createdAt), { addSuffix: true })}
-                              </span>
-                            ) : (
-                              'Unknown'
-                            )}
-                          </TableCell>
+                          <TableCell>{transaction.description || 'Withdrawal request'}</TableCell>
                         </TableRow>
                       ))}
                       
