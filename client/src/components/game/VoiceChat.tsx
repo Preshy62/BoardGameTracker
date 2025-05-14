@@ -471,11 +471,15 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                       <div className="absolute -bottom-1 -right-1 flex items-center justify-center">
                         <div 
                           className={`h-2 w-2 rounded-full ${
-                            speakingUsers['local'] > 70 ? 'bg-green-500 animate-pulse' : 
+                            speakingUsers['local'] > 70 ? 'bg-green-500 animate-pulse shadow-sm shadow-green-300' : 
                             speakingUsers['local'] > 30 ? 'bg-green-400' : 
                             'bg-green-300'
                           }`}
                         />
+                        {/* Add rings for high volume */}
+                        {speakingUsers['local'] > 50 && (
+                          <div className="absolute inset-0 -m-1 rounded-full border border-green-300 animate-ping opacity-75"></div>
+                        )}
                       </div>
                     )}
                   </Avatar>
