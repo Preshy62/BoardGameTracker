@@ -313,10 +313,13 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
               </span>
             )}
             {isJoined && (
-              <Badge variant="outline" className="ml-1 border-green-200 bg-green-50 text-green-700 text-xs">
+              <Badge variant="outline" className="ml-1 border-green-200 bg-green-50/70 text-green-700 text-xs px-2 shadow-sm backdrop-blur-sm">
                 <span className="flex items-center">
-                  <div className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1 animate-pulse"></div>
-                  Live
+                  <div className="relative h-2 w-2 mr-1.5">
+                    <div className="absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75 animate-ping"></div>
+                    <div className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></div>
+                  </div>
+                  <span className="font-medium">Live</span>
                 </span>
               </Badge>
             )}
@@ -335,11 +338,16 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
           {/* User count indicator when joined */}
           {isJoined && isClientReady && (
             <div className="mb-3 mt-2">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                <Users className="h-3.5 w-3.5 opacity-70" />
-                <span>
+              <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                <div className="relative">
+                  <Users className="h-3.5 w-3.5 text-blue-500" />
+                  <span className="absolute -top-1.5 -right-1.5 h-4 w-4 flex items-center justify-center bg-blue-100 text-[10px] text-blue-700 font-medium rounded-full border border-blue-200">
+                    {Object.keys(activeUsers).length}
+                  </span>
+                </div>
+                <span className="font-medium">
                   {Object.keys(activeUsers).length === 1 
-                    ? "You're the only one connected" 
+                    ? "You're the only one here" 
                     : `${Object.keys(activeUsers).length} players connected`}
                 </span>
               </div>
