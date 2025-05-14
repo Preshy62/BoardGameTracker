@@ -33,7 +33,8 @@ export function SoundSettings() {
     
     // Play a test sound when adjusting volume
     if (!isMuted) {
-      playUISound('click', value[0] * 0.5);
+      // We need to fix this - playUISound doesn't accept volume param
+      playUI('click');
     }
   };
   
@@ -80,7 +81,7 @@ export function SoundSettings() {
               toggleMute();
               if (isMuted) {
                 // Play a test sound when unmuting
-                setTimeout(() => playUISound('success', 0.5), 100);
+                setTimeout(() => playUI('success'), 100);
               }
             }}
           />

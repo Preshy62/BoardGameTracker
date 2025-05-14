@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Users } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Users, Headphones } from 'lucide-react';
 import { Game, GamePlayer } from '@shared/schema';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
 import AgoraRTC, { IAgoraRTCClient, IAgoraRTCRemoteUser, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng';
 import { useToast } from '@/hooks/use-toast';
-import { playSound as playSoundEffect } from '@/lib/sounds';
+import useSoundEffects from '@/hooks/use-sound-effects';
 
 interface VoiceChatProps {
   game: Game;
@@ -16,21 +17,16 @@ interface VoiceChatProps {
   currentUserId: number;
 }
 
-// Sound effects for microphone actions
-const SOUNDS = {
-  connected: '/voice-connected.mp3',
-  mute: '/mute.mp3',
-  unmute: '/unmute.mp3'
-};
-
 export default function VoiceChat({ game, players, currentUserId }: VoiceChatProps) {
   const { toast } = useToast();
+  const { playVoiceChatSound } = useSoundEffects();
   const [isJoined, setIsJoined] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isClientReady, setIsClientReady] = useState(false);
   const [activeUsers, setActiveUsers] = useState<Record<string, boolean>>({});
   const [speakingUsers, setSpeakingUsers] = useState<Record<string, number>>({});
   const [isPremiumUI, setIsPremiumUI] = useState(game.stake >= 50000);
+  const [hasJoinedBefore, setHasJoinedBefore] = useState(false);
   
   // Use refs to maintain references across renders
   const clientRef = useRef<IAgoraRTCClient | null>(null);
@@ -53,15 +49,19 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
     }
   }, [appId]);
 
-  // Play sound effects using our centralized sound system
-  const playSound = (soundName: keyof typeof SOUNDS) => {
-    const soundMap = {
-      'connected': 'VOICE_CONNECTED',
-      'mute': 'VOICE_MUTE',
-      'unmute': 'VOICE_UNMUTE'
-    } as const;
-    
-    playSoundEffect(soundMap[soundName], 0.5);
+  // Map old sound names to new voice chat sound actions
+  const playSound = (soundName: string) => {
+    if (soundName === 'connected') {
+      playVoiceChatSound('connect');
+    } else if (soundName === 'mute') {
+      playVoiceChatSound('mute');
+    } else if (soundName === 'unmute') {
+      playVoiceChatSound('unmute');
+    } else if (soundName === 'join') {
+      playVoiceChatSound('join');
+    } else if (soundName === 'leave') {
+      playVoiceChatSound('leave');
+    }
   };
 
   // Set up Agora client
@@ -413,21 +413,22 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                 </div>
                 
                 <div className="flex items-center">
-                  {/* Voice activity indicator */}
-                  <div className="flex space-x-0.5 mr-2">
-                    {[1, 2, 3, 4, 5].map((level) => (
+                  {/* Enhanced voice activity indicator */}
+                  <div className="flex items-center space-x-1 mr-2">
+                    <div className="w-12 h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div 
-                        key={level}
-                        className={`h-2 w-0.5 rounded-full ${
-                          speakingUsers['local'] > level * 15 
-                            ? 'bg-green-500' 
-                            : 'bg-gray-200'
+                        className={`h-full rounded-full transition-all duration-100 ${
+                          isMuted ? 'bg-red-400' : 
+                          speakingUsers['local'] > 70 ? 'bg-green-500' : 
+                          speakingUsers['local'] > 30 ? 'bg-green-400' : 
+                          speakingUsers['local'] > 10 ? 'bg-green-300' : 
+                          'bg-slate-300'
                         }`}
                         style={{ 
-                          height: `${6 + level * 2}px` 
+                          width: `${isMuted ? 100 : Math.min(Math.max(speakingUsers['local'], 5), 100)}%`,
                         }}
                       />
-                    ))}
+                    </div>
                   </div>
                   
                   {/* Status indicator */}
