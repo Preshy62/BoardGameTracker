@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Users, Headphones } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Users, Headphones, Info } from 'lucide-react';
 import { Game, GamePlayer } from '@shared/schema';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -312,6 +312,14 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                 Premium
               </span>
             )}
+            {isJoined && (
+              <Badge variant="outline" className="ml-1 border-green-200 bg-green-50 text-green-700 text-xs">
+                <span className="flex items-center">
+                  <div className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1 animate-pulse"></div>
+                  Live
+                </span>
+              </Badge>
+            )}
           </div>
           
           <div className="flex space-x-1">
@@ -405,6 +413,20 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
               <p className="flex items-center justify-center">
                 <Info className="h-4 w-4 mr-1.5 opacity-70" />
                 Click <span className="font-medium mx-1">Join</span> to connect to voice chat
+              </p>
+            </div>
+          )}
+          
+          {/* No other users message when connected alone */}
+          {isJoined && Object.keys(activeUsers).length === 1 && (
+            <div className={`text-center py-2 px-2 mb-2 text-sm rounded-md ${
+              isPremiumUI 
+                ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                : 'bg-slate-50 text-slate-500'
+            }`}>
+              <p className="flex items-center justify-center">
+                <Users className="h-4 w-4 mr-1.5 opacity-70" />
+                No other players connected to voice chat yet
               </p>
             </div>
           )}
