@@ -210,23 +210,55 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">{totalUsers}</div>
+                <div className="text-2xl font-bold">
+                  {isUserStatsLoading ? (
+                    <span className="animate-pulse">···</span>
+                  ) : totalUsers}
+                  {!isUserStatsLoading && newUsers > 0 && (
+                    <span className="text-xs ml-2 text-green-600">+{newUsers} new</span>
+                  )}
+                </div>
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <Users className="h-6 w-6 text-primary" />
                 </div>
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                {activeUsers > 0 && 
+                  `${activeUsers} active users (${Math.round((activeUsers / totalUsers) * 100)}%)`
+                }
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Active Games</CardTitle>
+              <CardTitle className="text-sm font-medium">Games</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">{activeGames} <span className="text-sm text-gray-500 font-normal">/ {totalGames}</span></div>
+                <div className="text-2xl font-bold">
+                  {isGameStatsLoading ? (
+                    <span className="animate-pulse">···</span>
+                  ) : (
+                    <>{totalGames}</>
+                  )}
+                </div>
                 <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
                   <Gamepad2 className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 text-xs text-gray-500 mt-2">
+                <div>
+                  <span className="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span> 
+                  {isGameStatsLoading ? '...' : activeGames} active
+                </div>
+                <div>
+                  <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span> 
+                  {isGameStatsLoading ? '...' : waitingGames} waiting
+                </div>
+                <div>
+                  <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span> 
+                  {isGameStatsLoading ? '...' : completedGames} done
                 </div>
               </div>
             </CardContent>
@@ -238,35 +270,321 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">{formatCurrency(platformFees)}</div>
+                <div className="text-2xl font-bold">
+                  {isFinancialStatsLoading ? (
+                    <span className="animate-pulse">···</span>
+                  ) : (
+                    formatCurrency(netRevenue, "NGN")
+                  )}
+                </div>
                 <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
                   <BadgeDollarSign className="h-6 w-6 text-amber-600" />
                 </div>
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                {!isFinancialStatsLoading && (
+                  `${formatCurrency(platformFees, "NGN")} from game fees`
+                )}
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+              <CardTitle className="text-sm font-medium">Transactions</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">{formatCurrency(totalDeposits - totalWithdrawals)}</div>
+                <div className="text-2xl font-bold">
+                  {isFinancialStatsLoading ? (
+                    <span className="animate-pulse">···</span>
+                  ) : (
+                    formatCurrency(totalDeposits, "NGN")
+                  )}
+                </div>
                 <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
                   <BarChart className="h-6 w-6 text-blue-600" />
                 </div>
+              </div>
+              <div className="text-xs text-gray-500 mt-2 flex justify-between">
+                <span>Deposits</span>
+                {!isFinancialStatsLoading && (
+                  <span>Withdrawals: {formatCurrency(totalWithdrawals, "NGN")}</span>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="users" className="w-full">
+        <Tabs defaultValue="dashboard" className="w-full">
           <TabsList className="mb-6">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="games">Games</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
           </TabsList>
+          
+          <div className="mb-6 flex justify-end">
+            <Select
+              value={statsTimePeriod}
+              onValueChange={setStatsTimePeriod}
+            >
+              <SelectTrigger className="w-[180px]">
+                <CalendarDays className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Select time period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">Today</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="year">This Year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <TabsContent value="dashboard" className="space-y-6">
+            {/* Dashboard visualizations */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* Game Activity Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Game Activity</CardTitle>
+                  <CardDescription>Number of games over time</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  {isGameStatsLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                    </div>
+                  ) : gameStats?.chartData?.length ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsAreaChart
+                        data={gameStats.chartData}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="gameColorCount" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <Tooltip />
+                        <Area
+                          type="monotone"
+                          dataKey="count"
+                          stroke="#8884d8"
+                          fillOpacity={1}
+                          fill="url(#gameColorCount)"
+                          name="Games"
+                        />
+                      </RechartsAreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                      No data available for this period
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* Financial Overview Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Financial Overview</CardTitle>
+                  <CardDescription>Deposits, withdrawals, and fees</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  {isFinancialStatsLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                    </div>
+                  ) : financialStats?.chartData?.length ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsBarChart
+                        data={financialStats.chartData}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="deposits" fill="#4CAF50" name="Deposits" />
+                        <Bar dataKey="withdrawals" fill="#F44336" name="Withdrawals" />
+                        <Bar dataKey="fees" fill="#2196F3" name="Fees" />
+                      </RechartsBarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                      No data available for this period
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Additional Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Game Status Breakdown */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Game Status</CardTitle>
+                  <CardDescription>Breakdown by status</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[200px]">
+                  {isGameStatsLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                    </div>
+                  ) : gameStats ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                          <span>Completed</span>
+                        </div>
+                        <span>{gameStats.gamesCompleted || 0}</span>
+                      </div>
+                      <Progress
+                        value={
+                          gameStats.totalGames
+                            ? (gameStats.gamesCompleted / gameStats.totalGames) * 100
+                            : 0
+                        }
+                        className="h-2 bg-green-200"
+                      />
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
+                          <span>In Progress</span>
+                        </div>
+                        <span>{gameStats.gamesInProgress || 0}</span>
+                      </div>
+                      <Progress
+                        value={
+                          gameStats.totalGames
+                            ? (gameStats.gamesInProgress / gameStats.totalGames) * 100
+                            : 0
+                        }
+                        className="h-2 bg-amber-200"
+                      />
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                          <span>Waiting</span>
+                        </div>
+                        <span>{gameStats.gamesWaiting || 0}</span>
+                      </div>
+                      <Progress
+                        value={
+                          gameStats.totalGames
+                            ? (gameStats.gamesWaiting / gameStats.totalGames) * 100
+                            : 0
+                        }
+                        className="h-2 bg-blue-200"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                      No data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* User Activity */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>User Activity</CardTitle>
+                  <CardDescription>Active vs. total users</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[200px]">
+                  {isUserStatsLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                    </div>
+                  ) : userStats ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={[
+                            {
+                              name: "Active Users",
+                              value: userStats.totalActiveUsers || 0,
+                              fill: "#4CAF50",
+                            },
+                            {
+                              name: "Inactive Users",
+                              value: 
+                                (userStats.totalUsers || 0) - 
+                                (userStats.totalActiveUsers || 0),
+                              fill: "#E0E0E0",
+                            },
+                          ]}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={70}
+                          label={({ name, percent }) => 
+                            `${name}: ${(percent * 100).toFixed(0)}%`
+                          }
+                        />
+                        <Tooltip />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                      No data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* User Registration */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>New Users</CardTitle>
+                  <CardDescription>Registration trend</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[200px]">
+                  {isUserStatsLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                    </div>
+                  ) : userStats?.chartData?.length ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={userStats.chartData}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip />
+                        <Line
+                          type="monotone"
+                          dataKey="newUsers"
+                          stroke="#8884d8"
+                          activeDot={{ r: 8 }}
+                          name="New Users"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                      No data available for this period
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
             <Card>
