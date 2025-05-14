@@ -320,14 +320,18 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
-                      variant="outline" 
+                      variant={isPremiumUI ? "default" : "outline"}
                       size="sm"
-                      className="h-7 px-2"
+                      className={`h-7 px-2 transition-all duration-200 ${
+                        isPremiumUI 
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+                          : 'hover:bg-green-50 border-green-300 text-green-600'
+                      }`}
                       onClick={joinChannel}
                       disabled={!isClientReady}
                     >
                       <Phone className="h-3.5 w-3.5 mr-1" />
-                      <span className="text-xs">Join</span>
+                      <span className="text-xs font-medium">Join</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -372,11 +376,11 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="h-7 px-2 border-red-200 hover:bg-red-50 hover:text-red-600"
+                        className="h-7 px-2 transition-all duration-200 border-red-200 hover:bg-red-50 text-red-500 hover:text-red-600"
                         onClick={leaveChannel}
                       >
                         <PhoneOff className="h-3.5 w-3.5 mr-1" />
-                        <span className="text-xs">Leave</span>
+                        <span className="text-xs font-medium">Leave</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -393,8 +397,15 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
         <div className="space-y-2">
           {/* Help text when no one is connected */}
           {!isJoined && Object.keys(activeUsers).length === 0 && (
-            <div className="text-center py-2 text-sm text-muted-foreground">
-              <p>Click "Join" to connect to voice chat</p>
+            <div className={`text-center py-3 px-2 text-sm rounded-md ${
+              isPremiumUI 
+                ? 'bg-amber-50 text-amber-700 border border-amber-200' 
+                : 'bg-slate-50 text-muted-foreground'
+            }`}>
+              <p className="flex items-center justify-center">
+                <Info className="h-4 w-4 mr-1.5 opacity-70" />
+                Click <span className="font-medium mx-1">Join</span> to connect to voice chat
+              </p>
             </div>
           )}
           
