@@ -351,4 +351,111 @@ router.post('/webhook', async (req: Request, res: Response) => {
   }
 });
 
+// For development: Test route to simulate Paystack webhook events
+if (process.env.NODE_ENV === 'development') {
+  router.post('/webhook-test/:event', async (req: Request, res: Response) => {
+    try {
+      const { event } = req.params;
+      const { userId, amount, reference } = req.body;
+      
+      // Validate minimum required parameters
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'userId is required'
+        });
+      }
+      
+      const user = await storage.getUser(Number(userId));
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
+      // Define test data based on the event type
+      const testData: any = {
+        event: event,
+        data: {
+          id: `test_${Date.now()}`,
+          reference: reference || `test_ref_${Date.now()}`,
+          amount: (amount || 1000) * 100, // Convert to kobo
+          currency: 'NGN',
+          channel: 'card',
+          status: 'success',
+          paid_at: new Date().toISOString(),
+          metadata: {
+            userId: userId
+          }
+        }
+      };
+      
+      // Additional data for specific events
+      switch (event) {
+        case 'charge.success':
+          testData.data.customer = {
+            email: user.email || 'test@example.com',
+            customer_code: `cust_${userId}_${Date.now()}`
+          };
+          testData.data.authorization = {
+            authorization_code: `auth_${Date.now()}`,
+            last4: '4242',
+            card_type: 'visa'
+          };
+          break;
+          
+        case 'charge.failed':
+          testData.data.gateway_response = 'Declined';
+          testData.data.status = 'failed';
+          break;
+          
+        case 'transfer.success':
+        case 'transfer.failed':
+        case 'transfer.reversed':
+          testData.data.recipient = {
+            recipient_code: `recip_${Date.now()}`,
+            type: 'nuban'
+          };
+          break;
+      }
+      
+      log(`Simulating Paystack webhook event: ${event}`, 'paystack');
+      log(`Test payload: ${JSON.stringify(testData)}`, 'paystack');
+      
+      // Forward the test event to the actual webhook handler
+      // Make a request to our own webhook endpoint
+      const response = await fetch(`${process.env.PUBLIC_URL || 'http://localhost:5000'}/api/payment/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Paystack-Signature': 'test_signature'
+        },
+        body: JSON.stringify(testData)
+      });
+      
+      if (response.ok) {
+        res.json({
+          success: true,
+          message: `Simulated ${event} webhook event sent successfully`,
+          testData
+        });
+      } else {
+        const error = await response.text();
+        res.status(500).json({
+          success: false,
+          message: `Error sending webhook test event: ${error}`,
+          testData
+        });
+      }
+    } catch (error) {
+      log(`Error in /payment/webhook-test: ${error instanceof Error ? error.message : String(error)}`, 'payment');
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to simulate webhook event'
+      });
+    }
+  });
+}
+
 export default router;
