@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Users, Headphones, Info } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Users, Headphones, Info, Loader2 } from 'lucide-react';
 import { Game, GamePlayer } from '@shared/schema';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -550,16 +550,20 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                           {getPlayerInitials(uid)}
                         </AvatarFallback>
                         
-                        {/* Audio activity indicator dot */}
+                        {/* Enhanced audio activity indicator */}
                         {speakingUsers[uid] > 5 && (
                           <div className="absolute -bottom-1 -right-1 flex items-center justify-center">
                             <div 
                               className={`h-2 w-2 rounded-full ${
-                                speakingUsers[uid] > 70 ? 'bg-green-500 animate-pulse' : 
+                                speakingUsers[uid] > 70 ? 'bg-green-500 animate-pulse shadow-sm shadow-green-300' : 
                                 speakingUsers[uid] > 30 ? 'bg-green-400' : 
                                 'bg-green-300'
                               }`}
                             />
+                            {/* Add rings for high volume */}
+                            {speakingUsers[uid] > 60 && (
+                              <div className="absolute inset-0 -m-1 rounded-full border border-green-300 animate-ping opacity-75"></div>
+                            )}
                           </div>
                         )}
                       </Avatar>
@@ -570,11 +574,11 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                     </div>
                     
                     <div className="flex items-center">
-                      {/* Enhanced voice activity meter */}
-                      <div className="w-10 h-2 bg-slate-100 rounded-full overflow-hidden mr-1">
+                      {/* Enhanced voice activity meter with visual effects */}
+                      <div className="w-14 h-2 bg-slate-100 rounded-full overflow-hidden mr-1 relative">
                         <div 
                           className={`h-full rounded-full transition-all duration-100 ${
-                            speakingUsers[uid] > 70 ? 'bg-green-500' : 
+                            speakingUsers[uid] > 70 ? 'bg-green-500 animate-pulse' : 
                             speakingUsers[uid] > 30 ? 'bg-green-400' : 
                             speakingUsers[uid] > 10 ? 'bg-green-300' : 
                             'bg-slate-300'
@@ -583,10 +587,24 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                             width: `${getAudioLevelPercentage(uid)}%`,
                           }}
                         />
+                        
+                        {/* Audio level vertical bars */}
+                        {speakingUsers[uid] > 15 && (
+                          <div className="absolute -right-4 -top-0.5 flex space-x-0.5">
+                            <div className={`h-2 w-0.5 rounded-full ${speakingUsers[uid] > 15 ? 'bg-green-400' : 'bg-slate-200'}`}></div>
+                            <div className={`h-2.5 w-0.5 rounded-full ${speakingUsers[uid] > 30 ? 'bg-green-400' : 'bg-slate-200'}`}></div>
+                            <div className={`h-3 w-0.5 rounded-full ${speakingUsers[uid] > 60 ? 'bg-green-400' : 'bg-slate-200'}`}></div>
+                          </div>
+                        )}
                       </div>
                       
-                      {/* Status indicator */}
-                      <Headphones className="h-3 w-3 text-blue-500" />
+                      {/* Enhanced status indicator */}
+                      <div className="relative">
+                        <Headphones className="h-3.5 w-3.5 text-blue-500" />
+                        {speakingUsers[uid] > 60 && (
+                          <div className="absolute -top-1 -right-1 h-1.5 w-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))
