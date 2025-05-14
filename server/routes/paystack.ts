@@ -356,7 +356,7 @@ if (process.env.NODE_ENV === 'development') {
   router.post('/webhook-test/:event', async (req: Request, res: Response) => {
     try {
       const { event } = req.params;
-      const { userId, amount, reference } = req.body;
+      const { userId, amount, reference, type, status } = req.body;
       
       // Validate minimum required parameters
       if (!userId) {
@@ -383,10 +383,11 @@ if (process.env.NODE_ENV === 'development') {
           amount: (amount || 1000) * 100, // Convert to kobo
           currency: 'NGN',
           channel: 'card',
-          status: 'success',
+          status: status || 'success',
           paid_at: new Date().toISOString(),
           metadata: {
-            userId: userId
+            userId: userId,
+            transactionType: type || (event.startsWith('charge') ? 'deposit' : 'withdrawal')
           }
         }
       };
