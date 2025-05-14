@@ -1627,8 +1627,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { period = "week" } = req.query;
       
-      // Get all games
-      const games = await storage.getGames();
+      // Get all games with error handling
+      let games = [];
+      try {
+        games = await storage.getGames();
+      } catch (err) {
+        console.error("Failed to fetch games:", err);
+        games = []; // Fallback to empty array
+      }
       
       // Calculate date range based on period
       const today = new Date();
@@ -1651,10 +1657,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startDate.setDate(today.getDate() - 7); // Default to week
       }
       
-      // Filter games in period
-      const gamesInPeriod = games.filter(game => 
-        game.createdAt && new Date(game.createdAt) >= startDate
-      );
+      // Filter games in period (safely)
+      const gamesInPeriod = games.filter(game => {
+        if (!game || !game.createdAt) return false;
+        try {
+          return new Date(game.createdAt) >= startDate;
+        } catch (e) {
+          console.error("Error parsing date:", e);
+          return false;
+        }
+      });
       
       // Calculate statistics
       const totalGames = gamesInPeriod.length;
@@ -1671,11 +1683,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gamesByDay[dateStr] = 0;
       }
       
-      // Count games per day
+      // Count games per day (safely)
       gamesInPeriod.forEach(game => {
-        if (game.createdAt) {
-          const dateStr = new Date(game.createdAt).toISOString().split('T')[0];
-          gamesByDay[dateStr] = (gamesByDay[dateStr] || 0) + 1;
+        if (game && game.createdAt) {
+          try {
+            const dateStr = new Date(game.createdAt).toISOString().split('T')[0];
+            gamesByDay[dateStr] = (gamesByDay[dateStr] || 0) + 1;
+          } catch (e) {
+            console.error("Error processing game date:", e);
+          }
         }
       });
       
@@ -1695,7 +1711,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching game statistics:", error);
-      res.status(500).json({ message: "Error fetching game statistics" });
+      res.status(500).json({ 
+        message: "Error fetching game statistics",
+        totalGames: 0,
+        gamesWaiting: 0,
+        gamesInProgress: 0,
+        gamesCompleted: 0,
+        chartData: [],
+        period: req.query.period || "week"
+      });
     }
   });
   
@@ -1704,13 +1728,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { period = "week" } = req.query;
       
-      // Get all users
-      const users = await storage.getAllUsers();
+      // Get all users with error handling
+      let users = [];
+      try {
+        users = await storage.getAllUsers();
+      } catch (err) {
+        console.error("Failed to fetch users for financial statistics:", err);
+        users = []; // Fallback to empty array
+      }
       
-      // Get all transactions for all users
-      const usersTransactionsPromises = users.map(user => storage.getUserTransactions(user.id));
-      const transactionsByUser = await Promise.all(usersTransactionsPromises);
-      const allTransactions = transactionsByUser.flat();
+      // Get all transactions for all users with error handling
+      let allTransactions = [];
+      try {
+        const usersTransactionsPromises = users.map(user => storage.getUserTransactions(user.id));
+        const transactionsByUser = await Promise.all(usersTransactionsPromises);
+        allTransactions = transactionsByUser.flat();
+      } catch (err) {
+        console.error("Failed to fetch transactions for financial statistics:", err);
+        allTransactions = []; // Fallback to empty array
+      }
       
       // Calculate date range based on period
       const today = new Date();
@@ -1733,31 +1769,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startDate.setDate(today.getDate() - 7); // Default to week
       }
       
-      // Filter transactions in period
-      const transactionsInPeriod = allTransactions.filter(tx => 
-        tx.createdAt && new Date(tx.createdAt) >= startDate
-      );
+      // Filter transactions in period (safely)
+      const transactionsInPeriod = allTransactions.filter(tx => {
+        if (!tx || !tx.createdAt) return false;
+        try {
+          return new Date(tx.createdAt) >= startDate;
+        } catch (e) {
+          console.error("Error parsing transaction date:", e);
+          return false;
+        }
+      });
       
-      // Calculate financial metrics
+      // Calculate financial metrics (safely)
       const totalDeposits = transactionsInPeriod
-        .filter(t => t.type === 'deposit' && t.status === 'completed')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .filter(t => t && t.type === 'deposit' && t.status === 'completed')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
         
       const totalWithdrawals = transactionsInPeriod
-        .filter(t => t.type === 'withdrawal' && t.status === 'completed')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .filter(t => t && t.type === 'withdrawal' && t.status === 'completed')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
         
       const totalFees = transactionsInPeriod
-        .filter(t => t.type === 'commission' && t.status === 'completed')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .filter(t => t && t.type === 'commission' && t.status === 'completed')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
         
       const totalGameStakes = transactionsInPeriod
-        .filter(t => t.type === 'stake' && t.status === 'completed')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .filter(t => t && t.type === 'stake' && t.status === 'completed')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
         
       const totalGameWinnings = transactionsInPeriod
-        .filter(t => t.type === 'winnings' && t.status === 'completed')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .filter(t => t && t.type === 'winnings' && t.status === 'completed')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
       
       // Group transactions by day for chart data
       const depositsByDay = {};
@@ -1772,18 +1814,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         feesByDay[dateStr] = 0;
       }
       
-      // Calculate daily totals
+      // Calculate daily totals (safely)
       transactionsInPeriod.forEach(tx => {
-        if (tx.status !== 'completed' || !tx.createdAt) return;
+        if (!tx || tx.status !== 'completed' || !tx.createdAt) return;
         
-        const dateStr = new Date(tx.createdAt).toISOString().split('T')[0];
-        
-        if (tx.type === 'deposit') {
-          depositsByDay[dateStr] = (depositsByDay[dateStr] || 0) + tx.amount;
-        } else if (tx.type === 'withdrawal') {
-          withdrawalsByDay[dateStr] = (withdrawalsByDay[dateStr] || 0) + tx.amount;
-        } else if (tx.type === 'commission') {
-          feesByDay[dateStr] = (feesByDay[dateStr] || 0) + tx.amount;
+        try {
+          const dateStr = new Date(tx.createdAt).toISOString().split('T')[0];
+          
+          if (tx.type === 'deposit') {
+            depositsByDay[dateStr] = (depositsByDay[dateStr] || 0) + (tx.amount || 0);
+          } else if (tx.type === 'withdrawal') {
+            withdrawalsByDay[dateStr] = (withdrawalsByDay[dateStr] || 0) + (tx.amount || 0);
+          } else if (tx.type === 'commission') {
+            feesByDay[dateStr] = (feesByDay[dateStr] || 0) + (tx.amount || 0);
+          }
+        } catch (e) {
+          console.error("Error processing transaction for chart data:", e);
         }
       });
       
