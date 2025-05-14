@@ -343,15 +343,21 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                       <Button 
                         variant={isMuted ? "default" : "outline"} 
                         size="sm"
-                        className={`h-7 px-2 ${isMuted ? 'bg-red-500 hover:bg-red-600' : ''}`}
+                        className={`h-7 px-2 transition-all duration-200 ${
+                          isMuted 
+                            ? 'bg-red-500 hover:bg-red-600 text-white' 
+                            : isPremiumUI 
+                              ? 'border-amber-300 hover:bg-amber-50 text-amber-700 hover:text-amber-800' 
+                              : 'hover:bg-slate-100'
+                        }`}
                         onClick={toggleMute}
                       >
                         {isMuted ? (
-                          <MicOff className="h-3.5 w-3.5 mr-1" />
+                          <MicOff className="h-3.5 w-3.5 mr-1 animate-pulse" />
                         ) : (
                           <Mic className="h-3.5 w-3.5 mr-1" />
                         )}
-                        <span className="text-xs">{isMuted ? 'Unmute' : 'Mute'}</span>
+                        <span className="text-xs font-medium">{isMuted ? 'Unmute' : 'Mute'}</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -403,11 +409,15 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                       {getPlayerInitials('local')}
                     </AvatarFallback>
                     
-                    {/* Audio level indicator */}
-                    {speakingUsers['local'] > 5 && (
+                    {/* Audio level indicator dot */}
+                    {speakingUsers['local'] > 5 && !isMuted && (
                       <div className="absolute -bottom-1 -right-1 flex items-center justify-center">
                         <div 
-                          className={`h-2 w-2 rounded-full ${speakingUsers['local'] > 30 ? 'bg-green-500' : 'bg-green-300'}`}
+                          className={`h-2 w-2 rounded-full ${
+                            speakingUsers['local'] > 70 ? 'bg-green-500 animate-pulse' : 
+                            speakingUsers['local'] > 30 ? 'bg-green-400' : 
+                            'bg-green-300'
+                          }`}
                         />
                       </div>
                     )}
