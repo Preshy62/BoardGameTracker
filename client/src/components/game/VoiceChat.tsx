@@ -273,19 +273,25 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
       return 'You (Me)';
     }
     
-    const player = players.find(p => p.id === Number(uid));
+    const player = players.find(p => p.userId === Number(uid) || p.id === Number(uid));
     return player?.user?.username || `Player ${uid}`;
   };
   
   // Get avatar initials for a player
   const getPlayerInitials = (uid: string | number) => {
     if (uid === 'local' || uid === currentUserId) {
-      const currentPlayer = players.find(p => p.id === currentUserId);
+      const currentPlayer = players.find(p => p.userId === currentUserId);
       return currentPlayer?.user?.avatarInitials || 'ME';
     }
     
-    const player = players.find(p => p.id === Number(uid));
+    const player = players.find(p => p.userId === Number(uid) || p.id === Number(uid));
     return player?.user?.avatarInitials || 'P';
+  };
+  
+  // Calculate audio level percentage for progress bar
+  const getAudioLevelPercentage = (uid: string | number) => {
+    const level = speakingUsers[uid.toString()] || 0;
+    return Math.min(Math.max(level, 5), 100);
   };
   
   // Determine if we should use premium styling
@@ -451,11 +457,15 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                           {getPlayerInitials(uid)}
                         </AvatarFallback>
                         
-                        {/* Audio level indicator */}
+                        {/* Audio activity indicator dot */}
                         {speakingUsers[uid] > 5 && (
                           <div className="absolute -bottom-1 -right-1 flex items-center justify-center">
                             <div 
-                              className={`h-2 w-2 rounded-full ${speakingUsers[uid] > 30 ? 'bg-green-500' : 'bg-green-300'}`}
+                              className={`h-2 w-2 rounded-full ${
+                                speakingUsers[uid] > 70 ? 'bg-green-500 animate-pulse' : 
+                                speakingUsers[uid] > 30 ? 'bg-green-400' : 
+                                'bg-green-300'
+                              }`}
                             />
                           </div>
                         )}
@@ -467,25 +477,23 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
                     </div>
                     
                     <div className="flex items-center">
-                      {/* Voice activity indicator */}
-                      <div className="flex space-x-0.5 mr-2">
-                        {[1, 2, 3, 4, 5].map((level) => (
-                          <div 
-                            key={level}
-                            className={`h-2 w-0.5 rounded-full ${
-                              speakingUsers[uid] > level * 15 
-                                ? 'bg-green-500' 
-                                : 'bg-gray-200'
-                            }`}
-                            style={{ 
-                              height: `${6 + level * 2}px` 
-                            }}
-                          />
-                        ))}
+                      {/* Enhanced voice activity meter */}
+                      <div className="w-10 h-2 bg-slate-100 rounded-full overflow-hidden mr-1">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-100 ${
+                            speakingUsers[uid] > 70 ? 'bg-green-500' : 
+                            speakingUsers[uid] > 30 ? 'bg-green-400' : 
+                            speakingUsers[uid] > 10 ? 'bg-green-300' : 
+                            'bg-slate-300'
+                          }`}
+                          style={{ 
+                            width: `${getAudioLevelPercentage(uid)}%`,
+                          }}
+                        />
                       </div>
                       
                       {/* Status indicator */}
-                      <Volume2 className="h-3.5 w-3.5 text-blue-500" />
+                      <Headphones className="h-3 w-3 text-blue-500" />
                     </div>
                   </div>
                 ))
