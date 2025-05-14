@@ -8,11 +8,43 @@ export const SOUND_EFFECTS = {
   STONE_ROLL: '/rolling-dice.mp3',
   STONE_LAND: '/dice-landing.mp3',
   CLICK: '/click.mp3',
+  BUTTON_PRESS: '/button-press.mp3',
+  COUNTDOWN: '/countdown.mp3',
+  GAME_START: '/game-start.mp3',
+  GAME_END: '/game-end.mp3',
+  
+  // Game outcome sounds
+  WIN: '/win.mp3',
+  LOSE: '/lose.mp3',
+  TIE: '/tie.mp3',
+  SPECIAL_WIN: '/special-win.mp3',  // For big wins
+  JACKPOT: '/jackpot.mp3',
+  
+  // Stone-specific sounds (for special stones)
+  STONE_1000: '/stone-1000.mp3',  // Special yellow stone sound
+  STONE_500: '/stone-500.mp3',    // Special yellow stone sound
+  STONE_3355: '/stone-3355.mp3',  // Super red stone sound
+  STONE_6624: '/stone-6624.mp3',  // Super red stone sound
+  
+  // UI sounds
+  NOTIFICATION: '/notification.mp3',
+  ERROR: '/error.mp3',
+  WARNING: '/warning.mp3',
+  SUCCESS: '/success.mp3',
+  
+  // Wallet sounds
+  DEPOSIT_SUCCESS: '/deposit-success.mp3',
+  WITHDRAWAL_SUCCESS: '/withdrawal-success.mp3',
+  COINS: '/coins.mp3',
   
   // Voice chat sounds
   VOICE_CONNECTED: '/voice-connected.mp3',
+  VOICE_DISCONNECTED: '/voice-disconnected.mp3',
   VOICE_MUTE: '/mute.mp3',
   VOICE_UNMUTE: '/unmute.mp3',
+  VOICE_JOIN: '/voice-join.mp3',
+  VOICE_LEAVE: '/voice-leave.mp3',
+  VOICE_NEW_MESSAGE: '/voice-message.mp3',
 };
 
 // Initialize audio context (needed for Safari and iOS)
@@ -166,11 +198,181 @@ export function playWinSound(): void {
   }
 }
 
+// Sound effect specifically for stone rolling with dynamic volume based on stake
+export function playStoneRollSound(stoneNumber?: number, stake?: number): void {
+  try {
+    // Default to generic roll sound
+    let soundKey: keyof typeof SOUND_EFFECTS = 'STONE_ROLL';
+    let volume = 0.5; // Default volume
+    
+    // Adjust volume based on stake
+    if (stake) {
+      // Higher stakes = slightly louder sound (max 0.9)
+      volume = Math.min(0.4 + (stake / 50000) * 0.5, 0.9);
+    }
+    
+    // Use special stone sounds if available
+    if (stoneNumber) {
+      if (stoneNumber === 1000 && 'STONE_1000' in SOUND_EFFECTS) {
+        soundKey = 'STONE_1000';
+      } else if (stoneNumber === 500 && 'STONE_500' in SOUND_EFFECTS) {
+        soundKey = 'STONE_500';
+      } else if (stoneNumber === 3355 && 'STONE_3355' in SOUND_EFFECTS) {
+        soundKey = 'STONE_3355';
+      } else if (stoneNumber === 6624 && 'STONE_6624' in SOUND_EFFECTS) {
+        soundKey = 'STONE_6624';
+      }
+    }
+    
+    // Play the chosen sound
+    playSound(soundKey, volume);
+    
+    // For special stones, add a secondary sound effect
+    if (stoneNumber === 1000 || stoneNumber === 500) {
+      setTimeout(() => playSound('SPECIAL_WIN', 0.3), 300);
+    } else if (stoneNumber === 3355 || stoneNumber === 6624) {
+      setTimeout(() => playSound('JACKPOT', 0.4), 300);
+    }
+  } catch (error) {
+    console.error('Error playing stone roll sound:', error);
+  }
+}
+
+// Sound for wallet transactions
+export function playTransactionSound(type: 'deposit' | 'withdrawal' | 'win' | 'bet', amount?: number): void {
+  try {
+    let soundKey: keyof typeof SOUND_EFFECTS;
+    let volume = 0.5;
+    
+    // Select sound based on transaction type
+    switch (type) {
+      case 'deposit':
+        soundKey = 'DEPOSIT_SUCCESS';
+        break;
+      case 'withdrawal':
+        soundKey = 'WITHDRAWAL_SUCCESS';
+        break;
+      case 'win':
+        // For wins, volume scales with amount
+        if (amount && amount > 10000) {
+          soundKey = 'JACKPOT';
+          volume = 0.7;
+        } else {
+          soundKey = 'WIN';
+          volume = amount ? Math.min(0.4 + (amount / 10000) * 0.5, 0.9) : 0.5;
+        }
+        break;
+      case 'bet':
+        soundKey = 'COINS';
+        break;
+      default:
+        soundKey = 'COINS';
+    }
+    
+    playSound(soundKey, volume);
+  } catch (error) {
+    console.error('Error playing transaction sound:', error);
+  }
+}
+
+// Play voice chat notification sounds
+export function playVoiceChatSound(action: 'connect' | 'disconnect' | 'mute' | 'unmute' | 'join' | 'leave' | 'message'): void {
+  try {
+    let soundKey: keyof typeof SOUND_EFFECTS;
+    
+    // Map action to sound key
+    switch (action) {
+      case 'connect':
+        soundKey = 'VOICE_CONNECTED';
+        break;
+      case 'disconnect':
+        soundKey = 'VOICE_DISCONNECTED';
+        break;
+      case 'mute':
+        soundKey = 'VOICE_MUTE';
+        break;
+      case 'unmute':
+        soundKey = 'VOICE_UNMUTE';
+        break;
+      case 'join':
+        soundKey = 'VOICE_JOIN';
+        break;
+      case 'leave':
+        soundKey = 'VOICE_LEAVE';
+        break;
+      case 'message':
+        soundKey = 'VOICE_NEW_MESSAGE';
+        break;
+      default:
+        return;
+    }
+    
+    playSound(soundKey, 0.4);
+  } catch (error) {
+    console.error('Error playing voice chat sound:', error);
+  }
+}
+
+// Play UI sounds for different events
+export function playUISound(type: 'notification' | 'error' | 'warning' | 'success' | 'click' | 'button'): void {
+  try {
+    let soundKey: keyof typeof SOUND_EFFECTS;
+    
+    // Map UI action to sound key
+    switch (type) {
+      case 'notification':
+        soundKey = 'NOTIFICATION';
+        break;
+      case 'error':
+        soundKey = 'ERROR';
+        break;
+      case 'warning':
+        soundKey = 'WARNING';
+        break;
+      case 'success':
+        soundKey = 'SUCCESS';
+        break;
+      case 'click':
+        soundKey = 'CLICK';
+        break;
+      case 'button':
+        soundKey = 'BUTTON_PRESS';
+        break;
+      default:
+        return;
+    }
+    
+    playSound(soundKey, 0.3);
+  } catch (error) {
+    console.error('Error playing UI sound:', error);
+  }
+}
+
+// Sound settings object for user preferences
+export const soundSettings = {
+  masterVolume: 0.7,
+  gameSoundsEnabled: true,
+  voiceChatSoundsEnabled: true,
+  uiSoundsEnabled: true,
+  walletSoundsEnabled: true,
+};
+
+// Function to update sound settings
+export function updateSoundSettings(settings: Partial<typeof soundSettings>): void {
+  Object.assign(soundSettings, settings);
+}
+
 export default {
   initAudioContext,
   resumeAudioContext,
   playSound,
   playRandomTone,
   playWinSound,
+  playStoneRollSound,
+  playTransactionSound,
+  playVoiceChatSound,
+  playUISound,
+  updateSoundSettings,
+  soundSettings,
   SOUND_EFFECTS
 };
