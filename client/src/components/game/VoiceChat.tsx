@@ -427,9 +427,31 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
         
         {/* Participants section */}
         <div className="space-y-2">
-          {/* Help text when no one is connected */}
-          {!isJoined && Object.keys(activeUsers).length === 0 && (
-            <div className={`text-center py-3 px-2 text-sm rounded-md ${
+          {/* Comprehensive guide for first-time users */}
+          {!isJoined && !hasJoinedBefore && Object.keys(activeUsers).length === 0 && (
+            <div className={`text-center py-3 px-3 mb-2 text-sm rounded-md border ${
+              isPremiumUI 
+                ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                : 'bg-blue-50 text-blue-700 border-blue-100'
+            }`}>
+              <div className="flex items-center justify-center mb-1.5">
+                <Info className="h-4 w-4 mr-1.5" />
+                <span className="font-medium">Voice Chat Guide</span>
+              </div>
+              <p className="mb-1.5 text-xs leading-relaxed">
+                Click the <span className="font-semibold">Join</span> button to connect. Make sure your microphone 
+                is working and allow browser permissions when prompted.
+              </p>
+              <div className="text-xs flex justify-center space-x-3 mt-2">
+                <span className="flex items-center"><Headphones className="h-3.5 w-3.5 mr-1" /> Use headphones</span>
+                <span className="flex items-center"><Mic className="h-3.5 w-3.5 mr-1" /> Speak clearly</span>
+              </div>
+            </div>
+          )}
+          
+          {/* Simple help text for experienced users */}
+          {!isJoined && hasJoinedBefore && Object.keys(activeUsers).length === 0 && (
+            <div className={`text-center py-2.5 px-2 text-sm rounded-md ${
               isPremiumUI 
                 ? 'bg-amber-50 text-amber-700 border border-amber-200' 
                 : 'bg-slate-50 text-muted-foreground'
