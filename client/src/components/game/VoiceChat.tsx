@@ -322,6 +322,30 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
             )}
           </div>
           
+          {/* Connection Status Message */}
+          {!isClientReady && (
+            <div className="text-center py-2 px-3 mt-2 mb-3 text-sm bg-slate-50 rounded-md">
+              <div className="flex justify-center items-center">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-slate-600">Initializing voice chat...</span>
+              </div>
+            </div>
+          )}
+          
+          {/* User count indicator when joined */}
+          {isJoined && isClientReady && (
+            <div className="mb-3 mt-2">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <Users className="h-3.5 w-3.5 opacity-70" />
+                <span>
+                  {Object.keys(activeUsers).length === 1 
+                    ? "You're the only one connected" 
+                    : `${Object.keys(activeUsers).length} players connected`}
+                </span>
+              </div>
+            </div>
+          )}
+          
           <div className="flex space-x-1">
             {!isJoined ? (
               <TooltipProvider>
