@@ -40,16 +40,45 @@ import {
   DollarSign,
   Gamepad2,
   ListFilter,
+  PieChart,
   Search,
   ShieldAlert,
   Trophy,
+  TrendingUp,
   User as UserIcon,
+  UserPlus,
   Users,
   Wallet,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Import Recharts components for data visualization
+import {
+  Area,
+  AreaChart as RechartsAreaChart,
+  Bar,
+  BarChart as RechartsBarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart as RechartsPieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 export default function Admin() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [statsTimePeriod, setStatsTimePeriod] = useState("week");
 
   // Fetch current admin user
   const { data: user, isLoading: isUserLoading } = useQuery<User>({
@@ -72,6 +101,33 @@ export default function Admin() {
   const { data: allTransactions, isLoading: isAllTransactionsLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/admin/transactions"],
     enabled: !!user?.isAdmin, // Only run if user is admin
+  });
+  
+  // Fetch game statistics
+  const { data: gameStats, isLoading: isGameStatsLoading } = useQuery({
+    queryKey: ["/api/admin/statistics/games", statsTimePeriod],
+    queryFn: () => 
+      fetch(`/api/admin/statistics/games?period=${statsTimePeriod}`)
+        .then(res => res.json()),
+    enabled: !!user?.isAdmin,
+  });
+  
+  // Fetch financial statistics
+  const { data: financialStats, isLoading: isFinancialStatsLoading } = useQuery({
+    queryKey: ["/api/admin/statistics/financial", statsTimePeriod],
+    queryFn: () => 
+      fetch(`/api/admin/statistics/financial?period=${statsTimePeriod}`)
+        .then(res => res.json()),
+    enabled: !!user?.isAdmin,
+  });
+  
+  // Fetch user activity statistics
+  const { data: userStats, isLoading: isUserStatsLoading } = useQuery({
+    queryKey: ["/api/admin/statistics/users", statsTimePeriod],
+    queryFn: () => 
+      fetch(`/api/admin/statistics/users?period=${statsTimePeriod}`)
+        .then(res => res.json()),
+    enabled: !!user?.isAdmin,
   });
 
   // Loading state
@@ -117,13 +173,18 @@ export default function Admin() {
     );
   }
 
-  // Calculate platform stats
-  const totalUsers = allUsers?.length || 0;
-  const totalGames = allGames?.length || 0;
-  const activeGames = allGames?.filter(game => game.status === "in_progress").length || 0;
-  const totalDeposits = allTransactions?.filter(t => t.type === "deposit" && t.status === "completed").reduce((sum, t) => sum + t.amount, 0) || 0;
-  const totalWithdrawals = allTransactions?.filter(t => t.type === "withdrawal" && t.status === "completed").reduce((sum, t) => sum + t.amount, 0) || 0;
-  const platformFees = allTransactions?.filter(t => t.type === "commission" && t.status === "completed").reduce((sum, t) => sum + t.amount, 0) || 0;
+  // Calculate platform stats - use the detailed stats when available
+  const totalUsers = userStats?.totalUsers || allUsers?.length || 0;
+  const totalGames = gameStats?.totalGames || allGames?.length || 0;
+  const activeGames = gameStats?.gamesInProgress || allGames?.filter(game => game.status === "in_progress").length || 0;
+  const completedGames = gameStats?.gamesCompleted || allGames?.filter(game => game.status === "completed").length || 0;
+  const waitingGames = gameStats?.gamesWaiting || allGames?.filter(game => game.status === "waiting").length || 0;
+  const totalDeposits = financialStats?.totalDeposits || allTransactions?.filter(t => t.type === "deposit" && t.status === "completed").reduce((sum, t) => sum + t.amount, 0) || 0;
+  const totalWithdrawals = financialStats?.totalWithdrawals || allTransactions?.filter(t => t.type === "withdrawal" && t.status === "completed").reduce((sum, t) => sum + t.amount, 0) || 0;
+  const platformFees = financialStats?.totalFees || allTransactions?.filter(t => t.type === "commission" && t.status === "completed").reduce((sum, t) => sum + t.amount, 0) || 0;
+  const netRevenue = financialStats?.netRevenue || (totalDeposits - totalWithdrawals + platformFees);
+  const newUsers = userStats?.totalNewUsers || 0;
+  const activeUsers = userStats?.totalActiveUsers || 0;
 
   // Filter users by search term
   const filteredUsers = allUsers?.filter(u => 
