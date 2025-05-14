@@ -309,16 +309,16 @@ export default function TransactionHistory({
   };
   
   // Get badge variant based on transaction status
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: string): "default" | "destructive" | "outline" | "secondary" => {
     switch (status) {
       case 'completed':
-        return 'success';
+        return 'secondary'; // Using secondary instead of success
       case 'pending':
         return 'outline';
       case 'failed':
         return 'destructive';
       case 'disputed':
-        return 'warning';
+        return 'outline'; // Using outline instead of warning
       default:
         return 'secondary';
     }
