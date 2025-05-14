@@ -1853,7 +1853,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching financial statistics:", error);
-      res.status(500).json({ message: "Error fetching financial statistics" });
+      res.status(500).json({ 
+        message: "Error fetching financial statistics",
+        totalDeposits: 0,
+        totalWithdrawals: 0,
+        totalFees: 0,
+        totalGameStakes: 0,
+        totalGameWinnings: 0,
+        netRevenue: 0,
+        chartData: [],
+        period: req.query.period || "week"
+      });
     }
   });
   
@@ -1862,8 +1872,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { period = "week" } = req.query;
       
-      // Get all users
-      const users = await storage.getAllUsers();
+      // Get all users with error handling
+      let users = [];
+      try {
+        users = await storage.getAllUsers();
+      } catch (err) {
+        console.error("Failed to fetch users for user statistics:", err);
+        users = []; // Fallback to empty array
+      }
       
       // Calculate date range based on period
       const today = new Date();
@@ -1886,24 +1902,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startDate.setDate(today.getDate() - 7); // Default to week
       }
       
-      // Filter users created in period
-      const usersInPeriod = users.filter(user => 
-        user.createdAt && new Date(user.createdAt) >= startDate
-      );
+      // Filter users created in period (safely)
+      const usersInPeriod = users.filter(user => {
+        if (!user || !user.createdAt) return false;
+        try {
+          return new Date(user.createdAt) >= startDate;
+        } catch (e) {
+          console.error("Error parsing user date:", e);
+          return false;
+        }
+      });
       
-      // Get all game players to calculate active users
+      // Get all game players to calculate active users with error handling
       const allGamePlayers = [];
-      const games = await storage.getGames();
+      let games = [];
       
+      try {
+        games = await storage.getGames();
+      } catch (err) {
+        console.error("Failed to fetch games for user statistics:", err);
+        games = []; // Fallback to empty array
+      }
+      
+      // Safely process games and their players
       for (const game of games) {
-        if (game.createdAt && new Date(game.createdAt) >= startDate) {
-          const gamePlayers = await storage.getGamePlayers(game.id);
-          allGamePlayers.push(...gamePlayers);
+        if (!game || !game.id || !game.createdAt) continue;
+        
+        try {
+          // Only include games in the selected period
+          if (new Date(game.createdAt) >= startDate) {
+            try {
+              const gamePlayers = await storage.getGamePlayers(game.id);
+              if (gamePlayers && Array.isArray(gamePlayers)) {
+                allGamePlayers.push(...gamePlayers);
+              }
+            } catch (err) {
+              console.error(`Failed to fetch players for game ${game.id}:`, err);
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing game date:", e);
         }
       }
       
-      // Get unique active user IDs
-      const activeUserIds = new Set(allGamePlayers.map(gp => gp.userId));
+      // Get unique active user IDs (safely)
+      const activeUserIds = new Set();
+      allGamePlayers.forEach(gp => {
+        if (gp && gp.userId) {
+          activeUserIds.add(gp.userId);
+        }
+      });
       
       // Group registrations by day for chart data
       const usersByDay = {};
@@ -1914,11 +1962,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usersByDay[dateStr] = 0;
       }
       
-      // Count users per day
+      // Count users per day (safely)
       usersInPeriod.forEach(user => {
-        if (user.createdAt) {
-          const dateStr = new Date(user.createdAt).toISOString().split('T')[0];
-          usersByDay[dateStr] = (usersByDay[dateStr] || 0) + 1;
+        if (user && user.createdAt) {
+          try {
+            const dateStr = new Date(user.createdAt).toISOString().split('T')[0];
+            usersByDay[dateStr] = (usersByDay[dateStr] || 0) + 1;
+          } catch (e) {
+            console.error("Error processing user date for chart:", e);
+          }
         }
       });
       
@@ -1937,7 +1989,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching user statistics:", error);
-      res.status(500).json({ message: "Error fetching user statistics" });
+      res.status(500).json({ 
+        message: "Error fetching user statistics",
+        totalNewUsers: 0,
+        totalActiveUsers: 0,
+        totalUsers: 0,
+        chartData: [],
+        period: req.query.period || "week"
+      });
     }
   });
   
