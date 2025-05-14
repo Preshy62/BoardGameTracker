@@ -368,19 +368,58 @@ export default function TransactionHistory({
                   value={typeFilter} 
                   onValueChange={(value) => setTypeFilter(value as TransactionFilter)}
                 >
-                  <SelectTrigger className="w-[130px]">
+                  <SelectTrigger className="w-[130px] bg-white">
                     <div className="flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      <span>Type</span>
+                      {typeFilter === 'all' ? (
+                        <Filter className="h-4 w-4 text-gray-500" />
+                      ) : typeFilter === 'deposit' ? (
+                        <ArrowDown className="h-4 w-4 text-green-500" />
+                      ) : typeFilter === 'withdrawal' ? (
+                        <ArrowUp className="h-4 w-4 text-amber-500" />
+                      ) : typeFilter === 'winnings' ? (
+                        <Trophy className="h-4 w-4 text-blue-500" />
+                      ) : typeFilter === 'stake' ? (
+                        <CreditCard className="h-4 w-4 text-purple-500" />
+                      ) : (
+                        <Filter className="h-4 w-4 text-gray-500" />
+                      )}
+                      <span className={typeFilter !== 'all' ? 'font-medium' : ''}>
+                        {typeFilter === 'all' ? 'Type' : typeFilter.charAt(0).toUpperCase() + typeFilter.slice(1)}
+                      </span>
                     </div>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="deposit">Deposits</SelectItem>
-                    <SelectItem value="withdrawal">Withdrawals</SelectItem>
-                    <SelectItem value="winnings">Winnings</SelectItem>
-                    <SelectItem value="stake">Stakes</SelectItem>
-                    <SelectItem value="refund">Refunds</SelectItem>
+                    <SelectItem value="deposit" className="flex items-center">
+                      <div className="flex items-center">
+                        <ArrowDown className="h-4 w-4 mr-2 text-green-500" />
+                        Deposits
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="withdrawal">
+                      <div className="flex items-center">
+                        <ArrowUp className="h-4 w-4 mr-2 text-amber-500" />
+                        Withdrawals
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="winnings">
+                      <div className="flex items-center">
+                        <Trophy className="h-4 w-4 mr-2 text-blue-500" />
+                        Winnings
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="stake">
+                      <div className="flex items-center">
+                        <CreditCard className="h-4 w-4 mr-2 text-purple-500" />
+                        Stakes
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="refund">
+                      <div className="flex items-center">
+                        <ArrowDown className="h-4 w-4 mr-2 text-gray-500" />
+                        Refunds
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 
@@ -388,18 +427,50 @@ export default function TransactionHistory({
                   value={statusFilter} 
                   onValueChange={(value) => setStatusFilter(value as StatusFilter)}
                 >
-                  <SelectTrigger className="w-[130px]">
+                  <SelectTrigger className="w-[130px] bg-white">
                     <div className="flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      <span>Status</span>
+                      {statusFilter === 'all' ? (
+                        <Filter className="h-4 w-4 text-gray-500" />
+                      ) : statusFilter === 'completed' ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : statusFilter === 'pending' ? (
+                        <Clock className="h-4 w-4 text-amber-500" />
+                      ) : statusFilter === 'failed' ? (
+                        <XCircle className="h-4 w-4 text-red-500" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 text-purple-500" />
+                      )}
+                      <span className={statusFilter !== 'all' ? 'font-medium' : ''}>
+                        {statusFilter === 'all' ? 'Status' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                      </span>
                     </div>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                    <SelectItem value="disputed">Disputed</SelectItem>
+                    <SelectItem value="completed">
+                      <div className="flex items-center">
+                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                        Completed
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="pending">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                        Pending
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="failed">
+                      <div className="flex items-center">
+                        <XCircle className="h-4 w-4 mr-2 text-red-500" />
+                        Failed
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="disputed">
+                      <div className="flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-2 text-purple-500" />
+                        Disputed
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 
@@ -407,19 +478,50 @@ export default function TransactionHistory({
                   value={currencyFilter} 
                   onValueChange={(value) => setCurrencyFilter(value as CurrencyFilter)}
                 >
-                  <SelectTrigger className="w-[130px]">
+                  <SelectTrigger className="w-[130px] bg-white">
                     <div className="flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      <span>Currency</span>
+                      {currencyFilter === 'all' ? (
+                        <DollarSign className="h-4 w-4 text-gray-500" />
+                      ) : (
+                        <DollarSign className="h-4 w-4 text-blue-500" />
+                      )}
+                      <span className={currencyFilter !== 'all' ? 'font-medium' : ''}>
+                        {currencyFilter === 'all' ? 'Currency' : currencyFilter}
+                      </span>
                     </div>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Currencies</SelectItem>
-                    <SelectItem value="NGN">Naira (₦)</SelectItem>
-                    <SelectItem value="USD">US Dollar ($)</SelectItem>
-                    <SelectItem value="EUR">Euro (€)</SelectItem>
-                    <SelectItem value="GBP">Pound (£)</SelectItem>
-                    <SelectItem value="CAD">CAD ($)</SelectItem>
+                    <SelectItem value="NGN">
+                      <div className="flex items-center">
+                        <span className="inline-block w-4 mr-2 text-center text-green-600 font-bold">₦</span>
+                        Naira (NGN)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="USD">
+                      <div className="flex items-center">
+                        <span className="inline-block w-4 mr-2 text-center text-green-600 font-bold">$</span>
+                        US Dollar
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="EUR">
+                      <div className="flex items-center">
+                        <span className="inline-block w-4 mr-2 text-center text-blue-600 font-bold">€</span>
+                        Euro
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="GBP">
+                      <div className="flex items-center">
+                        <span className="inline-block w-4 mr-2 text-center text-purple-600 font-bold">£</span>
+                        Pound
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="CAD">
+                      <div className="flex items-center">
+                        <span className="inline-block w-4 mr-2 text-center text-red-600 font-bold">$</span>
+                        CAD
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
