@@ -1573,5 +1573,327 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // Admin Users endpoint
+  app.get("/api/admin/users", authenticateAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users for admin:", error);
+      res.status(500).json({ message: "Error fetching users" });
+    }
+  });
+  
+  // Admin Games endpoint
+  app.get("/api/admin/games", authenticateAdmin, async (req, res) => {
+    try {
+      const games = await storage.getGames();
+      res.json(games);
+    } catch (error) {
+      console.error("Error fetching games for admin:", error);
+      res.status(500).json({ message: "Error fetching games" });
+    }
+  });
+  
+  // Admin Transactions endpoint
+  app.get("/api/admin/transactions", authenticateAdmin, async (req, res) => {
+    try {
+      // Get all users first
+      const users = await storage.getAllUsers();
+      
+      // Get transactions for each user and combine them
+      const allTransactionsPromises = users.map(user => storage.getUserTransactions(user.id));
+      const transactionsByUser = await Promise.all(allTransactionsPromises);
+      
+      // Flatten the array of transaction arrays
+      const allTransactions = transactionsByUser.flat();
+      
+      // Sort by createdAt descending
+      allTransactions.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      
+      res.json(allTransactions);
+    } catch (error) {
+      console.error("Error fetching transactions for admin:", error);
+      res.status(500).json({ message: "Error fetching transactions" });
+    }
+  });
+  
+  // Admin Game Statistics endpoint
+  app.get("/api/admin/statistics/games", authenticateAdmin, async (req, res) => {
+    try {
+      const { period = "week" } = req.query;
+      
+      // Get all games
+      const games = await storage.getGames();
+      
+      // Calculate date range based on period
+      const today = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case 'day':
+          startDate.setDate(today.getDate() - 1);
+          break;
+        case 'week':
+          startDate.setDate(today.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(today.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(today.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(today.getDate() - 7); // Default to week
+      }
+      
+      // Filter games in period
+      const gamesInPeriod = games.filter(game => 
+        game.createdAt && new Date(game.createdAt) >= startDate
+      );
+      
+      // Calculate statistics
+      const totalGames = gamesInPeriod.length;
+      const gamesWaiting = gamesInPeriod.filter(g => g.status === 'waiting').length;
+      const gamesInProgress = gamesInPeriod.filter(g => g.status === 'in_progress').length;
+      const gamesCompleted = gamesInPeriod.filter(g => g.status === 'completed').length;
+      
+      // Group games by day for chart data
+      const gamesByDay = {};
+      
+      // Initialize all days in the period with 0 games
+      for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        gamesByDay[dateStr] = 0;
+      }
+      
+      // Count games per day
+      gamesInPeriod.forEach(game => {
+        if (game.createdAt) {
+          const dateStr = new Date(game.createdAt).toISOString().split('T')[0];
+          gamesByDay[dateStr] = (gamesByDay[dateStr] || 0) + 1;
+        }
+      });
+      
+      // Format for chart data
+      const chartData = Object.entries(gamesByDay).map(([date, count]) => ({
+        date,
+        count
+      }));
+      
+      res.json({
+        totalGames,
+        gamesWaiting,
+        gamesInProgress,
+        gamesCompleted,
+        chartData,
+        period
+      });
+    } catch (error) {
+      console.error("Error fetching game statistics:", error);
+      res.status(500).json({ message: "Error fetching game statistics" });
+    }
+  });
+  
+  // Admin Financial Statistics endpoint
+  app.get("/api/admin/statistics/financial", authenticateAdmin, async (req, res) => {
+    try {
+      const { period = "week" } = req.query;
+      
+      // Get all users
+      const users = await storage.getAllUsers();
+      
+      // Get all transactions for all users
+      const usersTransactionsPromises = users.map(user => storage.getUserTransactions(user.id));
+      const transactionsByUser = await Promise.all(usersTransactionsPromises);
+      const allTransactions = transactionsByUser.flat();
+      
+      // Calculate date range based on period
+      const today = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case 'day':
+          startDate.setDate(today.getDate() - 1);
+          break;
+        case 'week':
+          startDate.setDate(today.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(today.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(today.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(today.getDate() - 7); // Default to week
+      }
+      
+      // Filter transactions in period
+      const transactionsInPeriod = allTransactions.filter(tx => 
+        tx.createdAt && new Date(tx.createdAt) >= startDate
+      );
+      
+      // Calculate financial metrics
+      const totalDeposits = transactionsInPeriod
+        .filter(t => t.type === 'deposit' && t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalWithdrawals = transactionsInPeriod
+        .filter(t => t.type === 'withdrawal' && t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalFees = transactionsInPeriod
+        .filter(t => t.type === 'commission' && t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalGameStakes = transactionsInPeriod
+        .filter(t => t.type === 'stake' && t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalGameWinnings = transactionsInPeriod
+        .filter(t => t.type === 'winnings' && t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      // Group transactions by day for chart data
+      const depositsByDay = {};
+      const withdrawalsByDay = {};
+      const feesByDay = {};
+      
+      // Initialize all days in the period
+      for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        depositsByDay[dateStr] = 0;
+        withdrawalsByDay[dateStr] = 0;
+        feesByDay[dateStr] = 0;
+      }
+      
+      // Calculate daily totals
+      transactionsInPeriod.forEach(tx => {
+        if (tx.status !== 'completed' || !tx.createdAt) return;
+        
+        const dateStr = new Date(tx.createdAt).toISOString().split('T')[0];
+        
+        if (tx.type === 'deposit') {
+          depositsByDay[dateStr] = (depositsByDay[dateStr] || 0) + tx.amount;
+        } else if (tx.type === 'withdrawal') {
+          withdrawalsByDay[dateStr] = (withdrawalsByDay[dateStr] || 0) + tx.amount;
+        } else if (tx.type === 'commission') {
+          feesByDay[dateStr] = (feesByDay[dateStr] || 0) + tx.amount;
+        }
+      });
+      
+      // Format for chart data
+      const chartData = Object.keys(depositsByDay).map(date => ({
+        date,
+        deposits: depositsByDay[date] || 0,
+        withdrawals: withdrawalsByDay[date] || 0,
+        fees: feesByDay[date] || 0
+      }));
+      
+      res.json({
+        totalDeposits,
+        totalWithdrawals,
+        totalFees,
+        totalGameStakes,
+        totalGameWinnings,
+        netRevenue: totalDeposits - totalWithdrawals + totalFees,
+        chartData,
+        period
+      });
+    } catch (error) {
+      console.error("Error fetching financial statistics:", error);
+      res.status(500).json({ message: "Error fetching financial statistics" });
+    }
+  });
+  
+  // Admin User Activity endpoint
+  app.get("/api/admin/statistics/users", authenticateAdmin, async (req, res) => {
+    try {
+      const { period = "week" } = req.query;
+      
+      // Get all users
+      const users = await storage.getAllUsers();
+      
+      // Calculate date range based on period
+      const today = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case 'day':
+          startDate.setDate(today.getDate() - 1);
+          break;
+        case 'week':
+          startDate.setDate(today.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(today.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(today.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(today.getDate() - 7); // Default to week
+      }
+      
+      // Filter users created in period
+      const usersInPeriod = users.filter(user => 
+        user.createdAt && new Date(user.createdAt) >= startDate
+      );
+      
+      // Get all game players to calculate active users
+      const allGamePlayers = [];
+      const games = await storage.getGames();
+      
+      for (const game of games) {
+        if (game.createdAt && new Date(game.createdAt) >= startDate) {
+          const gamePlayers = await storage.getGamePlayers(game.id);
+          allGamePlayers.push(...gamePlayers);
+        }
+      }
+      
+      // Get unique active user IDs
+      const activeUserIds = new Set(allGamePlayers.map(gp => gp.userId));
+      
+      // Group registrations by day for chart data
+      const usersByDay = {};
+      
+      // Initialize all days in the period
+      for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        usersByDay[dateStr] = 0;
+      }
+      
+      // Count users per day
+      usersInPeriod.forEach(user => {
+        if (user.createdAt) {
+          const dateStr = new Date(user.createdAt).toISOString().split('T')[0];
+          usersByDay[dateStr] = (usersByDay[dateStr] || 0) + 1;
+        }
+      });
+      
+      // Format for chart data
+      const chartData = Object.entries(usersByDay).map(([date, count]) => ({
+        date,
+        newUsers: count
+      }));
+      
+      res.json({
+        totalNewUsers: usersInPeriod.length,
+        totalActiveUsers: activeUserIds.size,
+        totalUsers: users.length,
+        chartData,
+        period
+      });
+    } catch (error) {
+      console.error("Error fetching user statistics:", error);
+      res.status(500).json({ message: "Error fetching user statistics" });
+    }
+  });
+  
   return httpServer;
 }

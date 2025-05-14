@@ -6,6 +6,8 @@ import {
   transactions, Transaction, InsertTransaction,
   GameStatus
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, gte, and, inArray, sql } from "drizzle-orm";
 
 // Interface for all storage operations
 export interface IStorage {
@@ -53,6 +55,13 @@ export interface IStorage {
   
   // Currency operations
   convertCurrency(amount: number, fromCurrency: string, toCurrency: string): Promise<{amount: number, rate: number}>;
+  
+  // Admin operations
+  getAllTransactions(): Promise<Transaction[]>;
+  getGameStatistics(period: string): Promise<any>; // Returns game creation and completion statistics
+  getFinancialStatistics(period: string): Promise<any>; // Returns financial data for dashboards
+  getUserActivity(period: string): Promise<any>; // Returns user registration and activity data
+  getTransactionSummary(period: string): Promise<any>; // Returns transaction summary by type and status
 }
 
 // In-memory implementation of the storage interface
@@ -1190,6 +1199,349 @@ export class DatabaseStorage implements IStorage {
       return {
         amount: amount * fallbackRate,
         rate: fallbackRate
+      };
+    }
+  }
+  
+  // Admin dashboard methods
+  async getAllTransactions(): Promise<Transaction[]> {
+    try {
+      const allTransactions = await db.select().from(transactions).orderBy(desc(transactions.createdAt));
+      return allTransactions;
+    } catch (error) {
+      console.error("Error fetching all transactions:", error);
+      return [];
+    }
+  }
+  
+  async getGameStatistics(period: string): Promise<any> {
+    try {
+      // Calculate date range based on period
+      const today = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case 'day':
+          startDate.setDate(today.getDate() - 1);
+          break;
+        case 'week':
+          startDate.setDate(today.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(today.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(today.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(today.getDate() - 7); // Default to week
+      }
+      
+      // Get games created in period
+      const gamesInPeriod = await db.select().from(games)
+        .where(gte(games.createdAt, startDate));
+      
+      // Calculate statistics
+      const totalGames = gamesInPeriod.length;
+      const gamesWaiting = gamesInPeriod.filter(g => g.status === 'waiting').length;
+      const gamesInProgress = gamesInPeriod.filter(g => g.status === 'in_progress').length;
+      const gamesCompleted = gamesInPeriod.filter(g => g.status === 'completed').length;
+      
+      // Group games by day for chart data
+      const gamesByDay: Record<string, number> = {};
+      
+      // Initialize all days in the period with 0 games
+      for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        gamesByDay[dateStr] = 0;
+      }
+      
+      // Count games per day
+      gamesInPeriod.forEach(game => {
+        const dateStr = new Date(game.createdAt).toISOString().split('T')[0];
+        gamesByDay[dateStr] = (gamesByDay[dateStr] || 0) + 1;
+      });
+      
+      // Format for chart data
+      const chartData = Object.entries(gamesByDay).map(([date, count]) => ({
+        date,
+        count
+      }));
+      
+      return {
+        totalGames,
+        gamesWaiting,
+        gamesInProgress,
+        gamesCompleted,
+        chartData,
+        period
+      };
+    } catch (error) {
+      console.error("Error getting game statistics:", error);
+      return {
+        totalGames: 0,
+        gamesWaiting: 0,
+        gamesInProgress: 0,
+        gamesCompleted: 0,
+        chartData: [],
+        period
+      };
+    }
+  }
+  
+  async getFinancialStatistics(period: string): Promise<any> {
+    try {
+      // Calculate date range based on period
+      const today = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case 'day':
+          startDate.setDate(today.getDate() - 1);
+          break;
+        case 'week':
+          startDate.setDate(today.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(today.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(today.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(today.getDate() - 7); // Default to week
+      }
+      
+      // Get transactions in period
+      const transactionsInPeriod = await db.select().from(transactions)
+        .where(gte(transactions.createdAt, startDate));
+      
+      // Calculate financial metrics
+      const totalDeposits = transactionsInPeriod
+        .filter(t => t.type === 'deposit' && t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalWithdrawals = transactionsInPeriod
+        .filter(t => t.type === 'withdrawal' && t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalFees = transactionsInPeriod
+        .filter(t => t.type === 'commission' && t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalGameStakes = transactionsInPeriod
+        .filter(t => t.type === 'stake' && t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalGameWinnings = transactionsInPeriod
+        .filter(t => t.type === 'winnings' && t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      // Group transactions by day for chart data
+      const depositsByDay: Record<string, number> = {};
+      const withdrawalsByDay: Record<string, number> = {};
+      const feesByDay: Record<string, number> = {};
+      
+      // Initialize all days in the period
+      for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        depositsByDay[dateStr] = 0;
+        withdrawalsByDay[dateStr] = 0;
+        feesByDay[dateStr] = 0;
+      }
+      
+      // Calculate daily totals
+      transactionsInPeriod.forEach(tx => {
+        if (tx.status !== 'completed') return;
+        
+        const dateStr = new Date(tx.createdAt).toISOString().split('T')[0];
+        
+        if (tx.type === 'deposit') {
+          depositsByDay[dateStr] = (depositsByDay[dateStr] || 0) + tx.amount;
+        } else if (tx.type === 'withdrawal') {
+          withdrawalsByDay[dateStr] = (withdrawalsByDay[dateStr] || 0) + tx.amount;
+        } else if (tx.type === 'commission') {
+          feesByDay[dateStr] = (feesByDay[dateStr] || 0) + tx.amount;
+        }
+      });
+      
+      // Format for chart data
+      const chartData = Object.keys(depositsByDay).map(date => ({
+        date,
+        deposits: depositsByDay[date] || 0,
+        withdrawals: withdrawalsByDay[date] || 0,
+        fees: feesByDay[date] || 0
+      }));
+      
+      return {
+        totalDeposits,
+        totalWithdrawals,
+        totalFees,
+        totalGameStakes,
+        totalGameWinnings,
+        netRevenue: totalDeposits - totalWithdrawals + totalFees,
+        chartData,
+        period
+      };
+    } catch (error) {
+      console.error("Error getting financial statistics:", error);
+      return {
+        totalDeposits: 0,
+        totalWithdrawals: 0,
+        totalFees: 0,
+        totalGameStakes: 0,
+        totalGameWinnings: 0,
+        netRevenue: 0,
+        chartData: [],
+        period
+      };
+    }
+  }
+  
+  async getUserActivity(period: string): Promise<any> {
+    try {
+      // Calculate date range based on period
+      const today = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case 'day':
+          startDate.setDate(today.getDate() - 1);
+          break;
+        case 'week':
+          startDate.setDate(today.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(today.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(today.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(today.getDate() - 7); // Default to week
+      }
+      
+      // Get users created in period
+      const usersInPeriod = await db.select().from(users)
+        .where(gte(users.createdAt, startDate));
+      
+      // Get game players in period (as proxy for active users)
+      const activeGamePlayers = await db.select()
+        .from(gamePlayers)
+        .innerJoin(games, eq(gamePlayers.gameId, games.id))
+        .where(gte(games.createdAt, startDate));
+      
+      // Get unique active user IDs
+      const activeUserIds = new Set(activeGamePlayers.map(gp => gp.userId));
+      
+      // Group registrations by day for chart data
+      const usersByDay: Record<string, number> = {};
+      
+      // Initialize all days in the period
+      for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        usersByDay[dateStr] = 0;
+      }
+      
+      // Count users per day
+      usersInPeriod.forEach(user => {
+        const dateStr = new Date(user.createdAt).toISOString().split('T')[0];
+        usersByDay[dateStr] = (usersByDay[dateStr] || 0) + 1;
+      });
+      
+      // Format for chart data
+      const chartData = Object.entries(usersByDay).map(([date, count]) => ({
+        date,
+        newUsers: count
+      }));
+      
+      return {
+        totalNewUsers: usersInPeriod.length,
+        totalActiveUsers: activeUserIds.size,
+        chartData,
+        period
+      };
+    } catch (error) {
+      console.error("Error getting user activity:", error);
+      return {
+        totalNewUsers: 0,
+        totalActiveUsers: 0,
+        chartData: [],
+        period
+      };
+    }
+  }
+  
+  async getTransactionSummary(period: string): Promise<any> {
+    try {
+      // Calculate date range based on period
+      const today = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case 'day':
+          startDate.setDate(today.getDate() - 1);
+          break;
+        case 'week':
+          startDate.setDate(today.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(today.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(today.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(today.getDate() - 7); // Default to week
+      }
+      
+      // Get transactions in period
+      const transactionsInPeriod = await db.select().from(transactions)
+        .where(gte(transactions.createdAt, startDate));
+      
+      // Count transactions by type and status
+      const byType: Record<string, number> = {};
+      const byStatus: Record<string, number> = {};
+      const byTypeAndStatus: Record<string, Record<string, number>> = {};
+      
+      transactionsInPeriod.forEach(tx => {
+        // By type
+        byType[tx.type] = (byType[tx.type] || 0) + 1;
+        
+        // By status
+        byStatus[tx.status] = (byStatus[tx.status] || 0) + 1;
+        
+        // By type and status
+        if (!byTypeAndStatus[tx.type]) {
+          byTypeAndStatus[tx.type] = {};
+        }
+        byTypeAndStatus[tx.type][tx.status] = (byTypeAndStatus[tx.type][tx.status] || 0) + 1;
+      });
+      
+      // Calculate total volumes by type
+      const volumeByType: Record<string, number> = {};
+      
+      transactionsInPeriod.forEach(tx => {
+        volumeByType[tx.type] = (volumeByType[tx.type] || 0) + tx.amount;
+      });
+      
+      return {
+        totalTransactions: transactionsInPeriod.length,
+        byType,
+        byStatus,
+        byTypeAndStatus,
+        volumeByType,
+        period
+      };
+    } catch (error) {
+      console.error("Error getting transaction summary:", error);
+      return {
+        totalTransactions: 0,
+        byType: {},
+        byStatus: {},
+        byTypeAndStatus: {},
+        volumeByType: {},
+        period
       };
     }
   }
