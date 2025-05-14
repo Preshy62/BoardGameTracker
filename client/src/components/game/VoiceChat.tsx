@@ -443,50 +443,91 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
         <div className="space-y-2">
           {/* Comprehensive guide for first-time users */}
           {!isJoined && !hasJoinedBefore && Object.keys(activeUsers).length === 0 && (
-            <div className={`text-center py-3 px-3 mb-2 text-sm rounded-md border ${
+            <div className={`text-center py-3 px-3 mb-2 text-sm rounded-md border shadow-sm ${
               isPremiumUI 
-                ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                : 'bg-blue-50 text-blue-700 border-blue-100'
+                ? 'bg-amber-50/70 text-amber-700 border-amber-200' 
+                : 'bg-blue-50/70 text-blue-700 border-blue-100'
             }`}>
-              <div className="flex items-center justify-center mb-1.5">
-                <Info className="h-4 w-4 mr-1.5" />
+              <div className="flex items-center justify-center mb-2">
+                <div className="relative mr-2">
+                  <Info className="h-4.5 w-4.5" />
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400"></span>
+                  </span>
+                </div>
                 <span className="font-medium">Voice Chat Guide</span>
               </div>
-              <p className="mb-1.5 text-xs leading-relaxed">
-                Click the <span className="font-semibold">Join</span> button to connect. Make sure your microphone 
-                is working and allow browser permissions when prompted.
-              </p>
-              <div className="text-xs flex justify-center space-x-3 mt-2">
-                <span className="flex items-center"><Headphones className="h-3.5 w-3.5 mr-1" /> Use headphones</span>
-                <span className="flex items-center"><Mic className="h-3.5 w-3.5 mr-1" /> Speak clearly</span>
+              
+              <div className="grid grid-cols-1 gap-2 mb-2">
+                <div className={`rounded-md p-1.5 ${isPremiumUI ? 'bg-amber-100/50' : 'bg-blue-100/50'}`}>
+                  <p className="text-xs leading-relaxed">
+                    Click <span className="font-semibold inline-flex items-center"><Phone className="h-3 w-3 mx-0.5" /> Join</span> to connect. 
+                    Allow microphone access when prompted.
+                  </p>
+                </div>
+                
+                <div className={`rounded-md p-1.5 ${isPremiumUI ? 'bg-amber-100/50' : 'bg-blue-100/50'}`}>
+                  <p className="text-xs leading-relaxed">
+                    Watch for the <span className="font-semibold inline-flex items-center gap-1">
+                      <div className="relative h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75 animate-ping"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </div> Live
+                    </span> indicator when connected.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="text-xs flex justify-center space-x-4 mt-3 pt-2 border-t border-blue-100">
+                <span className="flex items-center bg-white/50 px-2 py-1 rounded-full">
+                  <Headphones className="h-3.5 w-3.5 mr-1.5 text-blue-600" /> Use headphones
+                </span>
+                <span className="flex items-center bg-white/50 px-2 py-1 rounded-full">
+                  <Mic className="h-3.5 w-3.5 mr-1.5 text-blue-600" /> Speak clearly
+                </span>
               </div>
             </div>
           )}
           
           {/* Simple help text for experienced users */}
           {!isJoined && hasJoinedBefore && Object.keys(activeUsers).length === 0 && (
-            <div className={`text-center py-2.5 px-2 text-sm rounded-md ${
+            <div className={`text-center py-2.5 px-3 text-sm rounded-md shadow-sm ${
               isPremiumUI 
-                ? 'bg-amber-50 text-amber-700 border border-amber-200' 
-                : 'bg-slate-50 text-muted-foreground'
+                ? 'bg-amber-50/70 text-amber-700 border border-amber-200' 
+                : 'bg-slate-50/90 text-muted-foreground border border-slate-200'
             }`}>
               <p className="flex items-center justify-center">
-                <Info className="h-4 w-4 mr-1.5 opacity-70" />
-                Click <span className="font-medium mx-1">Join</span> to connect to voice chat
+                <div className="relative mr-2">
+                  <Phone className="h-4 w-4 text-blue-500" />
+                  <span className="absolute -top-1 -right-1 flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-400"></span>
+                  </span>
+                </div>
+                <span>Click <span className="font-medium mx-1 bg-blue-100/50 text-blue-700 px-1.5 rounded">Join</span> to connect to voice chat</span>
               </p>
             </div>
           )}
           
           {/* No other users message when connected alone */}
           {isJoined && Object.keys(activeUsers).length === 1 && (
-            <div className={`text-center py-2 px-2 mb-2 text-sm rounded-md ${
+            <div className={`text-center py-2.5 px-3 mb-2 text-sm rounded-md shadow-sm ${
               isPremiumUI 
-                ? 'bg-amber-50 text-amber-600 border border-amber-100' 
-                : 'bg-slate-50 text-slate-500'
+                ? 'bg-amber-50/80 text-amber-600 border border-amber-100' 
+                : 'bg-slate-50/90 text-slate-600 border border-slate-200'
             }`}>
               <p className="flex items-center justify-center">
-                <Users className="h-4 w-4 mr-1.5 opacity-70" />
-                No other players connected to voice chat yet
+                <div className="relative flex items-center mr-2">
+                  <Users className="h-4 w-4 text-slate-500" />
+                  <span className="absolute -top-1 right-0 h-3 w-3 flex items-center justify-center text-[8px] font-bold bg-slate-200 rounded-full text-slate-600">
+                    1
+                  </span>
+                </div>
+                <span>
+                  No other players connected yet
+                  <span className="block text-xs text-slate-500 mt-0.5">When others join, they'll appear here</span>
+                </span>
               </p>
             </div>
           )}
