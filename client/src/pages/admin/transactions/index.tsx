@@ -1,4 +1,4 @@
-import { AdminLayout } from "@/layouts/AdminLayout";
+
 import { AllTransactions } from "@/components/admin/AllTransactions";
 import { PendingWithdrawals } from "@/components/admin/PendingWithdrawals";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +9,7 @@ import { ArrowRightIcon, Bug } from "lucide-react";
 
 export default function AdminTransactionsPage() {
   return (
-    <AdminLayout>
+    <div>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Transaction Management</h1>
         
@@ -34,6 +34,6 @@ export default function AdminTransactionsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </div>
   );
 }

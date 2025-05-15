@@ -62,7 +62,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AdminLayout } from "@/layouts/AdminLayout";
+
 
 type UserDetailPageProps = {
   id?: string;
@@ -300,7 +300,7 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
   }
   
   return (
-    <AdminLayout>
+    <div>
       <div className="flex items-center mb-8">
         <Button 
           variant="ghost" 
@@ -781,6 +781,6 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
           </CardContent>
         </Card>
       )}
-    </AdminLayout>
+    </div>
   );
 }
