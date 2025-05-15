@@ -21,6 +21,7 @@ import VoiceTest from "@/pages/voice-test";
 import BoardTest from "@/pages/board-test";
 import TestPaystack from "@/pages/test-paystack";
 import AdminDashboard from "@/pages/admin/index";
+import AdminUsers from "@/pages/admin/users/index";
 import AdminVoiceTools from "@/pages/admin/voice-tools";
 import AdminTransactions from "@/pages/admin/transactions/index";
 import AdminTransactionDetail from "@/pages/admin/transactions/[id]";
@@ -70,6 +71,7 @@ function Router() {
       
       {/* Admin routes - hidden from regular navigation */}
       <ProtectedRoute path="/admin" component={AdminDashboard} />
+      <ProtectedRoute path="/admin/users" component={AdminUsers} />
       <ProtectedRoute path="/admin/voice-tools" component={AdminVoiceTools} />
       <ProtectedRoute path="/admin/transactions" component={AdminTransactions} />
       <Route path="/admin/transactions/:id">
