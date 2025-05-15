@@ -22,6 +22,8 @@ import BoardTest from "@/pages/board-test";
 import TestPaystack from "@/pages/test-paystack";
 import AdminDashboard from "@/pages/admin/index";
 import AdminVoiceTools from "@/pages/admin/voice-tools";
+import AdminTransactions from "@/pages/admin/transactions";
+import AdminTransactionDetail from "@/pages/admin/transactions/[id]";
 import VerifyEmail from "@/pages/auth/verify-email";
 import ResetPassword from "@/pages/auth/reset-password";
 import { useEffect } from "react";
@@ -67,6 +69,8 @@ function Router() {
       {/* Admin routes - hidden from regular navigation */}
       <ProtectedRoute path="/admin" component={AdminDashboard} />
       <ProtectedRoute path="/admin/voice-tools" component={AdminVoiceTools} />
+      <ProtectedRoute path="/admin/transactions" component={AdminTransactions} />
+      <ProtectedRoute path="/admin/transactions/:id" component={AdminTransactionDetail} />
       
       {/* Legacy routes - disabled */}
       

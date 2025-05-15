@@ -1,45 +1,30 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { getQueryFn } from "@/lib/queryClient";
 
-// List of admin usernames - fallback only
-const ADMIN_USERNAMES = ["admin", "precious"];
-
+/**
+ * Custom hook to check if the current user has admin privileges
+ * This hook helps protect admin routes and conditionally render admin-only UI elements
+ */
 export function useAdmin() {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Use React Query to check admin status from server
-  const { data, isError } = useQuery({
+  const { 
+    data, 
+    isLoading, 
+    error 
+  } = useQuery<{ isAdmin: boolean, username: string }>({
     queryKey: ["/api/admin/check"],
-    queryFn: async () => {
-      if (!user) return { isAdmin: false };
-      
-      try {
-        const response = await apiRequest("GET", "/api/admin/check");
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-        // Fallback to client-side check if API fails
-        return { 
-          isAdmin: ADMIN_USERNAMES.includes(user.username),
-          fromFallback: true
-        };
-      }
-    },
-    enabled: !!user, // Only run query if user is logged in
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    refetchOnWindowFocus: false,
+    queryFn: getQueryFn({ on401: "returnUndefined" }),
+    staleTime: 60 * 1000, // Cache for 1 minute
+    retry: false, // Don't retry if it fails - likely means user doesn't have admin access
   });
   
-  // Determine admin status - use server response if available, otherwise fallback
-  const isAdmin = data?.isAdmin || false;
+  // Default to non-admin if data is undefined or error occurred
+  const isAdmin = data?.isAdmin ?? false;
+  const username = data?.username;
   
-  return {
+  return { 
     isAdmin,
-    isLoading: isLoading && !isError,
-    isError
+    username,
+    isLoading,
+    error
   };
 }
