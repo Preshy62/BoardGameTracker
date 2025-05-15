@@ -70,57 +70,32 @@ function Router() {
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/checkout/:amount" component={Checkout} />
       
-      {/* Admin routes - hidden from regular navigation */}
-      <Route path="/admin">
-        <AdminLayout>
-          <AdminDashboard />
-        </AdminLayout>
-      </Route>
-      <Route path="/admin/users">
-        <AdminLayout>
-          <AdminUsers />
-        </AdminLayout>
-      </Route>
-      <Route path="/admin/voice-tools">
-        <AdminLayout>
-          <AdminVoiceTools />
-        </AdminLayout>
-      </Route>
-      <Route path="/admin/transactions">
-        <AdminLayout>
-          <AdminTransactions />
-        </AdminLayout>
-      </Route>
-      <Route path="/admin/transactions/:id">
-        {params => {
-          console.log("Transaction route params:", params);
-          return (
-            <AdminLayout>
-              <AdminTransactionDetail id={params.id} />
-            </AdminLayout>
-          );
-        }}
-      </Route>
-      <Route path="/admin/users/:id">
-        {params => {
-          console.log("User detail route params:", params);
-          return (
-            <AdminLayout>
-              <AdminUserDetail id={params.id} />
-            </AdminLayout>
-          );
-        }}
-      </Route>
-      <Route path="/admin/debug-transaction">
-        <AdminLayout>
-          <DebugTransaction />
-        </AdminLayout>
+      {/* Admin routes - using AdminLayout at router level */}
+      <Route path="/admin*">
+        {(params) => (
+          <AdminLayout>
+            <Switch>
+              <Route path="/admin" component={AdminDashboard} />
+              <Route path="/admin/users/:id">
+                {params => <AdminUserDetail id={params.id} />}
+              </Route>
+              <Route path="/admin/users" component={AdminUsers} />
+              <Route path="/admin/voice-tools" component={AdminVoiceTools} />
+              <Route path="/admin/transactions/:id">
+                {params => <AdminTransactionDetail id={params.id} />}
+              </Route>
+              <Route path="/admin/transactions" component={AdminTransactions} />
+              <Route path="/admin/debug-transaction" component={DebugTransaction} />
+              <Route component={NotFound} />
+            </Switch>
+          </AdminLayout>
+        )}
       </Route>
       
       {/* Legacy routes - disabled */}
       
-      {/* 404 route */}
-      <Route component={NotFound} />
+      {/* 404 route - only for non-admin paths */}
+      <Route path="/:rest*" component={NotFound} />
     </Switch>
   );
 }
