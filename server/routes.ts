@@ -1584,6 +1584,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin - Get single user details
+  app.get("/api/admin/users/:userId", authenticateAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Get user's transactions
+      const transactions = await storage.getUserTransactions(userId);
+      
+      // Get user's games
+      const games = await storage.getUserGames(userId);
+      
+      res.json({
+        user,
+        transactions,
+        games
+      });
+    } catch (error) {
+      console.error(`Error fetching user details for admin: ${error}`);
+      res.status(500).json({ message: "Error fetching user details" });
+    }
+  });
+  
+  // Admin - Update user status (activate/deactivate)
+  app.patch("/api/admin/users/:userId/status", authenticateAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { isActive } = req.body;
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ message: "isActive must be a boolean value" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent deactivating the current admin user
+      if (user.id === req.user?.id && !isActive) {
+        return res.status(400).json({ message: "You cannot deactivate your own account" });
+      }
+      
+      const updatedUser = await storage.updateUserProfile(userId, { isActive });
+      
+      res.json({
+        message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error(`Error updating user status for admin: ${error}`);
+      res.status(500).json({ message: "Error updating user status" });
+    }
+  });
+  
+  // Admin - Adjust user balance
+  app.patch("/api/admin/users/:userId/balance", authenticateAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { amount, reason } = req.body;
+      if (typeof amount !== 'number' || isNaN(amount)) {
+        return res.status(400).json({ message: "Amount must be a valid number" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Calculate new balance
+      const newBalance = user.walletBalance + amount;
+      if (newBalance < 0) {
+        return res.status(400).json({ message: "Balance adjustment would result in negative balance" });
+      }
+      
+      // Update user balance
+      const updatedUser = await storage.updateUserBalance(userId, newBalance);
+      
+      // Create transaction record
+      const transactionType = amount > 0 ? 'deposit' : 'withdrawal';
+      const transaction = await storage.createTransaction({
+        userId,
+        type: transactionType,
+        amount: Math.abs(amount),
+        status: 'completed',
+        currency: user.preferredCurrency || 'NGN',
+        description: reason || `Manual balance adjustment by admin (${req.user?.username})`,
+        reference: `admin-${Date.now()}`
+      });
+      
+      res.json({
+        message: `User balance updated successfully`,
+        user: updatedUser,
+        transaction
+      });
+    } catch (error) {
+      console.error(`Error adjusting user balance for admin: ${error}`);
+      res.status(500).json({ message: "Error adjusting user balance" });
+    }
+  });
+  
   // Admin Games endpoint
   app.get("/api/admin/games", authenticateAdmin, async (req, res) => {
     try {
