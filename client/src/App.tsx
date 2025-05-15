@@ -22,7 +22,7 @@ import BoardTest from "@/pages/board-test";
 import TestPaystack from "@/pages/test-paystack";
 import AdminDashboard from "@/pages/admin/index";
 import AdminVoiceTools from "@/pages/admin/voice-tools";
-import AdminTransactions from "@/pages/admin/transactions";
+import AdminTransactions from "@/pages/admin/transactions/index";
 import AdminTransactionDetail from "@/pages/admin/transactions/[id]";
 import VerifyEmail from "@/pages/auth/verify-email";
 import ResetPassword from "@/pages/auth/reset-password";
