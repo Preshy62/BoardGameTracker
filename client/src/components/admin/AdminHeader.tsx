@@ -75,7 +75,7 @@ export function AdminHeader() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
           {ADMIN_ROUTES.map((route) => {
-            const isActive = location === route.path;
+            const isActive = location.startsWith(route.path);
             const Icon = route.icon;
             
             return (
@@ -147,7 +147,7 @@ export function AdminHeader() {
               <SheetContent side="right">
                 <nav className="flex flex-col gap-4 mt-8">
                   {ADMIN_ROUTES.map((route) => {
-                    const isActive = location === route.path;
+                    const isActive = location.startsWith(route.path);
                     const Icon = route.icon;
                     
                     return (

@@ -75,11 +75,11 @@ function Router() {
         {(params) => (
           <AdminLayout>
             <Switch>
-              <Route path="/admin" component={AdminDashboard} />
               <Route path="/admin/users/:id">
                 {params => <AdminUserDetail id={params.id} />}
               </Route>
               <Route path="/admin/users" component={AdminUsers} />
+              <Route path="/admin" component={AdminDashboard} />
               <Route path="/admin/voice-tools" component={AdminVoiceTools} />
               <Route path="/admin/transactions/:id">
                 {params => <AdminTransactionDetail id={params.id} />}
