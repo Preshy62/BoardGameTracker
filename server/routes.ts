@@ -1660,6 +1660,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin - Update user profile details (username, email, phone)
+  app.patch("/api/admin/users/:userId", authenticateAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { username, email, phone } = req.body;
+      
+      // Basic validation
+      if (username && (typeof username !== 'string' || username.length < 3)) {
+        return res.status(400).json({ message: "Username must be at least 3 characters" });
+      }
+      
+      if (email && (typeof email !== 'string' || !email.includes('@'))) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if username is already taken by another user
+      if (username && username !== user.username) {
+        const existingUser = await storage.getUserByUsername(username);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ message: "Username is already taken" });
+        }
+      }
+      
+      // Check if email is already taken by another user
+      if (email && email !== user.email) {
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ message: "Email is already taken" });
+        }
+      }
+      
+      // Update user profile
+      const updatedUser = await storage.updateUserProfile(userId, { 
+        ...(username && { username }),
+        ...(email && { email }),
+        ...(phone !== undefined && { phone })
+      });
+      
+      res.json({
+        message: "User profile updated successfully",
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error(`Error updating user profile for admin: ${error}`);
+      res.status(500).json({ message: "Error updating user profile" });
+    }
+  });
+  
   // Admin - Adjust user balance
   app.patch("/api/admin/users/:userId/balance", authenticateAdmin, async (req, res) => {
     try {
