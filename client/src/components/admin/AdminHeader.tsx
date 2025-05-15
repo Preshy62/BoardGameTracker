@@ -10,7 +10,8 @@ import {
   Gamepad2, 
   LogOut, 
   Settings,
-  Menu
+  Menu,
+  Headphones
 } from "lucide-react";
 import { 
   Sheet, 
@@ -34,6 +35,7 @@ const ADMIN_ROUTES = [
   { path: "/admin/users", label: "Users", icon: Users },
   { path: "/admin/transactions", label: "Transactions", icon: CircleDollarSign },
   { path: "/admin/games", label: "Games", icon: Gamepad2 },
+  { path: "/admin/voice-tools", label: "Voice Tools", icon: Headphones },
   { path: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
