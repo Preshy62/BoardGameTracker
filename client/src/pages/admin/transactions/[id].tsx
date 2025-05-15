@@ -1,24 +1,40 @@
 import { useEffect, useState } from "react";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useRoute, useLocation } from "wouter";
-import { AdminLayout } from "@/layouts/AdminLayout";
+import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Loader2, ArrowLeft, Ban, CheckCircle } from "lucide-react";
+import { AdminLayout } from "@/layouts/AdminLayout";
+import { apiRequest } from "@/lib/queryClient";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+import { Separator } from "@/components/ui/separator";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { formatCurrency, formatDateTime } from "@/lib/format";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { toast } from "@/hooks/use-toast";
+import { 
+  AlertCircle, 
+  ArrowLeft, 
+  Ban, 
+  CheckCircle, 
+  Clock, 
+  CreditCard, 
+  User 
+} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Transaction = {
   id: number;
@@ -42,44 +58,38 @@ type Transaction = {
 };
 
 export default function TransactionDetailPage() {
-  const [, params] = useRoute<{ id: string }>("/admin/transactions/:id");
+  const { id } = useParams();
+  const transactionId = parseInt(id);
   const [, navigate] = useLocation();
-  const { isAdmin, isLoading: adminCheckLoading } = useAdmin();
-  const [newStatus, setNewStatus] = useState<string>("");
-  const [statusNote, setStatusNote] = useState<string>("");
+  const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAdmin, isLoading: adminCheckLoading } = useAdmin();
   
-  const transactionId = params?.id ? parseInt(params.id) : null;
+  const [newStatus, setNewStatus] = useState("");
+  const [statusNote, setStatusNote] = useState("");
   
   // Fetch transaction details
-  const { data: transaction, isLoading, error } = useQuery<Transaction>({
+  const { data, isLoading, error } = useQuery<Transaction>({
     queryKey: ["/api/admin/transactions", transactionId],
-    queryFn: async () => {
-      if (!transactionId) throw new Error("Transaction ID is required");
-      const response = await apiRequest("GET", `/api/admin/transactions/${transactionId}`);
-      return response.json();
-    },
-    enabled: !!transactionId && isAdmin,
+    queryFn: () => apiRequest("GET", `/api/admin/transactions/${transactionId}`).then(res => res.json()),
+    enabled: !isNaN(transactionId) && !!isAdmin,
   });
   
-  // Update transaction status mutation
+  const transaction = data;
+  
+  // Mutation for updating transaction status
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ status, note }: { status: string; note: string }) => {
-      if (!transactionId) throw new Error("Transaction ID is required");
-      
+    mutationFn: async (updates: { status: string; note?: string }) => {
       const response = await apiRequest(
         "PATCH", 
-        `/api/admin/transactions/${transactionId}/status`, 
-        { 
-          status,
-          reason: note || undefined
-        }
+        `/api/admin/transactions/${transactionId}/status`,
+        updates
       );
       return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Transaction status updated",
+        title: "Success",
         description: "The transaction status has been successfully updated",
       });
       
@@ -119,7 +129,7 @@ export default function TransactionDetailPage() {
     
     updateStatusMutation.mutate({
       status: newStatus,
-      note: statusNote
+      reason: statusNote || undefined
     });
   };
   
@@ -140,11 +150,19 @@ export default function TransactionDetailPage() {
     }
   }, [adminCheckLoading, isAdmin, navigate]);
   
-  if (adminCheckLoading || isLoading) {
+  if (isLoading || adminCheckLoading) {
     return (
       <AdminLayout>
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="mr-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <Skeleton className="h-8 w-64" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Skeleton className="h-[300px] w-full" />
+          <Skeleton className="h-[300px] w-full" />
         </div>
       </AdminLayout>
     );
@@ -153,137 +171,192 @@ export default function TransactionDetailPage() {
   if (error || !transaction) {
     return (
       <AdminLayout>
-        <Alert variant="destructive" className="mb-6">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {error instanceof Error 
-              ? error.message 
-              : "Failed to load transaction details. Please try again."}
-          </AlertDescription>
-        </Alert>
-        <Button onClick={handleBack} variant="outline" className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Transactions
-        </Button>
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="mr-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-2xl font-bold text-destructive">Transaction Not Found</h1>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 text-destructive">
+              <AlertCircle className="h-6 w-6" />
+              <p>The transaction could not be loaded. It may have been deleted or you may not have permission to view it.</p>
+            </div>
+            <Button onClick={handleBack} className="mt-4">
+              Return to Transactions
+            </Button>
+          </CardContent>
+        </Card>
       </AdminLayout>
     );
   }
   
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
-        <Button onClick={handleBack} variant="outline" className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Transactions
+      <div className="flex items-center mb-6">
+        <Button variant="ghost" size="sm" onClick={handleBack} className="mr-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
         </Button>
+        <h1 className="text-2xl font-bold">Transaction #{transaction.id}</h1>
+        <Badge variant={getStatusBadgeVariant(transaction.status)} className="ml-4">
+          {transaction.status.toUpperCase()}
+        </Badge>
       </div>
       
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Transaction details */}
-        <Card className="md:col-span-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Transaction Details</CardTitle>
-                <CardDescription>Transaction #{transaction.id}</CardDescription>
-              </div>
-              <Badge variant={getStatusBadgeVariant(transaction.status) as any}>
-                {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-              </Badge>
-            </div>
+            <CardTitle>Transaction Details</CardTitle>
+            <CardDescription>
+              Basic information about this transaction
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 gap-y-6 gap-x-10">
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium text-muted-foreground">Reference</h4>
-                <p className="font-medium break-all">{transaction.reference}</p>
+            <dl className="space-y-4">
+              <div className="flex flex-col space-y-1">
+                <dt className="text-sm font-medium text-muted-foreground">Type</dt>
+                <dd className="flex items-center gap-2 font-medium">
+                  <CreditCard className="h-4 w-4" />
+                  {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                </dd>
               </div>
               
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium text-muted-foreground">Date & Time</h4>
-                <p className="font-medium">
-                  {transaction.createdAt 
-                    ? formatDateTime(transaction.createdAt) 
-                    : 'Unknown'}
-                </p>
-              </div>
-              
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium text-muted-foreground">Amount</h4>
-                <p className="font-medium text-lg">
+              <div className="flex flex-col space-y-1">
+                <dt className="text-sm font-medium text-muted-foreground">Amount</dt>
+                <dd className="text-lg font-bold">
                   {formatCurrency(transaction.amount, transaction.currency)}
-                </p>
+                </dd>
               </div>
               
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium text-muted-foreground">Type</h4>
-                <p className="font-medium capitalize">{transaction.type}</p>
+              <div className="flex flex-col space-y-1">
+                <dt className="text-sm font-medium text-muted-foreground">Date</dt>
+                <dd className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  {formatDate(transaction.createdAt)}
+                </dd>
               </div>
               
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium text-muted-foreground">User ID</h4>
-                <p className="font-medium">{transaction.userId}</p>
+              <div className="flex flex-col space-y-1">
+                <dt className="text-sm font-medium text-muted-foreground">Reference</dt>
+                <dd className="font-mono text-sm">
+                  {transaction.reference}
+                </dd>
               </div>
               
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium text-muted-foreground">User</h4>
-                <p className="font-medium">
-                  {transaction.user 
-                    ? `${transaction.user.username} (${transaction.user.email})` 
-                    : 'Unknown user'}
-                </p>
-              </div>
-              
-              {transaction.bankDetails && (
-                <div className="col-span-2 space-y-2 mt-2">
-                  <h4 className="text-sm font-medium text-muted-foreground">Bank Details</h4>
-                  <div className="p-4 bg-muted rounded-md">
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Bank Name</p>
-                        <p className="font-medium">{transaction.bankDetails.bankName}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Account Number</p>
-                        <p className="font-medium">{transaction.bankDetails.accountNumber}</p>
-                      </div>
-                      {transaction.bankDetails.accountName && (
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Account Name</p>
-                          <p className="font-medium">{transaction.bankDetails.accountName}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+              {transaction.description && (
+                <div className="flex flex-col space-y-1">
+                  <dt className="text-sm font-medium text-muted-foreground">Description</dt>
+                  <dd className="text-sm whitespace-pre-line">
+                    {transaction.description}
+                  </dd>
                 </div>
               )}
-              
-              <div className="col-span-2 space-y-2 mt-2">
-                <h4 className="text-sm font-medium text-muted-foreground">Description</h4>
-                <p className="text-sm">
-                  {transaction.description || 'No description provided'}
-                </p>
-              </div>
-            </div>
+            </dl>
           </CardContent>
         </Card>
         
-        {/* Update status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Update Status</CardTitle>
-            <CardDescription>Change the status of this transaction</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Information</CardTitle>
+              <CardDescription>
+                Details about the user associated with this transaction
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {transaction.user ? (
+                <dl className="space-y-4">
+                  <div className="flex flex-col space-y-1">
+                    <dt className="text-sm font-medium text-muted-foreground">Username</dt>
+                    <dd className="flex items-center gap-2 font-medium">
+                      <User className="h-4 w-4" />
+                      {transaction.user.username}
+                    </dd>
+                  </div>
+                  
+                  <div className="flex flex-col space-y-1">
+                    <dt className="text-sm font-medium text-muted-foreground">Email</dt>
+                    <dd className="text-sm">
+                      {transaction.user.email}
+                    </dd>
+                  </div>
+                  
+                  <div className="flex flex-col space-y-1">
+                    <dt className="text-sm font-medium text-muted-foreground">User ID</dt>
+                    <dd className="text-sm font-mono">
+                      {transaction.userId}
+                    </dd>
+                  </div>
+                </dl>
+              ) : (
+                <div className="flex items-center justify-center h-24 text-muted-foreground">
+                  No user information available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {transaction.type === 'withdrawal' && transaction.bankDetails && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Bank Details</CardTitle>
+                <CardDescription>
+                  Banking information for this withdrawal
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <dl className="space-y-4">
+                  <div className="flex flex-col space-y-1">
+                    <dt className="text-sm font-medium text-muted-foreground">Bank Name</dt>
+                    <dd className="font-medium">
+                      {transaction.bankDetails.bankName}
+                    </dd>
+                  </div>
+                  
+                  <div className="flex flex-col space-y-1">
+                    <dt className="text-sm font-medium text-muted-foreground">Account Number</dt>
+                    <dd className="font-mono">
+                      {transaction.bankDetails.accountNumber}
+                    </dd>
+                  </div>
+                  
+                  {transaction.bankDetails.accountName && (
+                    <div className="flex flex-col space-y-1">
+                      <dt className="text-sm font-medium text-muted-foreground">Account Name</dt>
+                      <dd>
+                        {transaction.bankDetails.accountName}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+      
+      {/* Status Update Section */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Update Status</CardTitle>
+          <CardDescription>
+            Change the status of this transaction
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">New Status</label>
               <Select value={newStatus} onValueChange={setNewStatus}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select new status" />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
                   <SelectItem value="disputed">Disputed</SelectItem>
                 </SelectContent>
@@ -291,64 +364,53 @@ export default function TransactionDetailPage() {
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">Status Note (Optional)</label>
-              <Textarea
-                placeholder="Add a note about this status change"
+              <label className="text-sm font-medium">Note (Optional)</label>
+              <Textarea 
+                placeholder="Add a note explaining the status change"
                 value={statusNote}
-                onChange={(e) => setStatusNote(e.target.value)}
-                rows={4}
+                onChange={e => setStatusNote(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                This note will be included in the transaction record.
-              </p>
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-2">
-            <Button
-              className="w-full"
-              onClick={handleUpdateStatus}
-              disabled={!newStatus || updateStatusMutation.isPending}
-            >
-              {updateStatusMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                "Update Status"
-              )}
-            </Button>
-            
-            {transaction.type === 'withdrawal' && transaction.status === 'pending' && (
-              <>
-                <Button
-                  variant="outline"
-                  className="w-full flex items-center gap-2 text-green-600 hover:bg-green-600/10 hover:text-green-600"
-                  onClick={() => {
-                    setNewStatus('completed');
-                    setStatusNote("Withdrawal approved by admin");
-                  }}
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  Approve Withdrawal
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="w-full flex items-center gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => {
-                    setNewStatus('failed');
-                    setStatusNote("Withdrawal rejected by admin");
-                  }}
-                >
-                  <Ban className="h-4 w-4" />
-                  Reject Withdrawal
-                </Button>
-              </>
-            )}
-          </CardFooter>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <Button 
+            variant="default" 
+            onClick={handleUpdateStatus} 
+            disabled={!newStatus || updateStatusMutation.isPending}
+          >
+            {updateStatusMutation.isPending ? 'Updating...' : 'Update Status'}
+          </Button>
+          
+          {transaction.type === 'withdrawal' && transaction.status === 'pending' && (
+            <>
+              <Button
+                variant="outline"
+                className="w-full flex items-center gap-2 text-green-600 hover:bg-green-600/10 hover:text-green-600"
+                onClick={() => {
+                  setNewStatus('completed');
+                  setStatusNote("Withdrawal approved by admin");
+                }}
+              >
+                <CheckCircle className="h-4 w-4" />
+                Approve Withdrawal
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="w-full flex items-center gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => {
+                  setNewStatus('failed');
+                  setStatusNote("Withdrawal rejected by admin");
+                }}
+              >
+                <Ban className="h-4 w-4" />
+                Reject Withdrawal
+              </Button>
+            </>
+          )}
+        </CardFooter>
+      </Card>
     </AdminLayout>
   );
 }

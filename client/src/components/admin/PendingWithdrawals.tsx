@@ -1,82 +1,92 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Loader2, CheckCircle, XCircle, ArrowUpRight } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { format, parseISO } from "date-fns";
-import { useLocation } from "wouter";
-import { useState } from "react";
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Ban,
+  CheckCircle,
+  Clock,
+  Eye,
+  ExternalLink,
+  RefreshCcw,
+  User,
+} from "lucide-react";
 
-type Withdrawal = {
+type Transaction = {
   id: number;
   userId: number;
   amount: number;
   currency: string;
   status: string;
+  type: string;
   createdAt: string;
-  description: string;
   reference: string;
-  bankDetails: {
+  bankDetails?: {
     bankName: string;
     accountNumber: string;
     accountName?: string;
   };
-  user: {
+  user?: {
     username: string;
     email: string;
   };
 };
 
-type RejectWithdrawalData = {
-  transactionId: number;
-  reason: string;
-};
-
 export function PendingWithdrawals() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-  const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
-  const [rejectionReason, setRejectionReason] = useState("");
   
   // Fetch pending withdrawals
-  const { data: pendingWithdrawals, isLoading } = useQuery<Withdrawal[]>({
+  const { data, isLoading, error, refetch } = useQuery<Transaction[]>({
     queryKey: ["/api/admin/withdrawals/pending"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/admin/withdrawals/pending");
-      return response.json();
-    },
-    staleTime: 30 * 1000, // 30 seconds
+    queryFn: () => apiRequest("GET", "/api/admin/withdrawals/pending").then(res => res.json()),
   });
   
-  // Mutation for approving withdrawal
+  // Approve withdrawal mutation
   const approveWithdrawalMutation = useMutation({
     mutationFn: async (transactionId: number) => {
       const response = await apiRequest(
         "PATCH", 
-        `/api/admin/transactions/${transactionId}/status`, 
-        { status: "completed" }
+        `/api/admin/transactions/${transactionId}/status`,
+        { status: "completed", reason: "Withdrawal approved by admin" }
       );
       return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Withdrawal approved",
-        description: "The withdrawal request has been approved",
+        title: "Success",
+        description: "The withdrawal has been approved",
       });
+      
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals/pending"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/transactions"] });
@@ -90,32 +100,33 @@ export function PendingWithdrawals() {
     }
   });
   
-  // Mutation for rejecting withdrawal
+  // Reject withdrawal mutation
   const rejectWithdrawalMutation = useMutation({
-    mutationFn: async (data: RejectWithdrawalData) => {
+    mutationFn: async ({ transactionId, reason }: { transactionId: number; reason: string }) => {
       const response = await apiRequest(
         "PATCH", 
-        `/api/admin/transactions/${data.transactionId}/status`, 
+        `/api/admin/transactions/${transactionId}/status`,
         { 
           status: "failed", 
-          reason: data.reason 
+          reason: reason || "Withdrawal rejected by admin" 
         }
       );
       return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Withdrawal rejected",
-        description: "The withdrawal request has been rejected",
+        title: "Success",
+        description: "The withdrawal has been rejected and funds returned to the user",
       });
+      
+      // Reset state
+      setSelectedTransaction(null);
+      setRejectReason("");
+      setIsRejectDialogOpen(false);
+      
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals/pending"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/transactions"] });
-      
-      // Close dialog and reset state
-      setIsRejectDialogOpen(false);
-      setSelectedWithdrawal(null);
-      setRejectionReason("");
     },
     onError: (error) => {
       toast({
@@ -126,53 +137,91 @@ export function PendingWithdrawals() {
     }
   });
   
-  const handleApproveWithdrawal = (withdrawal: Withdrawal) => {
-    approveWithdrawalMutation.mutate(withdrawal.id);
+  const handleViewTransaction = (id: number) => {
+    navigate(`/admin/transactions/${id}`);
   };
   
-  const openRejectDialog = (withdrawal: Withdrawal) => {
-    setSelectedWithdrawal(withdrawal);
-    setRejectionReason("");
-    setIsRejectDialogOpen(true);
+  const handleApproveWithdrawal = (transaction: Transaction) => {
+    approveWithdrawalMutation.mutate(transaction.id);
   };
   
   const handleRejectWithdrawal = () => {
-    if (!selectedWithdrawal) return;
+    if (!selectedTransaction) return;
     
     rejectWithdrawalMutation.mutate({
-      transactionId: selectedWithdrawal.id,
-      reason: rejectionReason
+      transactionId: selectedTransaction.id,
+      reason: rejectReason
     });
   };
   
-  const handleViewDetails = (withdrawalId: number) => {
-    navigate(`/admin/transactions/${withdrawalId}`);
+  const openRejectDialog = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setRejectReason("");
+    setIsRejectDialogOpen(true);
   };
   
   if (isLoading) {
     return (
-      <Card>
+      <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Pending Withdrawals</CardTitle>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64" />
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <Skeleton key={idx} className="h-[200px] w-full" />
+            ))}
           </div>
         </CardContent>
       </Card>
     );
   }
   
-  if (!pendingWithdrawals || pendingWithdrawals.length === 0) {
+  if (error) {
     return (
-      <Card>
+      <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Pending Withdrawals</CardTitle>
+          <CardTitle className="flex items-center text-destructive">
+            <AlertCircle className="mr-2 h-5 w-5" />
+            Error Loading Withdrawals
+          </CardTitle>
+          <CardDescription>
+            There was a problem fetching pending withdrawals
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            No pending withdrawal requests
+          <p className="text-destructive mb-4">
+            {error instanceof Error ? error.message : "Unknown error"}
+          </p>
+          <Button 
+            variant="outline" 
+            onClick={() => refetch()}
+            className="flex items-center"
+          >
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  const pendingWithdrawals = data || [];
+  
+  if (pendingWithdrawals.length === 0) {
+    return (
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Pending Withdrawals</CardTitle>
+          <CardDescription>
+            Manage withdrawal requests from users
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-6 text-muted-foreground">
+            <CheckCircle className="mr-2 h-5 w-5 text-success" />
+            No pending withdrawals at this time
           </div>
         </CardContent>
       </Card>
@@ -181,88 +230,99 @@ export function PendingWithdrawals() {
   
   return (
     <>
-      <Card>
+      <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Pending Withdrawals</CardTitle>
+          <CardTitle>Pending Withdrawals ({pendingWithdrawals.length})</CardTitle>
+          <CardDescription>
+            Review and approve or reject withdrawal requests
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-md overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Bank Details</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Reference</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingWithdrawals.map((withdrawal) => (
-                  <TableRow key={withdrawal.id}>
-                    <TableCell className="font-medium">{withdrawal.id}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span>{withdrawal.user?.username || 'Unknown'}</span>
-                        <span className="text-xs text-muted-foreground">{withdrawal.user?.email}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pendingWithdrawals.map((withdrawal) => (
+              <Card key={withdrawal.id} className="overflow-hidden">
+                <CardHeader className="bg-muted/50 pb-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg">
+                        {formatCurrency(withdrawal.amount, withdrawal.currency)}
+                      </CardTitle>
+                      <CardDescription className="flex items-center mt-1">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {formatDate(withdrawal.createdAt)}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center px-2 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
+                      Pending
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="space-y-3">
+                    {withdrawal.user && (
+                      <div className="flex items-center">
+                        <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="text-sm font-medium">{withdrawal.user.username}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>{formatCurrency(withdrawal.amount, withdrawal.currency)}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span>{withdrawal.bankDetails?.bankName}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {withdrawal.bankDetails?.accountName ? `${withdrawal.bankDetails.accountName} -` : ''} 
-                          {withdrawal.bankDetails?.accountNumber}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {withdrawal.createdAt 
-                        ? format(parseISO(withdrawal.createdAt), 'MMM dd, yyyy') 
-                        : 'Unknown date'}
-                    </TableCell>
-                    <TableCell className="max-w-[150px] truncate" title={withdrawal.reference}>
-                      {withdrawal.reference}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleViewDetails(withdrawal.id)}
-                        >
-                          <ArrowUpRight className="h-4 w-4" />
-                          <span className="sr-only">View details</span>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => openRejectDialog(withdrawal)}
-                          disabled={rejectWithdrawalMutation.isPending || approveWithdrawalMutation.isPending}
-                        >
-                          <XCircle className="h-4 w-4" />
-                          <span className="sr-only">Reject</span>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                          onClick={() => handleApproveWithdrawal(withdrawal)}
-                          disabled={rejectWithdrawalMutation.isPending || approveWithdrawalMutation.isPending}
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          <span className="sr-only">Approve</span>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    )}
+                    
+                    {withdrawal.bankDetails && (
+                      <>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground mr-1">Bank:</span>
+                          <span className="font-medium">{withdrawal.bankDetails.bankName}</span>
+                        </div>
+                        <div className="text-sm font-mono">
+                          <span className="text-muted-foreground mr-1">Acct:</span>
+                          <span>{withdrawal.bankDetails.accountNumber}</span>
+                        </div>
+                        {withdrawal.bankDetails.accountName && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground mr-1">Name:</span>
+                            <span>{withdrawal.bankDetails.accountName}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between gap-2 bg-muted/30 border-t">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleViewTransaction(withdrawal.id)}
+                    className="text-muted-foreground"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Details
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleApproveWithdrawal(withdrawal)}
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      disabled={approveWithdrawalMutation.isPending}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Approve
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openRejectDialog(withdrawal)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      disabled={rejectWithdrawalMutation.isPending}
+                    >
+                      <Ban className="h-4 w-4 mr-1" />
+                      Reject
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -271,42 +331,47 @@ export function PendingWithdrawals() {
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Withdrawal Request</DialogTitle>
+            <DialogTitle className="flex items-center text-destructive">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              Reject Withdrawal
+            </DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting this withdrawal request. The user will be notified.
+              This will return the funds to the user's wallet balance.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4 rounded-md bg-muted p-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Amount</p>
-                <p className="font-medium">
-                  {selectedWithdrawal 
-                    ? formatCurrency(selectedWithdrawal.amount, selectedWithdrawal.currency)
-                    : ''}
-                </p>
+          {selectedTransaction && (
+            <div className="space-y-4 py-2">
+              <div className="bg-muted p-3 rounded-md">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-muted-foreground">Amount:</span>
+                  <span className="font-medium">
+                    {formatCurrency(selectedTransaction.amount, selectedTransaction.currency)}
+                  </span>
+                </div>
+                
+                {selectedTransaction.user && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">User:</span>
+                    <span>{selectedTransaction.user.username}</span>
+                  </div>
+                )}
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">User</p>
-                <p className="font-medium">
-                  {selectedWithdrawal?.user?.username || 'Unknown'}
-                </p>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Reason for Rejection (Optional)</label>
+                <Textarea
+                  placeholder="Provide a reason for the rejection"
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                />
               </div>
             </div>
-            
-            <div className="space-y-2">
-              <Input
-                placeholder="Reason for rejection"
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-              />
-            </div>
-          </div>
+          )}
           
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsRejectDialogOpen(false)}
               disabled={rejectWithdrawalMutation.isPending}
             >
@@ -315,16 +380,9 @@ export function PendingWithdrawals() {
             <Button
               variant="destructive"
               onClick={handleRejectWithdrawal}
-              disabled={rejectWithdrawalMutation.isPending || !rejectionReason.trim()}
+              disabled={rejectWithdrawalMutation.isPending}
             >
-              {rejectWithdrawalMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Rejecting...
-                </>
-              ) : (
-                "Reject Withdrawal"
-              )}
+              {rejectWithdrawalMutation.isPending ? 'Processing...' : 'Reject Withdrawal'}
             </Button>
           </DialogFooter>
         </DialogContent>
