@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatDate } from "@/lib/format";

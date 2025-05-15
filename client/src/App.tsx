@@ -25,6 +25,7 @@ import AdminVoiceTools from "@/pages/admin/voice-tools";
 import AdminTransactions from "@/pages/admin/transactions/index";
 import AdminTransactionDetail from "@/pages/admin/transactions/[id]";
 import DebugTransaction from "@/pages/admin/debug-transaction";
+import { AdminLayout } from "@/layouts/AdminLayout";
 import VerifyEmail from "@/pages/auth/verify-email";
 import ResetPassword from "@/pages/auth/reset-password";
 import { useEffect } from "react";
@@ -73,7 +74,12 @@ function Router() {
       <ProtectedRoute path="/admin/transactions" component={AdminTransactions} />
       <Route path="/admin/transactions/:id">
         {params => {
-          return <AdminTransactionDetail id={params.id} />;
+          console.log("Transaction route params:", params);
+          return (
+            <AdminLayout>
+              <AdminTransactionDetail id={params.id} />
+            </AdminLayout>
+          );
         }}
       </Route>
       <ProtectedRoute path="/admin/debug-transaction" component={DebugTransaction} />

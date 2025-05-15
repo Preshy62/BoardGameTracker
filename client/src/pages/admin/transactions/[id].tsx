@@ -3,7 +3,6 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { AdminLayout } from "@/layouts/AdminLayout";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { 
@@ -181,7 +180,7 @@ export default function TransactionDetailPage({ id: propsId }: TransactionDetail
   
   if (isLoading || adminCheckLoading) {
     return (
-      <AdminLayout>
+      <div>
         <div className="flex items-center mb-6">
           <Button variant="ghost" size="sm" onClick={handleBack} className="mr-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -193,13 +192,13 @@ export default function TransactionDetailPage({ id: propsId }: TransactionDetail
           <Skeleton className="h-[300px] w-full" />
           <Skeleton className="h-[300px] w-full" />
         </div>
-      </AdminLayout>
+      </div>
     );
   }
   
   if (error || !transaction) {
     return (
-      <AdminLayout>
+      <div>
         <div className="flex items-center mb-6">
           <Button variant="ghost" size="sm" onClick={handleBack} className="mr-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -218,12 +217,12 @@ export default function TransactionDetailPage({ id: propsId }: TransactionDetail
             </Button>
           </CardContent>
         </Card>
-      </AdminLayout>
+      </div>
     );
   }
   
   return (
-    <AdminLayout>
+    <div>
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="sm" onClick={handleBack} className="mr-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -441,6 +440,6 @@ export default function TransactionDetailPage({ id: propsId }: TransactionDetail
           )}
         </CardFooter>
       </Card>
-    </AdminLayout>
+    </div>
   );
 }
