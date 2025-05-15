@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { format, parseISO } from "date-fns";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import {
   Select,
   SelectContent,
@@ -39,7 +39,7 @@ type Transaction = {
 };
 
 export function AllTransactions() {
-  const [, navigate] = useNavigate();
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -55,7 +55,7 @@ export function AllTransactions() {
   });
   
   const handleViewDetails = (transactionId: number) => {
-    navigate(`/admin/transactions/${transactionId}`);
+    setLocation(`/admin/transactions/${transactionId}`);
   };
   
   // Filter transactions based on search term and filters

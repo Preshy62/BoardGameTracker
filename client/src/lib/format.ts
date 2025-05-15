@@ -1,175 +1,205 @@
 /**
- * Utility functions for formatting values like currency, dates, and numbers
+ * Utility functions for formatting values in the application
+ * These functions are used to ensure consistent formatting of currencies, dates, and other values
  */
 
 /**
- * Format a number as currency with the specified currency code
- * @param amount The amount to format
- * @param currencyCode Optional currency code (default: 'NGN')
- * @returns Formatted currency string
+ * Format a currency value according to locale
+ * @param amount The numeric amount to format
+ * @param currency The ISO currency code (e.g., 'USD', 'NGN', 'EUR')
+ * @param locale The locale to use for formatting (defaults to 'en-US')
+ * @returns Formatted currency string with symbol
  */
-export function formatCurrency(amount: number, currencyCode: string = 'NGN'): string {
-  // Handle undefined or null values
-  if (amount === undefined || amount === null) {
-    return '-';
+export function formatCurrency(
+  amount: number, 
+  currency: string = 'NGN', 
+  locale: string = 'en-US'
+): string {
+  // Handle special case for Nigerian Naira which might not be well-supported in all browsers
+  if (currency === 'NGN') {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currency,
+      currencyDisplay: 'symbol',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount).replace('NGN', '₦');
   }
   
-  try {
-    // Define currency symbols and formats for common currencies
-    const currencySymbols: Record<string, string> = {
-      'NGN': '₦',
-      'USD': '$',
-      'EUR': '€',
-      'GBP': '£',
-      'JPY': '¥',
-      'CNY': '¥',
-      'GHS': '₵',
-      'KES': 'KSh',
-      'ZAR': 'R',
-      'UGX': 'USh',
-      'RWF': 'RF',
-      'TZS': 'TSh'
-    };
-    
-    // Get the symbol or use currency code if symbol not found
-    const symbol = currencySymbols[currencyCode] || currencyCode;
-    
-    // Format with appropriate decimal places based on currency
-    // Currencies like JPY typically don't use decimal places
-    const decimalPlaces = ['JPY', 'KRW', 'VND'].includes(currencyCode) ? 0 : 2;
-    
-    // Use Intl.NumberFormat if available
-    if (typeof Intl !== 'undefined' && Intl.NumberFormat) {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currencyCode,
-        minimumFractionDigits: decimalPlaces,
-        maximumFractionDigits: decimalPlaces
-      }).format(amount);
-    }
-    
-    // Fallback formatting
-    const formattedAmount = amount.toFixed(decimalPlaces);
-    const parts = formattedAmount.toString().split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return `${symbol}${parts.join('.')}`;
-  } catch (error) {
-    console.error('Error formatting currency:', error);
-    // Fallback to basic formatting
-    return `${currencyCode} ${amount.toFixed(2)}`;
-  }
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency,
+    currencyDisplay: 'symbol',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 /**
- * Format a number with commas as thousands separators
+ * Format a number with commas for thousands separators
  * @param value The number to format
  * @returns Formatted number string
  */
 export function formatNumber(value: number): string {
-  if (value === undefined || value === null) {
-    return '-';
-  }
-  
-  try {
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  } catch (error) {
-    return String(value);
-  }
+  return new Intl.NumberFormat().format(value);
 }
 
 /**
- * Format a date string as a readable date
- * @param dateString ISO date string
- * @param includeTime Whether to include the time
+ * Format a date in a human-readable format
+ * @param date Date object or ISO string
+ * @param format The format to use: 'short', 'medium', 'long', or 'full'
+ * @param locale The locale to use for formatting
  * @returns Formatted date string
  */
-export function formatDate(dateString: string, includeTime: boolean = false): string {
-  if (!dateString) return '-';
+export function formatDate(
+  date: Date | string,
+  format: 'short' | 'medium' | 'long' | 'full' = 'medium',
+  locale: string = 'en-US'
+): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
   
-  try {
-    const date = new Date(dateString);
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return dateString;
-    }
-    
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {})
-    };
-    
-    return new Intl.DateTimeFormat('en-US', options).format(date);
-  } catch (error) {
-    return dateString;
-  }
-}
-
-/**
- * Truncate text with ellipsis if it exceeds the maximum length
- * @param text The text to truncate
- * @param maxLength Maximum length before truncation
- * @returns Truncated text
- */
-export function truncateText(text: string, maxLength: number = 30): string {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  
-  return `${text.substring(0, maxLength - 3)}...`;
-}
-
-/**
- * Format a percentage value
- * @param value Number to format as percentage
- * @param decimals Number of decimal places
- * @returns Formatted percentage string
- */
-export function formatPercentage(value: number, decimals: number = 1): string {
-  if (value === undefined || value === null) {
-    return '-';
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid date';
   }
   
-  try {
-    return `${value.toFixed(decimals)}%`;
-  } catch (error) {
-    return `${value}%`;
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: format,
+  }).format(dateObj);
+}
+
+/**
+ * Format a date and time in a human-readable format
+ * @param date Date object or ISO string
+ * @param format The format to use: 'short', 'medium', 'long', or 'full'
+ * @param locale The locale to use for formatting
+ * @returns Formatted date and time string
+ */
+export function formatDateTime(
+  date: Date | string,
+  format: 'short' | 'medium' | 'long' | 'full' = 'medium',
+  locale: string = 'en-US'
+): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid date';
   }
+  
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: format,
+    timeStyle: format,
+  }).format(dateObj);
 }
 
 /**
- * Format file size in bytes to human-readable format
- * @param bytes File size in bytes
- * @returns Formatted file size string
+ * Format a time in a human-readable format
+ * @param date Date object or ISO string
+ * @param format The format to use: 'short', 'medium', 'long', or 'full'
+ * @param locale The locale to use for formatting
+ * @returns Formatted time string
  */
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
+export function formatTime(
+  date: Date | string,
+  format: 'short' | 'medium' | 'long' | 'full' = 'short',
+  locale: string = 'en-US'
+): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
   
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid time';
+  }
   
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return new Intl.DateTimeFormat(locale, {
+    timeStyle: format,
+  }).format(dateObj);
 }
 
 /**
- * Format a phone number to a readable format
- * @param phoneNumber Raw phone number
- * @returns Formatted phone number
+ * Format a relative time (e.g., "2 hours ago", "in 3 days")
+ * @param date Date object or ISO string
+ * @param now Reference date object (defaults to now)
+ * @returns Formatted relative time string
  */
-export function formatPhoneNumber(phoneNumber: string): string {
-  if (!phoneNumber) return '';
+export function formatRelativeTime(
+  date: Date | string,
+  now: Date = new Date()
+): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
   
-  // Remove non-digit characters
-  const cleaned = phoneNumber.replace(/\D/g, '');
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid date';
+  }
   
-  // Format based on length
-  if (cleaned.length === 10) {
-    return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
-  } else if (cleaned.length === 11) {
-    return cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{4})/, '+$1 ($2) $3-$4');
+  const diffInMs = dateObj.getTime() - now.getTime();
+  const diffInSec = Math.round(diffInMs / 1000);
+  const diffInMin = Math.round(diffInSec / 60);
+  const diffInHr = Math.round(diffInMin / 60);
+  const diffInDays = Math.round(diffInHr / 24);
+  const diffInWeeks = Math.round(diffInDays / 7);
+  const diffInMonths = Math.round(diffInDays / 30);
+  const diffInYears = Math.round(diffInDays / 365);
+  
+  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+  
+  if (Math.abs(diffInSec) < 60) {
+    return rtf.format(diffInSec, 'second');
+  } else if (Math.abs(diffInMin) < 60) {
+    return rtf.format(diffInMin, 'minute');
+  } else if (Math.abs(diffInHr) < 24) {
+    return rtf.format(diffInHr, 'hour');
+  } else if (Math.abs(diffInDays) < 7) {
+    return rtf.format(diffInDays, 'day');
+  } else if (Math.abs(diffInWeeks) < 4) {
+    return rtf.format(diffInWeeks, 'week');
+  } else if (Math.abs(diffInMonths) < 12) {
+    return rtf.format(diffInMonths, 'month');
   } else {
-    return phoneNumber; // Return original if format unknown
+    return rtf.format(diffInYears, 'year');
   }
+}
+
+/**
+ * Truncate a string to a maximum length with ellipsis
+ * @param text The string to truncate
+ * @param maxLength Maximum allowed length
+ * @returns Truncated string with ellipsis if needed
+ */
+export function truncateText(text: string, maxLength: number): string {
+  if (!text || text.length <= maxLength) {
+    return text;
+  }
+  return `${text.substring(0, maxLength)}...`;
+}
+
+/**
+ * Format a transaction type for display
+ * @param type The transaction type from the API
+ * @returns Formatted transaction type string
+ */
+export function formatTransactionType(type: string): string {
+  const typeMap: Record<string, string> = {
+    'deposit': 'Deposit',
+    'withdrawal': 'Withdrawal',
+    'winnings': 'Game Winnings',
+    'stake': 'Game Stake',
+    'refund': 'Refund',
+  };
+  
+  return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+/**
+ * Format a transaction status for display
+ * @param status The transaction status from the API
+ * @returns Formatted transaction status string
+ */
+export function formatTransactionStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    'completed': 'Completed',
+    'pending': 'Pending',
+    'failed': 'Failed',
+    'disputed': 'Disputed',
+  };
+  
+  return statusMap[status] || status.charAt(0).toUpperCase() + status.slice(1);
 }
