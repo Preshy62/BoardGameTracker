@@ -71,7 +71,11 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminDashboard} />
       <ProtectedRoute path="/admin/voice-tools" component={AdminVoiceTools} />
       <ProtectedRoute path="/admin/transactions" component={AdminTransactions} />
-      <ProtectedRoute path="/admin/transactions/:id" component={AdminTransactionDetail} />
+      <Route path="/admin/transactions/:id">
+        {params => {
+          return <AdminTransactionDetail id={params.id} />;
+        }}
+      </Route>
       <ProtectedRoute path="/admin/debug-transaction" component={DebugTransaction} />
       
       {/* Legacy routes - disabled */}

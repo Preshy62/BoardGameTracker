@@ -60,7 +60,9 @@ export function AllTransactions() {
   
   const handleViewTransaction = (id: number) => {
     console.log(`Navigating to transaction ${id}`);
-    navigate(`/admin/transactions/${id}`);
+    const targetUrl = `/admin/transactions/${id}`;
+    console.log(`Target URL: ${targetUrl}`);
+    navigate(targetUrl);
   };
   
   // Apply filters

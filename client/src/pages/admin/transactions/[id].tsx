@@ -57,9 +57,15 @@ type Transaction = {
   };
 };
 
-export default function TransactionDetailPage() {
-  const { id } = useParams();
-  const transactionId = parseInt(id);
+interface TransactionDetailPageProps {
+  id?: string;
+}
+
+export default function TransactionDetailPage({ id: propsId }: TransactionDetailPageProps) {
+  const params = useParams();
+  // Use id from props or from params
+  const paramId = params?.id || propsId;
+  const transactionId = paramId ? parseInt(paramId) : NaN;
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
