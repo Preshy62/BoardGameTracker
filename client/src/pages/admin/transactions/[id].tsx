@@ -74,13 +74,13 @@ export default function TransactionDetailPage({ id: propsId }: TransactionDetail
   const [statusNote, setStatusNote] = useState("");
   
   // Fetch transaction details
-  const { data, isLoading, error } = useQuery<Transaction>({
+  const { data, isLoading, error } = useQuery<{transaction: Transaction, user: any}>({
     queryKey: ["/api/admin/transactions", transactionId],
     queryFn: () => apiRequest("GET", `/api/admin/transactions/${transactionId}`).then(res => res.json()),
     enabled: !isNaN(transactionId) && !!isAdmin,
   });
   
-  const transaction = data;
+  const transaction = data?.transaction;
   
   // Mutation for updating transaction status
   const updateStatusMutation = useMutation({
@@ -295,27 +295,27 @@ export default function TransactionDetailPage({ id: propsId }: TransactionDetail
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {transaction.user ? (
+              {data?.user ? (
                 <dl className="space-y-4">
                   <div className="flex flex-col space-y-1">
                     <dt className="text-sm font-medium text-muted-foreground">Username</dt>
                     <dd className="flex items-center gap-2 font-medium">
                       <User className="h-4 w-4" />
-                      {transaction.user.username}
+                      {data.user.username}
                     </dd>
                   </div>
                   
                   <div className="flex flex-col space-y-1">
                     <dt className="text-sm font-medium text-muted-foreground">Email</dt>
                     <dd className="text-sm">
-                      {transaction.user.email}
+                      {data.user.email}
                     </dd>
                   </div>
                   
                   <div className="flex flex-col space-y-1">
                     <dt className="text-sm font-medium text-muted-foreground">User ID</dt>
                     <dd className="text-sm font-mono">
-                      {transaction.userId}
+                      {transaction?.userId}
                     </dd>
                   </div>
                 </dl>
