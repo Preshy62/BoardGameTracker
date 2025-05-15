@@ -75,7 +75,7 @@ export default function AdminUsersPage() {
   });
   
   return (
-    <AdminLayout>
+    <div>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">User Management</h1>
         
@@ -204,6 +204,6 @@ export default function AdminUsersPage() {
           )}
         </CardContent>
       </Card>
-    </AdminLayout>
+    </div>
   );
 }
