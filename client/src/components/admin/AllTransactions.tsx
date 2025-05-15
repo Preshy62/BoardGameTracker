@@ -47,8 +47,8 @@ export function AllTransactions() {
   const [, navigate] = useLocation();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [typeFilter, setTypeFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   
   const pageSize = 10;
   
@@ -71,10 +71,10 @@ export function AllTransactions() {
       transaction.id.toString().includes(searchTerm);
     
     // Status filter
-    const statusMatch = !statusFilter || transaction.status === statusFilter;
+    const statusMatch = !statusFilter || statusFilter === "all" || transaction.status === statusFilter;
     
     // Type filter
-    const typeMatch = !typeFilter || transaction.type === typeFilter;
+    const typeMatch = !typeFilter || typeFilter === "all" || transaction.type === typeFilter;
     
     return searchMatch && statusMatch && typeMatch;
   }) || [];
@@ -180,7 +180,7 @@ export function AllTransactions() {
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
@@ -199,7 +199,7 @@ export function AllTransactions() {
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="deposit">Deposit</SelectItem>
               <SelectItem value="withdrawal">Withdrawal</SelectItem>
               <SelectItem value="game">Game</SelectItem>
@@ -208,13 +208,13 @@ export function AllTransactions() {
             </SelectContent>
           </Select>
           
-          {(statusFilter || typeFilter || searchTerm) && (
+          {((statusFilter && statusFilter !== "all") || (typeFilter && typeFilter !== "all") || searchTerm) && (
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={() => {
-                setStatusFilter("");
-                setTypeFilter("");
+                setStatusFilter("all");
+                setTypeFilter("all");
                 setSearchTerm("");
                 setPage(1);
               }}
