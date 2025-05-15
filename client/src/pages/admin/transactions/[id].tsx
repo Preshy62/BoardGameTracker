@@ -133,12 +133,12 @@ export default function TransactionDetailPage() {
     });
   };
   
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch(status) {
-      case 'completed': return 'success';
+      case 'completed': return 'secondary'; // Using 'secondary' instead of 'success'
       case 'pending': return 'default';
       case 'failed': return 'destructive';
-      case 'disputed': return 'warning';
+      case 'disputed': return 'outline'; // Using 'outline' instead of 'warning'
       default: return 'secondary';
     }
   };

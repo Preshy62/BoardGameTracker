@@ -42,12 +42,8 @@ export function AdminHeader() {
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
   
-  // Redirect non-admin users to home
-  if (!isLoading && !isAdmin) {
-    // Redirect to homepage if not an admin
-    setLocation("/");
-    return null;
-  }
+  // Note: Redirection is now handled by AdminLayout
+  // This component assumes it only renders for admin users
   
   const handleLogout = async () => {
     try {
