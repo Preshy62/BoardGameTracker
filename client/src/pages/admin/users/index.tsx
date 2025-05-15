@@ -163,7 +163,7 @@ export default function AdminUsersPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem asChild>
                                 <Link href={`/admin/users/${user.id}`} className="flex w-full items-center">
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details

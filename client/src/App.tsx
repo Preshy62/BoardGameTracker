@@ -22,6 +22,7 @@ import BoardTest from "@/pages/board-test";
 import TestPaystack from "@/pages/test-paystack";
 import AdminDashboard from "@/pages/admin/index";
 import AdminUsers from "@/pages/admin/users/index";
+import AdminUserDetail from "@/pages/admin/users/[id]";
 import AdminVoiceTools from "@/pages/admin/voice-tools";
 import AdminTransactions from "@/pages/admin/transactions/index";
 import AdminTransactionDetail from "@/pages/admin/transactions/[id]";
@@ -80,6 +81,16 @@ function Router() {
           return (
             <AdminLayout>
               <AdminTransactionDetail id={params.id} />
+            </AdminLayout>
+          );
+        }}
+      </Route>
+      <Route path="/admin/users/:id">
+        {params => {
+          console.log("User detail route params:", params);
+          return (
+            <AdminLayout>
+              <AdminUserDetail id={params.id} />
             </AdminLayout>
           );
         }}

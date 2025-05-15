@@ -1,0 +1,197 @@
+import { Router, Request, Response } from "express";
+import { storage } from "../storage";
+
+// Create the router
+const router = Router();
+
+// Middleware to ensure user is admin
+const ensureAdmin = async (req: Request, res: Response, next: Function) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  // Get user by ID
+  const user = await storage.getUser(req.session.userId);
+  if (!user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  // Check if user is admin - hardcoded list for now
+  const ADMIN_USERNAMES = ["admin", "precious"];
+  if (!ADMIN_USERNAMES.includes(user.username)) {
+    return res.status(403).json({ message: "Forbidden - Admin access required" });
+  }
+  
+  // User is admin
+  next();
+};
+
+// Admin check endpoint
+router.get("/check", async (req: Request, res: Response) => {
+  try {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Check if user is in the admin list
+    const ADMIN_USERNAMES = ["admin", "precious"];
+    const isAdmin = ADMIN_USERNAMES.includes(user.username);
+    
+    res.json({ 
+      isAdmin,
+      username: user.username 
+    });
+  } catch (error) {
+    console.error('Admin check error:', error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get all users
+router.get("/users", ensureAdmin, async (req: Request, res: Response) => {
+  try {
+    const users = await storage.getAllUsers();
+    
+    // Format users for API response
+    const formattedUsers = users.map(user => ({
+      ...user,
+      // Default to initials if no avatar
+      avatarInitials: user.avatarInitials || user.username.substring(0, 2).toUpperCase(),
+      // Add additional fields for admin view
+      isActive: true, // Default all users to active for now
+    }));
+    
+    res.json(formattedUsers);
+  } catch (error) {
+    console.error("Error fetching users for admin:", error);
+    res.status(500).json({ message: "Error fetching users" });
+  }
+});
+
+// Get single user details
+router.get("/users/:userId", ensureAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Get user's transactions
+    const transactions = await storage.getUserTransactions(userId);
+    
+    // Get user's games
+    const games = await storage.getUserGames(userId);
+    
+    // Add avatarInitials if not present
+    if (!user.avatarInitials) {
+      user.avatarInitials = user.username.substring(0, 2).toUpperCase();
+    }
+    
+    // Add isActive field for admin UI
+    const userWithStatus = {
+      ...user,
+      isActive: true,  // Default to active for now
+    };
+    
+    res.json({
+      user: userWithStatus,
+      transactions,
+      games
+    });
+  } catch (error) {
+    console.error(`Error fetching user details for admin: ${error}`);
+    res.status(500).json({ message: "Error fetching user details" });
+  }
+});
+
+// Update user status (activate/deactivate)
+router.patch("/users/:userId/status", ensureAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    const { isActive } = req.body;
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Update user profile with isActive status
+    const updatedUser = await storage.updateUserProfile(userId, { 
+      ...user, 
+      isActive 
+    });
+    
+    res.json(updatedUser);
+  } catch (error) {
+    console.error(`Error updating user status for admin: ${error}`);
+    res.status(500).json({ message: "Error updating user status" });
+  }
+});
+
+// Update user balance
+router.post("/users/:userId/balance", ensureAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    const { amount, reason } = req.body;
+    if (typeof amount !== 'number') {
+      return res.status(400).json({ message: "Amount must be a number" });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Calculate new balance
+    const newBalance = user.walletBalance + amount;
+    if (newBalance < 0) {
+      return res.status(400).json({ message: "Insufficient balance for deduction" });
+    }
+    
+    // Update user balance
+    const updatedUser = await storage.updateUserBalance(userId, newBalance);
+    
+    // Create transaction record
+    const transactionType = amount >= 0 ? 'deposit' : 'withdrawal';
+    const transaction = await storage.createTransaction({
+      userId,
+      type: transactionType,
+      amount: Math.abs(amount),  // Store as positive amount
+      status: 'completed',
+      currency: 'NGN',  // Default currency
+      description: reason || `Manual ${transactionType} by admin`,
+      reference: `admin-adjustment-${Date.now()}`
+    });
+    
+    res.json({
+      user: updatedUser,
+      transaction
+    });
+  } catch (error) {
+    console.error(`Error adjusting user balance for admin: ${error}`);
+    res.status(500).json({ message: "Error adjusting user balance" });
+  }
+});
+
+export default router;
