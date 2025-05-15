@@ -1710,6 +1710,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin - Get single game details
+  app.get("/api/admin/games/:gameId", authenticateAdmin, async (req, res) => {
+    try {
+      const gameId = parseInt(req.params.gameId);
+      if (isNaN(gameId)) {
+        return res.status(400).json({ message: "Invalid game ID" });
+      }
+      
+      const game = await storage.getGame(gameId);
+      if (!game) {
+        return res.status(404).json({ message: "Game not found" });
+      }
+      
+      // Get all players in the game
+      const players = await storage.getGamePlayers(gameId);
+      
+      // Get game messages
+      const messages = await storage.getGameMessages(gameId);
+      
+      res.json({
+        game,
+        players,
+        messages
+      });
+    } catch (error) {
+      console.error(`Error fetching game details for admin: ${error}`);
+      res.status(500).json({ message: "Error fetching game details" });
+    }
+  });
+  
+  // Admin - Force end a game
+  app.post("/api/admin/games/:gameId/end", authenticateAdmin, async (req, res) => {
+    try {
+      const gameId = parseInt(req.params.gameId);
+      if (isNaN(gameId)) {
+        return res.status(400).json({ message: "Invalid game ID" });
+      }
+      
+      const game = await storage.getGame(gameId);
+      if (!game) {
+        return res.status(404).json({ message: "Game not found" });
+      }
+      
+      if (game.status === 'completed') {
+        return res.status(400).json({ message: "Game is already completed" });
+      }
+      
+      // Get all players in the game
+      const players = await storage.getGamePlayers(gameId);
+      
+      // Decide what to do based on game state
+      if (game.status === 'waiting') {
+        // For waiting games, refund all player stakes
+        for (const player of players) {
+          if (player.user && player.isActive) {
+            // Refund the stake to player's wallet
+            const user = await storage.getUser(player.userId);
+            if (user) {
+              const newBalance = user.walletBalance + game.stake;
+              await storage.updateUserBalance(player.userId, newBalance);
+              
+              // Create refund transaction
+              await storage.createTransaction({
+                userId: player.userId,
+                type: 'refund',
+                amount: game.stake,
+                status: 'completed',
+                currency: game.currency,
+                description: `Refund for game #${gameId} terminated by admin`,
+                reference: `admin-refund-${Date.now()}-${player.userId}`
+              });
+            }
+          }
+        }
+        
+        // Update game status
+        const updatedGame = await storage.updateGameStatus(gameId, 'completed');
+        
+        return res.json({
+          message: "Game terminated and all stakes refunded",
+          game: updatedGame
+        });
+      } else if (game.status === 'in_progress') {
+        // For in-progress games, determine if there are any valid rolls
+        // Find highest roll if any
+        let highestRoll = -1;
+        let winnerIds: number[] = [];
+        
+        players.forEach(player => {
+          if (player.hasRolled && player.rolledNumber !== null && player.isActive) {
+            if (player.rolledNumber > highestRoll) {
+              highestRoll = player.rolledNumber;
+              winnerIds = [player.userId];
+            } else if (player.rolledNumber === highestRoll) {
+              winnerIds.push(player.userId);
+            }
+          }
+        });
+        
+        if (winnerIds.length > 0 && highestRoll > 0) {
+          // There are winners, split the pot
+          const updatedGame = await storage.updateGameWinners(gameId, winnerIds, highestRoll);
+          
+          return res.json({
+            message: `Game force-ended. Winnings distributed to ${winnerIds.length} player(s)`,
+            game: updatedGame,
+            winners: winnerIds,
+            winningNumber: highestRoll
+          });
+        } else {
+          // No valid rolls, refund everyone
+          for (const player of players) {
+            if (player.user && player.isActive) {
+              // Refund the stake to player's wallet
+              const user = await storage.getUser(player.userId);
+              if (user) {
+                const newBalance = user.walletBalance + game.stake;
+                await storage.updateUserBalance(player.userId, newBalance);
+                
+                // Create refund transaction
+                await storage.createTransaction({
+                  userId: player.userId,
+                  type: 'refund',
+                  amount: game.stake,
+                  status: 'completed',
+                  currency: game.currency,
+                  description: `Refund for game #${gameId} terminated by admin`,
+                  reference: `admin-refund-${Date.now()}-${player.userId}`
+                });
+              }
+            }
+          }
+          
+          // Update game status
+          const updatedGame = await storage.updateGameStatus(gameId, 'completed');
+          
+          return res.json({
+            message: "Game terminated and all stakes refunded",
+            game: updatedGame
+          });
+        }
+      }
+      
+      res.status(400).json({ message: "Invalid game state" });
+    } catch (error) {
+      console.error(`Error force-ending game for admin: ${error}`);
+      res.status(500).json({ message: "Error force-ending game" });
+    }
+  });
+  
   // Admin Transactions endpoint
   app.get("/api/admin/transactions", authenticateAdmin, async (req, res) => {
     try {
@@ -1734,6 +1884,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching transactions for admin:", error);
       res.status(500).json({ message: "Error fetching transactions" });
+    }
+  });
+  
+  // Admin - Get single transaction details
+  app.get("/api/admin/transactions/:transactionId", authenticateAdmin, async (req, res) => {
+    try {
+      const transactionId = parseInt(req.params.transactionId);
+      if (isNaN(transactionId)) {
+        return res.status(400).json({ message: "Invalid transaction ID" });
+      }
+      
+      const transaction = await storage.getTransaction(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      
+      // Get user details
+      const user = await storage.getUser(transaction.userId);
+      
+      res.json({
+        transaction,
+        user
+      });
+    } catch (error) {
+      console.error(`Error fetching transaction details for admin: ${error}`);
+      res.status(500).json({ message: "Error fetching transaction details" });
+    }
+  });
+  
+  // Admin - Update transaction status (for approving/rejecting withdrawals)
+  app.patch("/api/admin/transactions/:transactionId/status", authenticateAdmin, async (req, res) => {
+    try {
+      const transactionId = parseInt(req.params.transactionId);
+      if (isNaN(transactionId)) {
+        return res.status(400).json({ message: "Invalid transaction ID" });
+      }
+      
+      const { status, reason } = req.body;
+      if (!['pending', 'completed', 'failed', 'disputed'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status value" });
+      }
+      
+      const transaction = await storage.getTransaction(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      
+      // Handle withdrawal approvals/rejections specifically
+      if (transaction.type === 'withdrawal') {
+        const user = await storage.getUser(transaction.userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // If previously pending and now completed, nothing to do (funds already deducted)
+        // If previously pending and now failed/disputed, return funds to user
+        if (transaction.status === 'pending' && (status === 'failed' || status === 'disputed')) {
+          // Return funds to user
+          const newBalance = user.walletBalance + transaction.amount;
+          await storage.updateUserBalance(transaction.userId, newBalance);
+          
+          // Add a note to the transaction
+          const updatedTransaction = await storage.updateTransactionStatus(
+            transactionId, 
+            status
+          );
+          
+          return res.json({
+            message: `Withdrawal rejected and funds returned to user`,
+            transaction: updatedTransaction,
+            user: {
+              id: user.id,
+              username: user.username,
+              walletBalance: newBalance
+            }
+          });
+        }
+      }
+      
+      // For all other cases, just update the status
+      const updatedTransaction = await storage.updateTransactionStatus(transactionId, status);
+      
+      res.json({
+        message: `Transaction status updated to ${status}`,
+        transaction: updatedTransaction
+      });
+    } catch (error) {
+      console.error(`Error updating transaction status for admin: ${error}`);
+      res.status(500).json({ message: "Error updating transaction status" });
+    }
+  });
+  
+  // Admin - Get pending withdrawals
+  app.get("/api/admin/withdrawals/pending", authenticateAdmin, async (req, res) => {
+    try {
+      // Get all users first
+      const users = await storage.getAllUsers();
+      
+      // Get transactions for each user and combine them
+      const allTransactionsPromises = users.map(user => storage.getUserTransactions(user.id));
+      const transactionsByUser = await Promise.all(allTransactionsPromises);
+      
+      // Flatten the array of transaction arrays
+      const allTransactions = transactionsByUser.flat();
+      
+      // Filter pending withdrawals
+      const pendingWithdrawals = allTransactions.filter(tx => 
+        tx.type === 'withdrawal' && tx.status === 'pending'
+      );
+      
+      // Get user details for each withdrawal
+      const withdrawalsWithUserDetails = await Promise.all(
+        pendingWithdrawals.map(async (withdrawal) => {
+          const user = await storage.getUser(withdrawal.userId);
+          return {
+            ...withdrawal,
+            user: user ? {
+              id: user.id,
+              username: user.username,
+              email: user.email
+            } : null
+          };
+        })
+      );
+      
+      res.json(withdrawalsWithUserDetails);
+    } catch (error) {
+      console.error("Error fetching pending withdrawals for admin:", error);
+      res.status(500).json({ message: "Error fetching pending withdrawals" });
     }
   });
   

@@ -51,7 +51,7 @@ export interface IStorage {
   getUserTransactions(userId: number): Promise<Transaction[]>;
   createWithdrawalRequest(userId: number, amount: number, currency: string, bankDetails: any): Promise<Transaction>;
   getTransaction(transactionId: number): Promise<Transaction | undefined>;
-  updateTransactionStatus(transactionId: number, status: string): Promise<Transaction>;
+  updateTransactionStatus(transactionId: number, status: string, description?: string): Promise<Transaction>;
   
   // Currency operations
   convertCurrency(amount: number, fromCurrency: string, toCurrency: string): Promise<{amount: number, rate: number}>;
