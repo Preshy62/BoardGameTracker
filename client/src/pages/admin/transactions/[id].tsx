@@ -86,6 +86,7 @@ export default function TransactionDetailPage({ id: propsId }: TransactionDetail
   // Mutation for updating transaction status
   const updateStatusMutation = useMutation({
     mutationFn: async (updates: { status: string; note?: string }) => {
+      console.log("Sending update with:", updates);
       const response = await apiRequest(
         "PATCH", 
         `/api/admin/transactions/${transactionId}/status`,
@@ -133,9 +134,22 @@ export default function TransactionDetailPage({ id: propsId }: TransactionDetail
       return;
     }
     
+    // Skip update if user selects "current" option
+    if (newStatus === "current") {
+      toast({
+        title: "Info",
+        description: "Status remains unchanged",
+      });
+      setNewStatus("");
+      setStatusNote("");
+      return;
+    }
+    
+    console.log(`Updating transaction ${transactionId} status to: ${newStatus}`);
+    
     updateStatusMutation.mutate({
       status: newStatus,
-      reason: statusNote || undefined
+      note: statusNote || undefined
     });
   };
   
@@ -149,12 +163,21 @@ export default function TransactionDetailPage({ id: propsId }: TransactionDetail
     }
   };
   
-  // Redirect non-admin users
+  // Redirect non-admin users and log debugging info
   useEffect(() => {
+    console.log(`Transaction Detail - ID: ${transactionId}`);
+    console.log(`Admin check - Loading: ${adminCheckLoading}, Is Admin: ${isAdmin}`);
+    
     if (!adminCheckLoading && !isAdmin) {
+      console.log("Not an admin, redirecting to home");
+      toast({
+        title: "Access Denied",
+        description: "You need admin privileges to view transaction details",
+        variant: "destructive"
+      });
       navigate("/");
     }
-  }, [adminCheckLoading, isAdmin, navigate]);
+  }, [adminCheckLoading, isAdmin, navigate, transactionId, toast]);
   
   if (isLoading || adminCheckLoading) {
     return (
