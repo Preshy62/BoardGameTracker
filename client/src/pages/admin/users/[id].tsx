@@ -1,8 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { 
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { 
@@ -60,6 +82,133 @@ type UserDetail = {
   transactions: any[];
   games: any[];
 };
+
+// Form schema for editing user details
+const userEditFormSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().optional(),
+});
+
+type UserEditFormValues = z.infer<typeof userEditFormSchema>;
+
+// Edit User Modal Component
+function EditUserModal({ user, onUpdate }: { user: UserDetail, onUpdate: () => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const form = useForm<UserEditFormValues>({
+    resolver: zodResolver(userEditFormSchema),
+    defaultValues: {
+      username: user.username,
+      email: user.email,
+      phone: user.phone || "",
+    },
+  });
+  
+  const updateUserMutation = useMutation({
+    mutationFn: async (data: UserEditFormValues) => {
+      const response = await apiRequest(
+        "PATCH", 
+        `/api/admin/users/${user.id}`,
+        data
+      );
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User details have been updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setIsOpen(false);
+      onUpdate();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to update user: ${error.message || "Unknown error"}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  function onSubmit(data: UserEditFormValues) {
+    updateUserMutation.mutate(data);
+  }
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          className="w-full justify-start" 
+          variant="outline"
+        >
+          <Pencil className="h-4 w-4 mr-2" />
+          Edit User Details
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit User Details</DialogTitle>
+          <DialogDescription>
+            Make changes to the user's profile information.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input placeholder="username" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="email@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Phone number (optional)" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter className="pt-4">
+              <Button type="submit" disabled={updateUserMutation.isPending}>
+                {updateUserMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
   const params = useParams();
@@ -523,13 +672,10 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
               <CardTitle>User Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button 
-                className="w-full justify-start" 
-                variant="outline"
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit User Details
-              </Button>
+              <EditUserModal 
+                user={user}
+                onUpdate={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/users", userId] })}
+              />
               
               <Button
                 className="w-full justify-start"
