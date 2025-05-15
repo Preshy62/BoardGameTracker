@@ -59,6 +59,7 @@ export function AllTransactions() {
   });
   
   const handleViewTransaction = (id: number) => {
+    console.log(`Navigating to transaction ${id}`);
     navigate(`/admin/transactions/${id}`);
   };
   

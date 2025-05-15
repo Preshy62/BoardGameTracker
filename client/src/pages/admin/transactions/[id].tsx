@@ -359,6 +359,7 @@ export default function TransactionDetailPage() {
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
                   <SelectItem value="disputed">Disputed</SelectItem>
+                  <SelectItem value="current">Keep Current Status</SelectItem>
                 </SelectContent>
               </Select>
             </div>

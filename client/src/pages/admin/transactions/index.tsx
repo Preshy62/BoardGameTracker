@@ -2,11 +2,25 @@ import { AdminLayout } from "@/layouts/AdminLayout";
 import { AllTransactions } from "@/components/admin/AllTransactions";
 import { PendingWithdrawals } from "@/components/admin/PendingWithdrawals";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+
+import { Link } from "wouter";
+import { ArrowRightIcon, Bug } from "lucide-react";
 
 export default function AdminTransactionsPage() {
   return (
     <AdminLayout>
-      <h1 className="text-3xl font-bold mb-8">Transaction Management</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Transaction Management</h1>
+        
+        <Link href="/admin/debug-transaction">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Bug className="h-4 w-4" />
+            Debug Transactions
+            <ArrowRightIcon className="h-3 w-3" />
+          </Button>
+        </Link>
+      </div>
       
       <PendingWithdrawals />
       
