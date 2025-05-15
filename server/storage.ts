@@ -502,13 +502,18 @@ export class MemStorage implements IStorage {
     return this.transactions.get(transactionId);
   }
   
-  async updateTransactionStatus(transactionId: number, status: string): Promise<Transaction> {
+  async updateTransactionStatus(transactionId: number, status: string, description?: string): Promise<Transaction> {
     const transaction = await this.getTransaction(transactionId);
     if (!transaction) {
       throw new Error(`Transaction with ID ${transactionId} not found`);
     }
     
-    const updatedTransaction = { ...transaction, status };
+    const updatedTransaction = { 
+      ...transaction, 
+      status,
+      ...(description ? { description } : {})
+    };
+    
     this.transactions.set(transactionId, updatedTransaction);
     return updatedTransaction;
   }
@@ -984,9 +989,16 @@ export class DatabaseStorage implements IStorage {
     return transaction;
   }
 
-  async updateTransactionStatus(transactionId: number, status: string): Promise<Transaction> {
+  async updateTransactionStatus(transactionId: number, status: string, description?: string): Promise<Transaction> {
+    // Create update data with optional description
+    const updateData: Record<string, string> = { status };
+    if (description) {
+      updateData.description = description;
+    }
+    
+    // Update the transaction
     const [updatedTransaction] = await db.update(transactions)
-      .set({ status })
+      .set(updateData)
       .where(eq(transactions.id, transactionId))
       .returning();
       

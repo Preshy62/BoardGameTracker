@@ -1948,7 +1948,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Add a note to the transaction
           const updatedTransaction = await storage.updateTransactionStatus(
             transactionId, 
-            status
+            status,
+            reason || `Withdrawal ${status} by admin (${req.user?.username})`
           );
           
           return res.json({
@@ -1964,7 +1965,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // For all other cases, just update the status
-      const updatedTransaction = await storage.updateTransactionStatus(transactionId, status);
+      const updatedTransaction = await storage.updateTransactionStatus(
+        transactionId, 
+        status, 
+        reason || `Status updated by admin (${req.user?.username})`
+      );
       
       res.json({
         message: `Transaction status updated to ${status}`,
