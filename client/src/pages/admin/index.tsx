@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
-import AdminHeader from "@/components/layout/AdminHeader";
+import { AdminLayout } from "@/layouts/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
@@ -32,7 +32,7 @@ export default function AdminDashboard() {
   }
   
   return (
-    <AdminLayout>
+    <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       </div>
@@ -162,6 +162,6 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
-    </AdminLayout>
+    </div>
   );
 }

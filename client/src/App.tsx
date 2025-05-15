@@ -71,10 +71,26 @@ function Router() {
       <ProtectedRoute path="/checkout/:amount" component={Checkout} />
       
       {/* Admin routes - hidden from regular navigation */}
-      <ProtectedRoute path="/admin" component={AdminDashboard} />
-      <ProtectedRoute path="/admin/users" component={AdminUsers} />
-      <ProtectedRoute path="/admin/voice-tools" component={AdminVoiceTools} />
-      <ProtectedRoute path="/admin/transactions" component={AdminTransactions} />
+      <Route path="/admin">
+        <AdminLayout>
+          <AdminDashboard />
+        </AdminLayout>
+      </Route>
+      <Route path="/admin/users">
+        <AdminLayout>
+          <AdminUsers />
+        </AdminLayout>
+      </Route>
+      <Route path="/admin/voice-tools">
+        <AdminLayout>
+          <AdminVoiceTools />
+        </AdminLayout>
+      </Route>
+      <Route path="/admin/transactions">
+        <AdminLayout>
+          <AdminTransactions />
+        </AdminLayout>
+      </Route>
       <Route path="/admin/transactions/:id">
         {params => {
           console.log("Transaction route params:", params);
@@ -95,7 +111,11 @@ function Router() {
           );
         }}
       </Route>
-      <ProtectedRoute path="/admin/debug-transaction" component={DebugTransaction} />
+      <Route path="/admin/debug-transaction">
+        <AdminLayout>
+          <DebugTransaction />
+        </AdminLayout>
+      </Route>
       
       {/* Legacy routes - disabled */}
       
