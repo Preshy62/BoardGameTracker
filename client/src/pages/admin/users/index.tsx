@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAdmin } from "@/hooks/use-admin";
-import { AdminLayout } from "@/layouts/AdminLayout";
+
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/format";
 import { 
