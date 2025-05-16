@@ -76,7 +76,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/payment', paystackRoutes);
   app.use('/api/transactions', transactionRoutes);
   app.use('/api/currencies', currencyRoutes);
-  app.use('/api/admin', adminRoutes);
   
   // Initialize game manager
   const gameManager = new GameManager(storage);
@@ -98,6 +97,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   });
+  
+  // Register admin routes after session middleware
+  app.use('/api/admin', adminRoutes);
   
   // Authentication middleware
   const authenticate = (req: Request, res: Response, next: Function) => {
