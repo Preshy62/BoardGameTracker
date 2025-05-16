@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import { runMigration } from "./utils/migrate-email-fields";
 import { initializeEmailTransport } from "./utils/email";
 import { addTransactionDescriptionField } from "./migrations/add-transaction-description";
+import { maintenanceMiddleware } from "./utils/maintenance";
 
 // Create a demo user function for testing
 async function createDemoUser() {
@@ -47,6 +48,9 @@ async function createDemoUser() {
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Apply maintenance mode middleware
+app.use(maintenanceMiddleware);
 
 app.use((req, res, next) => {
   const start = Date.now();

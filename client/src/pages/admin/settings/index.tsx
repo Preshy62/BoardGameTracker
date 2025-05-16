@@ -52,11 +52,23 @@ export default function AdminSettings() {
   // Update maintenance mode
   const toggleMaintenanceMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/admin/maintenance", {
-        enabled: !maintenanceMode,
-        message: maintenanceMessage
-      });
-      return response.json();
+      try {
+        const response = await apiRequest("POST", "/api/admin/maintenance", {
+          enabled: !maintenanceMode,
+          message: maintenanceMessage
+        });
+        
+        // Check if response is ok before trying to parse JSON
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Server error: ${errorText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Maintenance toggle error:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       setMaintenanceMode(data.enabled);
@@ -68,10 +80,11 @@ export default function AdminSettings() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/maintenance"] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Toggle maintenance error details:', error);
       toast({
         title: "Failed to update maintenance mode",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     }
