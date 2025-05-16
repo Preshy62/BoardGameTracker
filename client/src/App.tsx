@@ -70,26 +70,45 @@ function Router() {
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/checkout/:amount" component={Checkout} />
       
-      {/* Admin routes - using AdminLayout at router level */}
-      <Route path="/admin*">
-        {(params) => (
+      {/* Admin routes - with individual wrappers */}
+      <Route path="/admin">
+        <AdminLayout>
+          <AdminDashboard />
+        </AdminLayout>
+      </Route>
+      <Route path="/admin/users">
+        <AdminLayout>
+          <AdminUsers />
+        </AdminLayout>
+      </Route>
+      <Route path="/admin/users/:id">
+        {params => (
           <AdminLayout>
-            <Switch>
-              <Route path="/admin/users/:id">
-                {params => <AdminUserDetail id={params.id} />}
-              </Route>
-              <Route path="/admin/users" component={AdminUsers} />
-              <Route path="/admin" component={AdminDashboard} />
-              <Route path="/admin/voice-tools" component={AdminVoiceTools} />
-              <Route path="/admin/transactions/:id">
-                {params => <AdminTransactionDetail id={params.id} />}
-              </Route>
-              <Route path="/admin/transactions" component={AdminTransactions} />
-              <Route path="/admin/debug-transaction" component={DebugTransaction} />
-              <Route component={NotFound} />
-            </Switch>
+            <AdminUserDetail id={params.id} />
           </AdminLayout>
         )}
+      </Route>
+      <Route path="/admin/voice-tools">
+        <AdminLayout>
+          <AdminVoiceTools />
+        </AdminLayout>
+      </Route>
+      <Route path="/admin/transactions">
+        <AdminLayout>
+          <AdminTransactions />
+        </AdminLayout>
+      </Route>
+      <Route path="/admin/transactions/:id">
+        {params => (
+          <AdminLayout>
+            <AdminTransactionDetail id={params.id} />
+          </AdminLayout>
+        )}
+      </Route>
+      <Route path="/admin/debug-transaction">
+        <AdminLayout>
+          <DebugTransaction />
+        </AdminLayout>
       </Route>
       
       {/* Legacy routes - disabled */}
