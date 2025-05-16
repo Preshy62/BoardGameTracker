@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Settings, Save, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
@@ -41,6 +41,13 @@ export default function AdminSettings() {
       console.error("Failed to fetch maintenance status", error);
     }
   };
+  
+  // Fetch maintenance status on component mount
+  useEffect(() => {
+    if (isAdmin) {
+      fetchMaintenanceStatus();
+    }
+  }, [isAdmin]);
   
   // Update maintenance mode
   const toggleMaintenanceMutation = useMutation({
