@@ -24,6 +24,11 @@ import {
   sendPasswordResetEmail, 
   sendTransactionEmail 
 } from "./utils/email";
+import { 
+  getMaintenanceSettings,
+  updateMaintenanceSettings,
+  maintenanceMiddleware
+} from "./utils/maintenance";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -62,6 +67,9 @@ declare module 'express-session' {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize server
   const httpServer = createServer(app);
+  
+  // Apply maintenance middleware
+  app.use(maintenanceMiddleware);
   
   // Register payment and transaction routes
   app.use('/api/payment', paystackRoutes);

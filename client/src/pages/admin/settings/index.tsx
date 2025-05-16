@@ -8,16 +8,67 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Settings, Save, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useMutation } from "@tanstack/react-query";
 
 export default function AdminSettings() {
   const { isAdmin, isLoading } = useAdmin();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState(
+    "We're currently performing scheduled maintenance. Please check back soon."
+  );
   
   // Redirect if not admin
   if (!isAdmin && !isLoading) {
     navigate("/admin");
     return null;
   }
+  
+  // Fetch the current maintenance status
+  const fetchMaintenanceStatus = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/admin/maintenance");
+      const data = await response.json();
+      setMaintenanceMode(data.enabled);
+      if (data.message) {
+        setMaintenanceMessage(data.message);
+      }
+    } catch (error) {
+      console.error("Failed to fetch maintenance status", error);
+    }
+  };
+  
+  // Update maintenance mode
+  const toggleMaintenanceMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/maintenance", {
+        enabled: !maintenanceMode,
+        message: maintenanceMessage
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setMaintenanceMode(data.enabled);
+      toast({
+        title: data.enabled ? "Maintenance Mode Enabled" : "Maintenance Mode Disabled",
+        description: data.enabled 
+          ? "The system is now in maintenance mode. Only admins can access the site." 
+          : "The system is now accessible to all users.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/maintenance"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update maintenance mode",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
   
   return (
     <div>
@@ -179,17 +230,37 @@ export default function AdminSettings() {
                       Put the system in maintenance mode
                     </p>
                   </div>
-                  <Switch id="maintenance-mode" />
+                  <Switch 
+                    id="maintenance-mode" 
+                    checked={maintenanceMode}
+                    onCheckedChange={() => toggleMaintenanceMutation.mutate()}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="maintenance-message">Maintenance Message</Label>
                   <Input 
                     id="maintenance-message" 
-                    defaultValue="We're currently performing scheduled maintenance. Please check back soon."
+                    value={maintenanceMessage}
+                    onChange={(e) => setMaintenanceMessage(e.target.value)}
                   />
                 </div>
                 <div className="flex justify-end space-x-2 pt-4">
-                  <Button variant="destructive">Enable Maintenance Mode</Button>
+                  <Button 
+                    variant={maintenanceMode ? "outline" : "destructive"}
+                    onClick={() => toggleMaintenanceMutation.mutate()}
+                    disabled={toggleMaintenanceMutation.isPending}
+                  >
+                    {toggleMaintenanceMutation.isPending ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                        Processing...
+                      </>
+                    ) : maintenanceMode ? (
+                      "Disable Maintenance Mode"
+                    ) : (
+                      "Enable Maintenance Mode"
+                    )}
+                  </Button>
                 </div>
               </div>
             </CardContent>

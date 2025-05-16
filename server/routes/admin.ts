@@ -1,5 +1,9 @@
 import { Router, Request, Response } from "express";
 import { storage } from "../storage";
+import { 
+  getMaintenanceSettings, 
+  updateMaintenanceSettings 
+} from "../utils/maintenance";
 
 // Create the router
 const router = Router();
@@ -191,6 +195,34 @@ router.post("/users/:userId/balance", ensureAdmin, async (req: Request, res: Res
   } catch (error) {
     console.error(`Error adjusting user balance for admin: ${error}`);
     res.status(500).json({ message: "Error adjusting user balance" });
+  }
+});
+
+// Maintenance mode endpoints
+router.get("/maintenance", ensureAdmin, async (req: Request, res: Response) => {
+  try {
+    const settings = getMaintenanceSettings();
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching maintenance settings:', error);
+    res.status(500).json({ message: "Failed to get maintenance settings" });
+  }
+});
+
+router.post("/maintenance", ensureAdmin, async (req: Request, res: Response) => {
+  try {
+    const { enabled, message } = req.body;
+    
+    const settings = updateMaintenanceSettings({
+      enabled: enabled !== undefined ? enabled : undefined,
+      message: message || undefined
+    });
+    
+    console.log(`Maintenance mode ${settings.enabled ? 'enabled' : 'disabled'} by admin user ID: ${req.session.userId}`);
+    res.json(settings);
+  } catch (error) {
+    console.error('Error updating maintenance settings:', error);
+    res.status(500).json({ message: "Failed to update maintenance settings" });
   }
 });
 
