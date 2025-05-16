@@ -21,12 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
+
 import { 
   Search, 
   Eye, 
@@ -138,36 +133,36 @@ export default function AdminGamesPage() {
           />
         </div>
         
-        <TabsList className="ml-auto">
-          <TabsTrigger 
-            value="all" 
-            className={statusFilter === "all" ? "bg-primary text-primary-foreground" : ""}
+        <div className="ml-auto flex space-x-1 bg-muted p-1 rounded-md">
+          <Button 
+            variant={statusFilter === "all" ? "default" : "ghost"}
+            size="sm"
             onClick={() => setStatusFilter("all")}
           >
             All
-          </TabsTrigger>
-          <TabsTrigger 
-            value="active" 
-            className={statusFilter === "active" ? "bg-primary text-primary-foreground" : ""}
+          </Button>
+          <Button 
+            variant={statusFilter === "active" ? "default" : "ghost"}
+            size="sm"
             onClick={() => setStatusFilter("active")}
           >
             Active
-          </TabsTrigger>
-          <TabsTrigger 
-            value="completed" 
-            className={statusFilter === "completed" ? "bg-primary text-primary-foreground" : ""}
+          </Button>
+          <Button 
+            variant={statusFilter === "completed" ? "default" : "ghost"}
+            size="sm"
             onClick={() => setStatusFilter("completed")}
           >
             Completed
-          </TabsTrigger>
-          <TabsTrigger 
-            value="pending" 
-            className={statusFilter === "pending" ? "bg-primary text-primary-foreground" : ""}
+          </Button>
+          <Button 
+            variant={statusFilter === "pending" ? "default" : "ghost"}
+            size="sm"
             onClick={() => setStatusFilter("pending")}
           >
             Pending
-          </TabsTrigger>
-        </TabsList>
+          </Button>
+        </div>
       </div>
       
       <Card>
