@@ -26,6 +26,7 @@ import AdminUserDetail from "@/pages/admin/users/[id]";
 import AdminVoiceTools from "@/pages/admin/voice-tools";
 import AdminTransactions from "@/pages/admin/transactions/index";
 import AdminTransactionDetail from "@/pages/admin/transactions/[id]";
+import AdminSettings from "@/pages/admin/settings/index";
 import DebugTransaction from "@/pages/admin/debug-transaction";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import VerifyEmail from "@/pages/auth/verify-email";
@@ -104,6 +105,11 @@ function Router() {
             <AdminTransactionDetail id={params.id} />
           </AdminLayout>
         )}
+      </Route>
+      <Route path="/admin/settings">
+        <AdminLayout>
+          <AdminSettings />
+        </AdminLayout>
       </Route>
       <Route path="/admin/debug-transaction">
         <AdminLayout>
