@@ -76,6 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/payment', paystackRoutes);
   app.use('/api/transactions', transactionRoutes);
   app.use('/api/currencies', currencyRoutes);
+  app.use('/api/admin', adminRoutes);
   
   // Initialize game manager
   const gameManager = new GameManager(storage);
