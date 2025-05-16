@@ -15,6 +15,7 @@ import Stripe from "stripe";
 import paystackRoutes from "./routes/paystack";
 import transactionRoutes from "./routes/transactions";
 import currencyRoutes from "./routes/currency";
+import adminRoutes from "./routes/admin";
 import { AVAILABLE_CURRENCIES } from "./routes/currency";
 import { addMinutes, addHours, addDays } from "date-fns";
 import { 
