@@ -144,7 +144,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.post("/api/register", async (req, res) => {
     try {
-      const validatedData = insertUserSchema.parse(req.body);
+      // Log the request body to see what's being sent
+      console.log("Registration request body:", req.body);
+      
+      // Create a more permissive schema for registration validation
+      const validationSchema = z.object({
+        username: z.string().min(3, "Username must be at least 3 characters"),
+        email: z.string().email("Invalid email address"),
+        password: z.string().min(6, "Password must be at least 6 characters"),
+        avatarInitials: z.string().optional(),
+        countryCode: z.string().min(2).default("NG"),
+        preferredCurrency: z.string().min(3).default("NGN"),
+        language: z.string().min(2).default("en"),
+        timeZone: z.string().optional(),
+      });
+
+      const validatedData = validationSchema.parse(req.body);
       
       // Check if username already exists
       const existingUser = await storage.getUserByUsername(validatedData.username);

@@ -40,7 +40,7 @@ type RegisterData = Pick<
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-export default function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
