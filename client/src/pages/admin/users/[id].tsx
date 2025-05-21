@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Skeleton } from "@/components/ui/skeleton";
 import * as z from "zod";
 import {
   Dialog,
@@ -357,25 +356,25 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <Skeleton className="h-8 w-48" />
-              <Skeleton className="h-4 w-64" />
+              <div className="h-8 w-48 bg-muted animate-pulse rounded-md" />
+              <div className="h-4 w-64 bg-muted animate-pulse rounded-md" />
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
+                <div className="h-24 w-full bg-muted animate-pulse rounded-md" />
+                <div className="h-24 w-full bg-muted animate-pulse rounded-md" />
               </div>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader>
-              <Skeleton className="h-8 w-32" />
+              <div className="h-8 w-32 bg-muted animate-pulse rounded-md" />
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
+                <div className="h-16 w-full bg-muted animate-pulse rounded-md" />
+                <div className="h-16 w-full bg-muted animate-pulse rounded-md" />
               </div>
             </CardContent>
           </Card>
