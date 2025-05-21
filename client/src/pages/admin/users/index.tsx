@@ -290,7 +290,8 @@ export default function AdminUsersPage() {
                                   e.preventDefault();
                                   
                                   // Prevent deactivating admin users
-                                  if (user.isAdmin && user.isActive) {
+                                  const isAdminUser = ["admin", "precious"].includes(user.username);
+                                  if (isAdminUser && user.isActive) {
                                     toast({
                                       title: "Cannot Deactivate Admin",
                                       description: "Administrator accounts cannot be deactivated",

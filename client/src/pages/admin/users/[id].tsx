@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Skeleton } from "@/components/ui/skeleton";
 import * as z from "zod";
 import {
   Dialog,
