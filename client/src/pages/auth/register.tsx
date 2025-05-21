@@ -131,32 +131,48 @@ export default function Register() {
   }, [form]);
 
   const onSubmit = (data: RegisterFormValues) => {
-    // Calculate initials from username
-    const avatarInitials = getInitials(data.username);
-    
-    // Get browser timezone if not provided
-    const timeZone = data.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    // Register request with all needed data
-    registerMutation.mutate({
-      ...data,
-      avatarInitials,
-      timeZone,
-    }, {
-      onSuccess: () => {
-        // Save the email for potential resend verification
-        setRegisteredEmail(data.email);
-        setRegistrationSuccess(true);
-        toast({
-          title: "Registration successful",
-          description: "Please check your email to verify your account.",
-        });
-      },
-      onError: (error: Error) => {
-        // Error handling is already in the mutation
-        console.error("Registration error:", error);
-      }
-    });
+    try {
+      // Calculate initials from username
+      const avatarInitials = getInitials(data.username);
+      
+      // Get browser timezone if not provided
+      const timeZone = data.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      
+      console.log("Submitting registration data:", { ...data, avatarInitials, timeZone });
+      
+      // Register request with all needed data
+      registerMutation.mutate({
+        ...data,
+        avatarInitials,
+        timeZone,
+      }, {
+        onSuccess: (response) => {
+          // Save the email for potential resend verification
+          setRegisteredEmail(data.email);
+          setRegistrationSuccess(true);
+          toast({
+            title: "Registration successful",
+            description: "Your account has been created successfully.",
+          });
+          console.log("Registration success response:", response);
+        },
+        onError: (error: Error) => {
+          console.error("Registration error in component:", error);
+          toast({
+            title: "Registration failed",
+            description: error.message || "Please check your information and try again",
+            variant: "destructive",
+          });
+        }
+      });
+    } catch (error) {
+      console.error("Unexpected error during registration:", error);
+      toast({
+        title: "Registration error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

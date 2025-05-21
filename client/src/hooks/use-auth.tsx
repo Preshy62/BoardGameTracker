@@ -76,6 +76,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       // Remove confirmPassword as it's not in the API schema
       const { confirmPassword, ...registerData } = credentials;
       const res = await apiRequest("POST", "/api/register", registerData);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Registration failed");
+      }
       return await res.json();
     },
     onSuccess: (response: any) => {
@@ -85,11 +89,15 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         title: "Registration successful",
         description: "Please check your email to verify your account.",
       });
+      // In development, auto-login was handled server-side
+      // Refresh user data
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
     onError: (error: Error) => {
+      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: error.message,
+        description: error.message || "Please try again with different credentials",
         variant: "destructive",
       });
     },

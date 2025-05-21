@@ -2,8 +2,21 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    try {
+      // Try to parse as JSON first
+      const errorData = await res.json();
+      if (errorData.message) {
+        throw new Error(errorData.message);
+      }
+      throw new Error(JSON.stringify(errorData));
+    } catch (e) {
+      // If not JSON, get as text
+      if (e instanceof Error && e.message !== "Unexpected end of JSON input") {
+        throw e;
+      }
+      const text = res.statusText || "Unknown error";
+      throw new Error(`${res.status}: ${text}`);
+    }
   }
 }
 
