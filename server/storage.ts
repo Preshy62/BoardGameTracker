@@ -662,6 +662,23 @@ export class DatabaseStorage implements IStorage {
     
     return updatedUser;
   }
+  
+  async deleteUser(userId: number): Promise<boolean> {
+    try {
+      // Delete user's game player records first to maintain referential integrity
+      await db.delete(gamePlayers)
+        .where(eq(gamePlayers.userId, userId));
+      
+      // Delete the user
+      const result = await db.delete(users)
+        .where(eq(users.id, userId));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
+    }
+  }
 
   // Game operations
   async getGame(id: number): Promise<Game | undefined> {
