@@ -280,7 +280,7 @@ export default function AdminUsersPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
-                                <Link href={`/admin/users/${user.id}?edit=true`} className="flex w-full items-center">
+                                <Link href={`/admin/users/${user.id}`} className="flex w-full items-center">
                                   <UserCog className="h-4 w-4 mr-2" />
                                   Edit User
                                 </Link>
