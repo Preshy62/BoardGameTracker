@@ -47,11 +47,12 @@ import {
   Clock, 
   History, 
   Mail, 
-  Pencil, 
+  Pencil,
+  Wallet,
+  DollarSign,
   Phone, 
   Shield, 
-  UserCircle,
-  Wallet
+  UserCircle
 } from "lucide-react";
 import { 
   Table, 
@@ -711,6 +712,102 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
                 user={user}
                 onUpdate={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/users", userId] })}
               />
+              
+              {/* Add Wallet Balance Adjustment Dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="w-full justify-start" variant="outline">
+                    <Wallet className="h-4 w-4 mr-2" />
+                    Adjust Wallet Balance
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Adjust Wallet Balance</DialogTitle>
+                    <DialogDescription>
+                      Add or subtract funds from the user's wallet. 
+                      Use positive values to add funds and negative values to subtract funds.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4 pt-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="amount">Amount</Label>
+                      <Input 
+                        id="amount"
+                        placeholder="Enter amount (e.g. 1000 or -500)" 
+                        type="number" 
+                        step="any"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Current balance: {formatCurrency(user.walletBalance)}
+                      </p>
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="reason">Reason</Label>
+                      <Input 
+                        id="reason"
+                        placeholder="Enter reason for adjustment" 
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        This will be recorded in the transaction history
+                      </p>
+                    </div>
+                    
+                    <DialogFooter className="pt-4">
+                      <Button 
+                        onClick={() => {
+                          const amountInput = document.getElementById('amount') as HTMLInputElement;
+                          const reasonInput = document.getElementById('reason') as HTMLInputElement;
+                          
+                          const amount = parseFloat(amountInput.value);
+                          const reason = reasonInput.value;
+                          
+                          if (isNaN(amount)) {
+                            toast({
+                              title: "Invalid Amount",
+                              description: "Please enter a valid number",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          
+                          if (!reason.trim()) {
+                            toast({
+                              title: "Reason Required",
+                              description: "Please provide a reason for this adjustment",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          
+                          // Confirm before processing large amounts
+                          if (Math.abs(amount) > 10000) {
+                            if (!confirm(`Are you sure you want to ${amount > 0 ? 'add' : 'subtract'} ${formatCurrency(Math.abs(amount))} ${amount > 0 ? 'to' : 'from'} this user's account?`)) {
+                              return;
+                            }
+                          }
+                          
+                          updateBalanceMutation.mutate({
+                            amount,
+                            reason
+                          });
+                          
+                          // Clear the inputs
+                          amountInput.value = '';
+                          reasonInput.value = '';
+                        }}
+                        disabled={updateBalanceMutation.isPending}
+                      >
+                        {updateBalanceMutation.isPending ? 
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Processing...</> : 
+                          "Adjust Balance"}
+                      </Button>
+                    </DialogFooter>
+                  </div>
+                </DialogContent>
+              </Dialog>
               
               <Button
                 className="w-full justify-start"
