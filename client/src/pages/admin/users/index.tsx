@@ -286,8 +286,19 @@ export default function AdminUsersPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={(e) => {
+                                onSelect={(e) => {
                                   e.preventDefault();
+                                  
+                                  // Prevent deactivating admin users
+                                  if (user.isAdmin && user.isActive) {
+                                    toast({
+                                      title: "Cannot Deactivate Admin",
+                                      description: "Administrator accounts cannot be deactivated",
+                                      variant: "destructive"
+                                    });
+                                    return;
+                                  }
+                                  
                                   updateUserStatusMutation.mutate({ 
                                     userId: user.id, 
                                     status: !user.isActive 
