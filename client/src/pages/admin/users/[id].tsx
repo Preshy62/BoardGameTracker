@@ -281,9 +281,19 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
       });
     },
     onError: (error: any) => {
+      // Prevent page redirection or crashes on error
+      console.error("Error updating user status:", error);
+      
+      let errorMessage = "Unknown error occurred";
+      if (error.message?.includes("administrator")) {
+        errorMessage = "Administrator accounts cannot be deactivated";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Error",
-        description: `Failed to update user status: ${error.message || "Unknown error"}`,
+        title: "Action Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -751,6 +761,14 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
                           queryKey: ["/api/admin/users"]
                         });
                       }
+                    },
+                    onError: (error: any) => {
+                      // Handle errors without page reload
+                      toast({
+                        title: "Action Failed",
+                        description: error.message || "Could not update user status. Admin accounts cannot be deactivated.",
+                        variant: "destructive"
+                      });
                     }
                   });
                 }}
