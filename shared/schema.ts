@@ -250,4 +250,5 @@ export const botGameStatistics = pgTable("bot_game_statistics", {
   totalPayouts: doublePrecision("total_payouts").notNull().default(0),
   totalStakes: doublePrecision("total_stakes").notNull().default(0),
   platformFees: doublePrecision("platform_fees").notNull().default(0),
+  pendingPayouts: doublePrecision("pending_payouts").notNull().default(0),
 });

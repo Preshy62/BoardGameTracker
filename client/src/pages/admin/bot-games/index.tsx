@@ -51,6 +51,7 @@ export default function BotGamesAdminPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [dailyStats, setDailyStats] = useState<any>(null);
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
 
   const form = useForm<z.infer<typeof botSettingsSchema>>({
     resolver: zodResolver(botSettingsSchema),
@@ -98,10 +99,26 @@ export default function BotGamesAdminPage() {
         });
       }
     };
+    
+    const fetchPendingApprovals = async () => {
+      try {
+        const res = await apiRequest("GET", "/api/admin/bot-games/pending-approvals");
+        const data = await res.json();
+        setPendingApprovals(data);
+      } catch (error) {
+        console.error("Failed to fetch pending approvals:", error);
+        toast({
+          title: "Failed to load pending approvals",
+          description: "There was a problem loading special stone bonus approvals.",
+          variant: "destructive",
+        });
+      }
+    };
 
     if (isAdmin) {
       fetchSettings();
       fetchDailyStats();
+      fetchPendingApprovals();
     }
   }, [isAdmin, toast, form]);
 

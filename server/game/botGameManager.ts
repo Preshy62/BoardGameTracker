@@ -332,7 +332,8 @@ export class BotGameManager {
   private async updateBotGameStatistics(
     stake: number,
     payout: number,
-    playerWon: boolean
+    playerWon: boolean,
+    pendingAmount: number = 0
   ): Promise<void> {
     try {
       const today = new Date();
@@ -358,6 +359,7 @@ export class BotGameManager {
             totalPayouts: todayStats.totalPayouts + payout,
             totalStakes: todayStats.totalStakes + stake,
             platformFees: todayStats.platformFees + (stake * 0.05), // 5% fee
+            pendingPayouts: todayStats.pendingPayouts + pendingAmount
           })
           .where(eq(botGameStatistics.id, todayStats.id));
       } else {
@@ -368,7 +370,8 @@ export class BotGameManager {
           totalWins: playerWon ? 1 : 0,
           totalPayouts: payout,
           totalStakes: stake,
-          platformFees: stake * 0.05, // 5% fee
+          platformFees: stake * 0.05, // 5% fee,
+          pendingPayouts: pendingAmount
         });
       }
     } catch (error) {
