@@ -102,6 +102,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register admin routes after session middleware
   app.use('/api/admin', adminRoutes);
   
+  // Register bot games routes
+  app.use('/api/bot-games', botGamesRoutes);
+  
   // Authentication middleware
   const authenticate = (req: Request, res: Response, next: Function) => {
     if (!req.session.userId) {
@@ -801,6 +804,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Special handling for single player (bot) games
       const isSinglePlayerGame = req.body.playWithBot === true;
       console.log('Creating game with params:', req.body);
+      
+      // For bot games, validate stake amounts according to bot game settings
+      if (isSinglePlayerGame) {
+        try {
+          // Get the bot game manager from the game manager
+          const botGameManager = gameManager.getBotGameManager();
+          
+          // Validate the stake for bot games
+          const validation = await botGameManager.validateBotGameStake(
+            validatedData.stake, 
+            validatedData.currency || 'NGN'
+          );
+          
+          if (!validation.valid) {
+            return res.status(400).json({ 
+              message: validation.message || "Invalid stake for bot game" 
+            });
+          }
+          
+          // Use converted stake if provided
+          if (validation.convertedStake) {
+            validatedData.stake = validation.convertedStake;
+          }
+        } catch (error) {
+          console.error("Error validating bot game stake:", error);
+          return res.status(500).json({ message: "Failed to validate bot game stake" });
+        }
+      }
       
       // Validate max players (allow 1 for single player bot games)
       if ((!isSinglePlayerGame && validatedData.maxPlayers < 2) || validatedData.maxPlayers > 10) {

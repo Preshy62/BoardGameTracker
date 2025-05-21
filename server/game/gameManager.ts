@@ -514,9 +514,9 @@ export class GameManager {
       
       if (winnerIds.length === 1) {
         // Single winner
-        updatedGame = await this.storage.updateGameWinner(
+        updatedGame = await this.storage.updateGameWinners(
           gameId, 
-          winnerIds[0], 
+          winnerIds,
           highestRoll
         );
         
