@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAdmin } from "@/hooks/use-admin";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatDate } from "@/lib/format";
@@ -99,6 +100,30 @@ export default function AdminUsersPage() {
       toast({
         title: "Failed to delete user",
         description: error.message || "An error occurred while deleting the user",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update user status mutation (activate/deactivate)
+  const updateUserStatusMutation = useMutation({
+    mutationFn: async ({ userId, status }: { userId: number, status: boolean }) => {
+      const response = await apiRequest("PATCH", `/api/admin/users/${userId}/status`, { isActive: status });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.isActive ? "User activated" : "User deactivated",
+        description: `${data.username}'s account has been ${data.isActive ? "activated" : "deactivated"} successfully.`,
+      });
+      
+      // Refresh the users list
+      refetch();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update user status",
+        description: error.message || "An error occurred while updating the user status",
         variant: "destructive",
       });
     }
@@ -236,20 +261,36 @@ export default function AdminUsersPage() {
                                   View Details
                                 </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <UserCog className="h-4 w-4 mr-2" />
-                                Edit User
+                              <DropdownMenuItem asChild>
+                                <Link href={`/admin/users/${user.id}?edit=true`} className="flex w-full items-center">
+                                  <UserCog className="h-4 w-4 mr-2" />
+                                  Edit User
+                                </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                  updateUserStatusMutation.mutate({ 
+                                    userId: user.id, 
+                                    status: !user.isActive 
+                                  });
+                                }}
+                              >
                                 {user.isActive ? (
                                   <>
                                     <X className="h-4 w-4 mr-2 text-destructive" />
-                                    <span className="text-destructive">Deactivate</span>
+                                    <span className="text-destructive">
+                                      {updateUserStatusMutation.isPending && updateUserStatusMutation.variables?.userId === user.id ? 
+                                        "Deactivating..." : "Deactivate"}
+                                    </span>
                                   </>
                                 ) : (
                                   <>
                                     <Check className="h-4 w-4 mr-2 text-primary" />
-                                    <span className="text-primary">Activate</span>
+                                    <span className="text-primary">
+                                      {updateUserStatusMutation.isPending && updateUserStatusMutation.variables?.userId === user.id ? 
+                                        "Activating..." : "Activate"}
+                                    </span>
                                   </>
                                 )}
                               </DropdownMenuItem>
