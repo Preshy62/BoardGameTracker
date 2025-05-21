@@ -1,10 +1,49 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { botGameSettings, botGameStatistics } from "@shared/schema";
-import { eq, gte, lte } from "drizzle-orm";
+import { eq, gte, lte, and, sql } from "drizzle-orm";
 import { startOfDay, endOfDay } from "date-fns";
 import { z } from "zod";
-import { authenticate, authenticateAdmin } from "./middleware";
+
+// Extend Request type to include user property
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: number;
+      };
+    }
+  }
+}
+
+// Authentication middleware
+const authenticate = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session?.userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  next();
+};
+
+const authenticateAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session?.userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  // Check if user is admin
+  const result = await db.execute(
+    sql`SELECT is_admin FROM users WHERE id = ${req.session.userId}`
+  );
+  const row = result.rows ? result.rows[0] : null;
+  const user = row ? { is_admin: row.is_admin } : null;
+  
+  if (!user || !user.is_admin) {
+    return res.status(403).json({ message: "Forbidden - Admin access required" });
+  }
+  
+  // Add user information to request
+  req.user = { id: req.session.userId };
+  next();
+};
 
 const router = Router();
 
@@ -62,7 +101,7 @@ router.post("/settings", authenticateAdmin, async (req, res) => {
         .set({
           ...validatedData,
           updatedAt: new Date(),
-          updatedBy: req.user.id,
+          updatedBy: req.session.userId,
         })
         .where(eq(botGameSettings.id, existingSettings.id))
         .returning();
@@ -72,7 +111,7 @@ router.post("/settings", authenticateAdmin, async (req, res) => {
         .values({
           ...validatedData,
           updatedAt: new Date(),
-          updatedBy: req.user.id,
+          updatedBy: req.session.userId,
         })
         .returning();
     }

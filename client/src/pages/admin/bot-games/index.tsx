@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import AdminLayout from "@/layouts/AdminLayout";
-import { DashboardIcon, InfoCircledIcon, LineChartIcon } from "@radix-ui/react-icons";
+import { AdminLayout } from "@/layouts/AdminLayout";
+import { BarChart3, Target, AlertCircle } from "lucide-react";
 
 import {
   Card,
