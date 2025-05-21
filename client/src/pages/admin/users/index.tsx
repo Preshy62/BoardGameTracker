@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAdmin } from "@/hooks/use-admin";
+import { useToast } from "@/hooks/use-toast";
 
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatDate } from "@/lib/format";
 import { 
   Card, 
@@ -11,6 +12,17 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   Table, 
   TableBody, 
@@ -35,7 +47,8 @@ import {
   Check,
   X,
   Eye,
-  UserCog
+  UserCog,
+  Trash2
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -53,7 +66,9 @@ type User = {
 
 export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const { isAdmin } = useAdmin();
+  const { toast } = useToast();
   
   // Fetch all users
   const { data: users = [], isLoading, error } = useQuery<User[]>({
@@ -185,6 +200,10 @@ export default function AdminUsersPage() {
                                     <span className="text-primary">Activate</span>
                                   </>
                                 )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                <span className="text-destructive">Delete User</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

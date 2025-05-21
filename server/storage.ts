@@ -175,6 +175,32 @@ export class MemStorage implements IStorage {
     this.users.set(userId, updatedUser);
     return updatedUser;
   }
+  
+  async deleteUser(userId: number): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      return false; // User doesn't exist
+    }
+    
+    // Delete user from memory
+    this.users.delete(userId);
+    
+    // Delete user's game player records
+    for (const [id, player] of this.gamePlayers.entries()) {
+      if (player.userId === userId) {
+        this.gamePlayers.delete(id);
+      }
+    }
+    
+    // Delete user's transactions
+    for (const [id, transaction] of this.transactions.entries()) {
+      if (transaction.userId === userId) {
+        this.transactions.delete(id);
+      }
+    }
+    
+    return true;
+  }
 
   // Game operations
   async getGame(id: number): Promise<Game | undefined> {
