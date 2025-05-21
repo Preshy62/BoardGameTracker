@@ -705,15 +705,32 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
               <Button
                 className="w-full justify-start"
                 variant={user.isActive ? "destructive" : "outline"}
-                onClick={() => updateUserStatusMutation.mutate({ 
-                  isActive: !user.isActive 
-                })}
+                onClick={() => {
+                  // Create a copy of the message to show in the toast later
+                  const actionMessage = user.isActive ? "deactivating" : "activating";
+                  
+                  // Show immediate toast so user knows something is happening
+                  toast({
+                    title: `${actionMessage.charAt(0).toUpperCase() + actionMessage.slice(1)} account...`,
+                    description: `The account is being ${actionMessage}. Please wait.`,
+                  });
+                  
+                  // Execute the API call
+                  updateUserStatusMutation.mutate({ 
+                    isActive: !user.isActive 
+                  }, {
+                    onSuccess: (data) => {
+                      // Force refresh the page once the API call is complete
+                      window.location.reload();
+                    }
+                  });
+                }}
                 disabled={updateUserStatusMutation.isPending}
               >
                 {updateUserStatusMutation.isPending ? (
                   <>
-                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {user.isActive ? "Disabling..." : "Enabling..."}
                   </>
                 ) : user.isActive ? (
                   <>
