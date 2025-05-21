@@ -141,7 +141,7 @@ export default function BotGamesAdminPage() {
             </CardHeader>
             <CardContent>
               <div className="flex justify-between items-center">
-                <DashboardIcon className="h-8 w-8 text-primary" />
+                <BarChart3 className="h-8 w-8 text-primary" />
                 <span className="text-3xl font-bold">
                   {dailyStats ? dailyStats.totalGamesPlayed : '-'}
                 </span>
@@ -156,7 +156,7 @@ export default function BotGamesAdminPage() {
             </CardHeader>
             <CardContent>
               <div className="flex justify-between items-center">
-                <InfoCircledIcon className="h-8 w-8 text-green-500" />
+                <Target className="h-8 w-8 text-green-500" />
                 <span className="text-3xl font-bold text-green-600">
                   {dailyStats ? dailyStats.totalWins : '-'}
                   {dailyStats && (
@@ -176,7 +176,7 @@ export default function BotGamesAdminPage() {
             </CardHeader>
             <CardContent>
               <div className="flex justify-between items-center">
-                <LineChartIcon className="h-8 w-8 text-blue-500" />
+                <AlertCircle className="h-8 w-8 text-blue-500" />
                 <span className="text-3xl font-bold text-blue-600">
                   {dailyStats ? formatCurrency(dailyStats.totalPayouts) : '-'}
                 </span>
