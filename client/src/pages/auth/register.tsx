@@ -37,8 +37,9 @@ import { getInitials } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   getPrimaryCurrencyForCountry, 
-  groupCurrencies, 
-  countryToCurrency 
+  groupCurrencies,
+  currencies,
+  countries
 } from "@/lib/countryData";
 
 const registerSchema = z.object({
@@ -58,30 +59,7 @@ const registerSchema = z.object({
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-// Country options list
-const countries = [
-  { code: "NG", name: "Nigeria" },
-  { code: "US", name: "United States" },
-  { code: "GB", name: "United Kingdom" },
-  { code: "CA", name: "Canada" },
-  { code: "ZA", name: "South Africa" },
-  { code: "GH", name: "Ghana" },
-  { code: "KE", name: "Kenya" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "JP", name: "Japan" },
-];
-
-// Currency options list 
-const currencyOptions = [
-  { code: "NGN", name: "Nigerian Naira (₦)" },
-  { code: "USD", name: "US Dollar ($)" },
-  { code: "GBP", name: "British Pound (£)" },
-  { code: "EUR", name: "Euro (€)" },
-  { code: "ZAR", name: "South African Rand (R)" },
-  { code: "GHS", name: "Ghanaian Cedi (GH₵)" },
-  { code: "KES", name: "Kenyan Shilling (KSh)" },
-];
+// Language options with mapping
 
 // Language options list
 const languages = [
@@ -360,7 +338,7 @@ export default function Register() {
                     const selectedCountry = form.getValues("countryCode");
                     
                     // Get recommendation groups based on the selected country
-                    const grouped = groupCurrencies(currencyOptions, selectedCountry);
+                    const grouped = groupCurrencies(currencies, selectedCountry);
                     const primaryCurrency = getPrimaryCurrencyForCountry(selectedCountry);
                     
                     return (
@@ -388,7 +366,7 @@ export default function Register() {
                                     {currency.code !== primaryCurrency && (
                                       <Star className="mr-2 h-3.5 w-3.5 text-yellow-500" />
                                     )}
-                                    {currency.name}
+                                    {currency.name} ({currency.symbol})
                                   </div>
                                 </SelectItem>
                               ))}
@@ -397,9 +375,9 @@ export default function Register() {
                             {/* Other Currencies Group */}
                             <SelectGroup>
                               <SelectLabel>Other Currencies</SelectLabel>
-                              {grouped.other.map((currency) => (
+                              {grouped.others.map((currency) => (
                                 <SelectItem key={currency.code} value={currency.code}>
-                                  {currency.name}
+                                  {currency.name} ({currency.symbol})
                                 </SelectItem>
                               ))}
                             </SelectGroup>
