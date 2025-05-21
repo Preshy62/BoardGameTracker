@@ -36,9 +36,8 @@ import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { AuthProvider, useAuth } from "./hooks/use-auth";
+import AuthProvider, { useAuth } from "./hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
-import SimpleRegisterForm from "@/components/SimpleRegisterForm";
 
 function HomeOrLanding() {
   const { user } = useAuth();
@@ -51,29 +50,7 @@ function Router() {
       {/* Public routes */}
       <Route path="/landing" component={LandingPage} />
       <Route path="/" component={HomeOrLanding} />
-      <Route path="/auth">
-        <AuthPage />
-      </Route>
-      <Route path="/register">
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-          <div className="sm:mx-auto sm:w-full sm:max-w-md">
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Create your account
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              Or{' '}
-              <a href="/auth" className="font-medium text-primary hover:text-primary-dark">
-                sign in to your existing account
-              </a>
-            </p>
-          </div>
-          <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-            <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-              <SimpleRegisterForm />
-            </div>
-          </div>
-        </div>
-      </Route>
+      <Route path="/auth" component={AuthPage} />
       <Route path="/verify-email/:token" component={VerifyEmail} />
       <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/demo-new" component={DemoNewPage} />

@@ -81,17 +81,8 @@ export default function AdminUsersPage() {
   // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
-      try {
-        const response = await apiRequest("DELETE", `/api/admin/users/${userId}`);
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to delete user");
-        }
-        return response.json();
-      } catch (error: any) {
-        console.error("Delete user error:", error);
-        throw error;
-      }
+      const response = await apiRequest("DELETE", `/api/admin/users/${userId}`);
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
@@ -117,17 +108,8 @@ export default function AdminUsersPage() {
   // Update user status mutation (activate/deactivate)
   const updateUserStatusMutation = useMutation({
     mutationFn: async ({ userId, status }: { userId: number, status: boolean }) => {
-      try {
-        const response = await apiRequest("PATCH", `/api/admin/users/${userId}/status`, { isActive: status });
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to update user status");
-        }
-        return response.json();
-      } catch (error: any) {
-        console.error("Status update error:", error);
-        throw error;
-      }
+      const response = await apiRequest("PATCH", `/api/admin/users/${userId}/status`, { isActive: status });
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
@@ -280,26 +262,14 @@ export default function AdminUsersPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
-                                <Link href={`/admin/users/${user.id}`} className="flex w-full items-center">
+                                <Link href={`/admin/users/${user.id}?edit=true`} className="flex w-full items-center">
                                   <UserCog className="h-4 w-4 mr-2" />
                                   Edit User
                                 </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem
+                              <DropdownMenuItem 
                                 onSelect={(e) => {
                                   e.preventDefault();
-                                  
-                                  // Prevent deactivating admin users
-                                  const isAdminUser = ["admin", "precious"].includes(user.username);
-                                  if (isAdminUser && user.isActive) {
-                                    toast({
-                                      title: "Cannot Deactivate Admin",
-                                      description: "Administrator accounts cannot be deactivated",
-                                      variant: "destructive"
-                                    });
-                                    return;
-                                  }
-                                  
                                   updateUserStatusMutation.mutate({ 
                                     userId: user.id, 
                                     status: !user.isActive 

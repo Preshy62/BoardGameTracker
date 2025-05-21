@@ -40,7 +40,7 @@ type RegisterData = Pick<
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export default function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -73,19 +73,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
-      console.log("Registration data:", credentials);
       // Remove confirmPassword as it's not in the API schema
       const { confirmPassword, ...registerData } = credentials;
-      
-      try {
-        const res = await apiRequest("POST", "/api/register", registerData);
-        const data = await res.json();
-        console.log("Registration response:", data);
-        return data;
-      } catch (error) {
-        console.error("Registration error in mutation:", error);
-        throw error;
-      }
+      const res = await apiRequest("POST", "/api/register", registerData);
+      return await res.json();
     },
     onSuccess: (response: any) => {
       // Don't set the user data in query client since they're not logged in yet

@@ -25,7 +25,6 @@ import {
   FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { 
@@ -48,12 +47,11 @@ import {
   Clock, 
   History, 
   Mail, 
-  Pencil,
-  Wallet,
-  DollarSign,
+  Pencil, 
   Phone, 
   Shield, 
-  UserCircle
+  UserCircle,
+  Wallet
 } from "lucide-react";
 import { 
   Table, 
@@ -236,43 +234,18 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
   // Mutation for updating user status
   const updateUserStatusMutation = useMutation({
     mutationFn: async (updates: { isActive: boolean }) => {
-      try {
-        const response = await apiRequest(
-          "PATCH", 
-          `/api/admin/users/${userId}/status`,
-          updates
-        );
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to update user status");
-        }
-        
-        return response.json();
-      } catch (error: any) {
-        console.error("Status update error:", error);
-        throw error;
-      }
+      const response = await apiRequest(
+        "PATCH", 
+        `/api/admin/users/${userId}/status`,
+        updates
+      );
+      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
-        title: data.isActive ? "User Activated" : "User Deactivated",
-        description: `${data.username}'s account has been ${data.isActive ? "activated" : "deactivated"} successfully.`,
+        title: "Success",
+        description: "The user status has been successfully updated",
       });
-      
-      // Update local data immediately
-      if (data && user) {
-        queryClient.setQueryData(["/api/admin/users", userId], (oldData: any) => {
-          if (!oldData) return oldData;
-          return {
-            ...oldData,
-            user: {
-              ...oldData.user,
-              isActive: data.isActive
-            }
-          };
-        });
-      }
       
       // Invalidate relevant queries
       queryClient.invalidateQueries({ 
@@ -283,19 +256,9 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
       });
     },
     onError: (error: any) => {
-      // Prevent page redirection or crashes on error
-      console.error("Error updating user status:", error);
-      
-      let errorMessage = "Unknown error occurred";
-      if (error.message?.includes("administrator")) {
-        errorMessage = "Administrator accounts cannot be deactivated";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
       toast({
-        title: "Action Failed",
-        description: errorMessage,
+        title: "Error",
+        description: `Failed to update user status: ${error.message || "Unknown error"}`,
         variant: "destructive",
       });
     }
@@ -356,25 +319,25 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <div className="h-8 w-48 bg-muted animate-pulse rounded-md" />
-              <div className="h-4 w-64 bg-muted animate-pulse rounded-md" />
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64" />
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="h-24 w-full bg-muted animate-pulse rounded-md" />
-                <div className="h-24 w-full bg-muted animate-pulse rounded-md" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
               </div>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader>
-              <div className="h-8 w-32 bg-muted animate-pulse rounded-md" />
+              <Skeleton className="h-8 w-32" />
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="h-16 w-full bg-muted animate-pulse rounded-md" />
-                <div className="h-16 w-full bg-muted animate-pulse rounded-md" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
               </div>
             </CardContent>
           </Card>
@@ -714,138 +677,18 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
                 onUpdate={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/users", userId] })}
               />
               
-              {/* Add Wallet Balance Adjustment Dialog */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="w-full justify-start" variant="outline">
-                    <Wallet className="h-4 w-4 mr-2" />
-                    Adjust Wallet Balance
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Adjust Wallet Balance</DialogTitle>
-                    <DialogDescription>
-                      Add or subtract funds from the user's wallet. 
-                      Use positive values to add funds and negative values to subtract funds.
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <div className="space-y-4 pt-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="amount">Amount</Label>
-                      <Input 
-                        id="amount"
-                        placeholder="Enter amount (e.g. 1000 or -500)" 
-                        type="number" 
-                        step="any"
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        Current balance: {formatCurrency(user.walletBalance)}
-                      </p>
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="reason">Reason</Label>
-                      <Input 
-                        id="reason"
-                        placeholder="Enter reason for adjustment" 
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        This will be recorded in the transaction history
-                      </p>
-                    </div>
-                    
-                    <DialogFooter className="pt-4">
-                      <Button 
-                        onClick={() => {
-                          const amountInput = document.getElementById('amount') as HTMLInputElement;
-                          const reasonInput = document.getElementById('reason') as HTMLInputElement;
-                          
-                          const amount = parseFloat(amountInput.value);
-                          const reason = reasonInput.value;
-                          
-                          if (isNaN(amount)) {
-                            toast({
-                              title: "Invalid Amount",
-                              description: "Please enter a valid number",
-                              variant: "destructive"
-                            });
-                            return;
-                          }
-                          
-                          if (!reason.trim()) {
-                            toast({
-                              title: "Reason Required",
-                              description: "Please provide a reason for this adjustment",
-                              variant: "destructive"
-                            });
-                            return;
-                          }
-                          
-                          // Confirm before processing large amounts
-                          if (Math.abs(amount) > 10000) {
-                            if (!confirm(`Are you sure you want to ${amount > 0 ? 'add' : 'subtract'} ${formatCurrency(Math.abs(amount))} ${amount > 0 ? 'to' : 'from'} this user's account?`)) {
-                              return;
-                            }
-                          }
-                          
-                          updateBalanceMutation.mutate({
-                            amount,
-                            reason
-                          });
-                          
-                          // Clear the inputs
-                          amountInput.value = '';
-                          reasonInput.value = '';
-                        }}
-                        disabled={updateBalanceMutation.isPending}
-                      >
-                        {updateBalanceMutation.isPending ? 
-                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Processing...</> : 
-                          "Adjust Balance"}
-                      </Button>
-                    </DialogFooter>
-                  </div>
-                </DialogContent>
-              </Dialog>
-              
               <Button
                 className="w-full justify-start"
                 variant={user.isActive ? "destructive" : "outline"}
-                onClick={() => {
-                  // Prevent status changes for admin users (client-side validation)
-                  if (user.isAdmin && user.isActive) {
-                    toast({
-                      title: "Action Not Allowed",
-                      description: "Administrator accounts cannot be deactivated",
-                      variant: "destructive"
-                    });
-                    return;
-                  }
-                  
-                  // Save current status to compare after update
-                  const wasActive = user.isActive;
-                  const newStatus = !wasActive;
-                  const actionMessage = wasActive ? "deactivating" : "activating";
-                  
-                  // Show immediate toast so user knows something is happening
-                  toast({
-                    title: `${actionMessage.charAt(0).toUpperCase() + actionMessage.slice(1)} account...`,
-                    description: `The account is being ${actionMessage}. Please wait.`,
-                  });
-                  
-                  // Execute the API call
-                  updateUserStatusMutation.mutate({ 
-                    isActive: newStatus 
-                  });
-                }}
+                onClick={() => updateUserStatusMutation.mutate({ 
+                  isActive: !user.isActive 
+                })}
                 disabled={updateUserStatusMutation.isPending}
               >
                 {updateUserStatusMutation.isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {user.isActive ? "Disabling..." : "Enabling..."}
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
                   </>
                 ) : user.isActive ? (
                   <>

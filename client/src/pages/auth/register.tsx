@@ -137,12 +137,6 @@ export default function Register() {
     // Get browser timezone if not provided
     const timeZone = data.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     
-    console.log("Preparing to submit registration data:", {
-      ...data,
-      avatarInitials,
-      timeZone
-    });
-    
     // Register request with all needed data
     registerMutation.mutate({
       ...data,
