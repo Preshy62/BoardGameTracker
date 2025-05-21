@@ -50,7 +50,9 @@ function Router() {
       {/* Public routes */}
       <Route path="/landing" component={LandingPage} />
       <Route path="/" component={HomeOrLanding} />
-      <Route path="/auth" component={AuthPage} />
+      <Route path="/auth">
+        <AuthPage />
+      </Route>
       <Route path="/verify-email/:token" component={VerifyEmail} />
       <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/demo-new" component={DemoNewPage} />
