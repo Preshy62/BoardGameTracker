@@ -227,3 +227,27 @@ export interface WebSocketMessage {
   type: WebSocketMessageType;
   payload: any;
 }
+
+// Bot game settings
+export const botGameSettings = pgTable("bot_game_settings", {
+  id: serial("id").primaryKey(),
+  dailyWinLimit: integer("daily_win_limit").notNull().default(20), // Default 20 wins per day
+  minStake: doublePrecision("min_stake").notNull().default(500), // Default min 500 Naira
+  maxStake: doublePrecision("max_stake").notNull().default(20000), // Default max 20,000 Naira
+  platformFeePercent: doublePrecision("platform_fee_percent").notNull().default(5), // Default 5%
+  winChancePercent: doublePrecision("win_chance_percent").notNull().default(25), // Default 25% to win
+  doubleStoneMultiplier: doublePrecision("double_stone_multiplier").notNull().default(2), // Default 2x
+  tripleStoneMultiplier: doublePrecision("triple_stone_multiplier").notNull().default(3), // Default 3x
+  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedBy: integer("updated_by").references(() => users.id),
+});
+
+export const botGameStatistics = pgTable("bot_game_statistics", {
+  id: serial("id").primaryKey(),
+  date: timestamp("date").notNull().defaultNow(),
+  totalGamesPlayed: integer("total_games_played").notNull().default(0),
+  totalWins: integer("total_wins").notNull().default(0),
+  totalPayouts: doublePrecision("total_payouts").notNull().default(0),
+  totalStakes: doublePrecision("total_stakes").notNull().default(0),
+  platformFees: doublePrecision("platform_fees").notNull().default(0),
+});

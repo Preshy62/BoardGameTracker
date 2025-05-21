@@ -1,5 +1,6 @@
 import { IStorage } from "../storage";
 import { RandomNumberGenerator } from "./randomGenerator";
+import { BotGameManager } from "./botGameManager";
 import { 
   Game, 
   GamePlayer, 
@@ -22,6 +23,7 @@ interface WebSocketConnection {
 export class GameManager {
   private storage: IStorage;
   private rng: RandomNumberGenerator;
+  private botGameManager: BotGameManager;
   private gameWebSockets: Map<number, WebSocketConnection[]>;
   private turnTimers: Map<number, NodeJS.Timeout>;
   private readonly TURN_TIME_SECONDS = 30;
@@ -29,8 +31,16 @@ export class GameManager {
   constructor(storage: IStorage) {
     this.storage = storage;
     this.rng = new RandomNumberGenerator();
+    this.botGameManager = new BotGameManager(storage);
     this.gameWebSockets = new Map();
     this.turnTimers = new Map();
+  }
+  
+  /**
+   * Getter for the bot game manager instance
+   */
+  public getBotGameManager(): BotGameManager {
+    return this.botGameManager;
   }
 
   /**
