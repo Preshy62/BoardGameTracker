@@ -229,13 +229,34 @@ export default function CreateGame() {
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Play with Bot</FormLabel>
                           <FormDescription>
-                            Start a single-player game against the computer
+                            Play against the computer with special payouts:
+                            <ul className="list-disc ml-5 mt-1 space-y-1">
+                              <li>25% chance to win against the bot</li>
+                              <li>Double stone win (500, 1000): 2x payout</li> 
+                              <li>Triple stone win (3355, 6624): 3x payout</li>
+                              <li>Stakes between ₦500 and ₦20,000</li>
+                            </ul>
                           </FormDescription>
                         </div>
                         <FormControl>
                           <Switch
                             checked={field.value}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              
+                              // If bot mode is enabled, adjust stake if needed
+                              if (checked) {
+                                const currentStake = form.getValues("stake");
+                                if (currentStake > 20000) {
+                                  form.setValue("stake", 20000);
+                                } else if (currentStake < 500) {
+                                  form.setValue("stake", 500);
+                                }
+                                
+                                // Set max players to 1 for bot games (UI only, server handles adding bot)
+                                form.setValue("maxPlayers", 2);
+                              }
+                            }}
                           />
                         </FormControl>
                       </FormItem>
