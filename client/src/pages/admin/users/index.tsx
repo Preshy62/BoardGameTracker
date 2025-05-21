@@ -71,10 +71,37 @@ export default function AdminUsersPage() {
   const { toast } = useToast();
   
   // Fetch all users
-  const { data: users = [], isLoading, error } = useQuery<User[]>({
+  const { data: users = [], isLoading, error, refetch } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     queryFn: () => apiRequest("GET", "/api/admin/users").then(res => res.json()),
     enabled: !!isAdmin,
+  });
+  
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiRequest("DELETE", `/api/admin/users/${userId}`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "User deleted",
+        description: data.message || "User has been successfully deleted",
+      });
+      
+      // Refresh the users list
+      refetch();
+      
+      // Reset the state
+      setUserToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete user",
+        description: error.message || "An error occurred while deleting the user",
+        variant: "destructive",
+      });
+    }
   });
   
   // Apply search filter
@@ -105,6 +132,31 @@ export default function AdminUsersPage() {
           />
         </div>
       </div>
+      
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will permanently delete the user <span className="font-medium">{userToDelete?.username}</span> and all associated data.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => userToDelete && deleteUserMutation.mutate(userToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteUserMutation.isPending ? 
+                "Deleting..." : 
+                "Delete User"
+              }
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       <Card>
         <CardHeader>
@@ -201,7 +253,12 @@ export default function AdminUsersPage() {
                                   </>
                                 )}
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                  setUserToDelete(user);
+                                }}
+                              >
                                 <Trash2 className="h-4 w-4 mr-2 text-destructive" />
                                 <span className="text-destructive">Delete User</span>
                               </DropdownMenuItem>
