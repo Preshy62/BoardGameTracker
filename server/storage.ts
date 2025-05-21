@@ -19,6 +19,7 @@ export interface IStorage {
   updateUserBalance(userId: number, newBalance: number): Promise<User>;
   updateUserProfile(userId: number, updates: Partial<User>): Promise<User>;
   updateUserBankDetails(userId: number, bankDetails: any): Promise<User>;
+  deleteUser(userId: number): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
   
   // Game operations

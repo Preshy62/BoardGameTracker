@@ -136,6 +136,12 @@ router.patch("/users/:userId/status", ensureAdmin, async (req: Request, res: Res
       return res.status(404).json({ message: "User not found" });
     }
     
+    // Protect admin accounts from deactivation
+    const ADMIN_USERNAMES = ["admin", "precious"];
+    if (ADMIN_USERNAMES.includes(user.username) && !isActive) {
+      return res.status(403).json({ message: "Cannot deactivate administrator accounts" });
+    }
+    
     // Update user profile with isActive status
     const updatedUser = await storage.updateUserProfile(userId, { 
       ...user, 
@@ -146,6 +152,45 @@ router.patch("/users/:userId/status", ensureAdmin, async (req: Request, res: Res
   } catch (error) {
     console.error(`Error updating user status for admin: ${error}`);
     res.status(500).json({ message: "Error updating user status" });
+  }
+});
+
+// Delete user endpoint
+router.delete("/users/:userId", ensureAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Protect admin accounts from deletion
+    const ADMIN_USERNAMES = ["admin", "precious"];
+    if (ADMIN_USERNAMES.includes(user.username)) {
+      return res.status(403).json({ message: "Cannot delete administrator accounts" });
+    }
+    
+    // Check if deleteUser method exists in storage
+    if (typeof storage.deleteUser !== 'function') {
+      return res.status(501).json({ 
+        message: "User deletion not implemented in storage layer. Please update your storage implementation."
+      });
+    }
+    
+    // Delete the user
+    await storage.deleteUser(userId);
+    
+    res.json({ 
+      success: true, 
+      message: `User ${user.username} has been deleted successfully`
+    });
+  } catch (error) {
+    console.error(`Error deleting user for admin: ${error}`);
+    res.status(500).json({ message: "Error deleting user" });
   }
 });
 
