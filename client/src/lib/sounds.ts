@@ -2,6 +2,9 @@
 
 let audioContext: AudioContext | null = null;
 
+// Background music instance
+let backgroundMusicElement: HTMLAudioElement | null = null;
+
 // Sound effect paths
 export const SOUND_EFFECTS = {
   // Game sounds
@@ -45,6 +48,11 @@ export const SOUND_EFFECTS = {
   VOICE_JOIN: '/voice-join.mp3',
   VOICE_LEAVE: '/voice-leave.mp3',
   VOICE_NEW_MESSAGE: '/voice-message.mp3',
+  
+  // Background music
+  BG_MUSIC_MAIN: '/bg-music-main.mp3',
+  BG_MUSIC_INTENSE: '/bg-music-intense.mp3',
+  BG_MUSIC_CALM: '/bg-music-calm.mp3',
 };
 
 // Initialize audio context (needed for Safari and iOS)
@@ -355,11 +363,113 @@ export const soundSettings = {
   voiceChatSoundsEnabled: true,
   uiSoundsEnabled: true,
   walletSoundsEnabled: true,
+  backgroundMusicEnabled: true,
+  backgroundMusicVolume: 0.3,
 };
 
 // Function to update sound settings
 export function updateSoundSettings(settings: Partial<typeof soundSettings>): void {
   Object.assign(soundSettings, settings);
+  
+  // Apply background music volume changes if music is playing
+  if (backgroundMusicElement && 'backgroundMusicVolume' in settings) {
+    backgroundMusicElement.volume = soundSettings.backgroundMusicVolume;
+  }
+  
+  // Toggle background music if that setting was changed
+  if ('backgroundMusicEnabled' in settings) {
+    if (settings.backgroundMusicEnabled) {
+      if (backgroundMusicElement) {
+        backgroundMusicElement.play().catch(err => {
+          console.error('Failed to play background music:', err);
+        });
+      }
+    } else {
+      if (backgroundMusicElement) {
+        backgroundMusicElement.pause();
+      }
+    }
+  }
+}
+
+// Play background music
+export function playBackgroundMusic(
+  musicKey: 'BG_MUSIC_MAIN' | 'BG_MUSIC_INTENSE' | 'BG_MUSIC_CALM' = 'BG_MUSIC_MAIN', 
+  volume = soundSettings.backgroundMusicVolume,
+  loop = true
+): void {
+  try {
+    // Stop any existing background music
+    if (backgroundMusicElement) {
+      backgroundMusicElement.pause();
+      backgroundMusicElement = null;
+    }
+    
+    // If music is disabled in settings, don't start new music
+    if (!soundSettings.backgroundMusicEnabled) {
+      return;
+    }
+    
+    // Make sure we have a valid audio context
+    initAudioContext();
+    resumeAudioContext();
+    
+    // Create new audio element
+    backgroundMusicElement = new Audio(SOUND_EFFECTS[musicKey]);
+    backgroundMusicElement.volume = volume;
+    backgroundMusicElement.loop = loop;
+    
+    // Add event listeners for looping and error handling
+    backgroundMusicElement.addEventListener('ended', () => {
+      if (loop && backgroundMusicElement) {
+        backgroundMusicElement.currentTime = 0;
+        backgroundMusicElement.play().catch(err => {
+          console.error('Failed to loop background music:', err);
+        });
+      }
+    });
+    
+    // Start playing
+    backgroundMusicElement.play().catch(err => {
+      console.error('Failed to play background music:', err);
+    });
+  } catch (error) {
+    console.error('Error starting background music:', error);
+  }
+}
+
+// Stop background music
+export function stopBackgroundMusic(): void {
+  if (backgroundMusicElement) {
+    backgroundMusicElement.pause();
+    backgroundMusicElement = null;
+  }
+}
+
+// Fade background music (useful for transitions)
+export function fadeBackgroundMusic(targetVolume: number, duration: number = 2000): void {
+  if (!backgroundMusicElement) return;
+  
+  const startVolume = backgroundMusicElement.volume;
+  const startTime = Date.now();
+  
+  const fadeInterval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    if (backgroundMusicElement) {
+      backgroundMusicElement.volume = startVolume + (targetVolume - startVolume) * progress;
+      
+      if (progress === 1) {
+        clearInterval(fadeInterval);
+        if (targetVolume === 0 && backgroundMusicElement) {
+          backgroundMusicElement.pause();
+        }
+      }
+    } else {
+      clearInterval(fadeInterval);
+    }
+  }, 50);
 }
 
 export default {
@@ -374,5 +484,8 @@ export default {
   playUISound,
   updateSoundSettings,
   soundSettings,
-  SOUND_EFFECTS
+  SOUND_EFFECTS,
+  playBackgroundMusic,
+  stopBackgroundMusic,
+  fadeBackgroundMusic
 };
