@@ -130,6 +130,8 @@ export class BotGameManager {
     feeAmount: number;
     description: string;
     type: 'normal' | 'double' | 'triple';
+    pendingAdminApproval?: boolean;
+    adminPayoutAmount?: number;
   }> {
     try {
       // Get current settings
@@ -152,36 +154,48 @@ export class BotGameManager {
       // Determine stone type (normal, double, triple)
       let multiplier = 2; // Base multiplier for a win
       let stoneType: 'normal' | 'double' | 'triple' = 'normal';
+      let pendingAdminApproval = false;
+      let adminPayoutAmount = 0;
       
       // Check if double or triple stone
       // Double stones: 500, 1000 (Special stones)
       if (rolledNumber === 500 || rolledNumber === 1000) {
         multiplier = doubleMultiplier;
         stoneType = 'double';
+        pendingAdminApproval = true;
       } 
       // Triple stones: 3355, 6624 (Super stones)
       else if (rolledNumber === 3355 || rolledNumber === 6624) {
         multiplier = tripleMultiplier;
         stoneType = 'triple';
+        pendingAdminApproval = true;
       }
       
       // Calculate payout and fee
       const basePayout = game.stake * multiplier;
       const feeAmount = basePayout * (platformFeePercent / 100);
-      const finalPayout = basePayout - feeAmount;
+      let finalPayout = basePayout - feeAmount;
+      
+      // For double/triple stones, 20% of the payout needs admin approval
+      if (pendingAdminApproval) {
+        adminPayoutAmount = finalPayout * 0.2; // 20% pending admin approval
+        finalPayout = finalPayout * 0.8; // Player gets 80% immediately
+      }
       
       let description = `Won against computer with a ${rolledNumber}`;
       if (stoneType === 'double') {
-        description = `Won with double stone (${rolledNumber})! ${doubleMultiplier}x payout`;
+        description = `Won with double stone (${rolledNumber})! ${doubleMultiplier}x payout (80% auto, 20% admin approval)`;
       } else if (stoneType === 'triple') {
-        description = `Won with triple stone (${rolledNumber})! ${tripleMultiplier}x payout`;
+        description = `Won with triple stone (${rolledNumber})! ${tripleMultiplier}x payout (80% auto, 20% admin approval)`;
       }
       
       return {
         payout: finalPayout,
         feeAmount,
         description,
-        type: stoneType
+        type: stoneType,
+        pendingAdminApproval,
+        adminPayoutAmount
       };
     } catch (error) {
       console.error("Error calculating bot game payout:", error);
@@ -222,6 +236,8 @@ export class BotGameManager {
     playerWon: boolean;
     payout: number;
     description: string;
+    pendingAdminApproval?: boolean;
+    adminPayoutAmount?: number;
   }> {
     try {
       // Get the game details
@@ -272,8 +288,26 @@ export class BotGameManager {
           description: payoutDetails.description,
         });
         
-        // Update bot game statistics
-        await this.updateBotGameStatistics(game.stake, payoutDetails.payout, true);
+        // Check if this is a special stone win with pending admin approval portion
+        if (payoutDetails.pendingAdminApproval && payoutDetails.adminPayoutAmount && payoutDetails.adminPayoutAmount > 0) {
+          // Create a pending transaction for the 20% that requires admin approval
+          await this.storage.createTransaction({
+            userId: player.id,
+            amount: payoutDetails.adminPayoutAmount,
+            type: "special_win_pending",
+            status: "pending",
+            reference: `bot-game-${gameId}-special-win-pending`,
+            description: `Pending 20% special stone bonus for ${rolledNumber} (requires admin approval)`,
+          });
+        }
+        
+        // Update bot game statistics - adding the pending amount parameter
+        await this.updateBotGameStatistics(
+          game.stake, 
+          payoutDetails.payout, 
+          true, 
+          payoutDetails.pendingAdminApproval ? payoutDetails.adminPayoutAmount : 0
+        );
       } else {
         // Player lost, update statistics
         await this.updateBotGameStatistics(game.stake, 0, false);
@@ -282,7 +316,9 @@ export class BotGameManager {
       return {
         playerWon,
         payout: playerWon ? payoutDetails.payout : 0,
-        description: payoutDetails.description
+        description: payoutDetails.description,
+        pendingAdminApproval: payoutDetails.pendingAdminApproval,
+        adminPayoutAmount: payoutDetails.adminPayoutAmount
       };
     } catch (error) {
       console.error("Error processing bot game outcome:", error);
