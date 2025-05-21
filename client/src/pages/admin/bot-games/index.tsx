@@ -52,6 +52,7 @@ export default function BotGamesAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [dailyStats, setDailyStats] = useState<any>(null);
   const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
+  const [approvingBonus, setApprovingBonus] = useState<number | null>(null);
 
   const form = useForm<z.infer<typeof botSettingsSchema>>({
     resolver: zodResolver(botSettingsSchema),
@@ -144,6 +145,40 @@ export default function BotGamesAdminPage() {
       });
     }
   };
+  
+  // Handle approving a special stone bonus
+  const handleApproveBonus = async (transactionId: number) => {
+    try {
+      setApprovingBonus(transactionId);
+      
+      await apiRequest("POST", `/api/admin/bot-games/approve-bonus/${transactionId}`);
+      
+      toast({
+        title: "Bonus approved",
+        description: "The special stone bonus has been credited to the player.",
+      });
+      
+      // Refresh pending approvals list
+      const res = await apiRequest("GET", "/api/admin/bot-games/pending-approvals");
+      const data = await res.json();
+      setPendingApprovals(data);
+      
+      // Refresh stats as well
+      const statsRes = await apiRequest("GET", "/api/admin/bot-games/stats");
+      const statsData = await statsRes.json();
+      setDailyStats(statsData);
+      
+      setApprovingBonus(null);
+    } catch (error) {
+      console.error("Failed to approve special stone bonus:", error);
+      toast({
+        title: "Approval failed",
+        description: "There was a problem approving the special stone bonus.",
+        variant: "destructive",
+      });
+      setApprovingBonus(null);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -201,6 +236,48 @@ export default function BotGamesAdminPage() {
             </CardContent>
           </Card>
         </div>
+        
+        {pendingApprovals.length > 0 && (
+          <Card className="mb-8 border-amber-200 bg-amber-50">
+            <CardHeader className="pb-3">
+              <CardTitle>
+                Pending Special Stone Bonuses
+                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                  {pendingApprovals.length} pending
+                </span>
+              </CardTitle>
+              <CardDescription>
+                These are the 20% bonuses from special stone wins that require manual admin approval
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {pendingApprovals.map((approval) => (
+                  <div key={approval.id} className="flex items-center justify-between border-b pb-4">
+                    <div>
+                      <p className="font-medium">{approval.user.username}</p>
+                      <p className="text-sm text-gray-500">{approval.description}</p>
+                      <p className="text-sm text-gray-500">Game #{approval.gameId} • {new Date(approval.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-lg font-bold text-green-600">
+                        {formatCurrency(approval.amount)}
+                      </span>
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        disabled={approvingBonus === approval.id}
+                        onClick={() => handleApproveBonus(approval.id)}
+                      >
+                        {approvingBonus === approval.id ? "Processing..." : "Approve"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
         
         <Card className="mb-8">
           <CardHeader>

@@ -231,4 +231,124 @@ router.post("/validate-stake", authenticate, async (req, res) => {
   }
 });
 
+// Get all pending special stone bonuses - admin only
+router.get("/pending-approvals", authenticateAdmin, async (req, res) => {
+  try {
+    // Fetch all pending special stone bonus transactions
+    const pendingBonuses = await db.query.transactions.findMany({
+      where: (transactions, { eq, and }) => and(
+        eq(transactions.type, "special_win_pending"),
+        eq(transactions.status, "pending"),
+      ),
+      with: {
+        user: true
+      },
+      orderBy: (transactions, { desc }) => [desc(transactions.createdAt)]
+    });
+    
+    res.json(pendingBonuses);
+  } catch (error) {
+    console.error("Error fetching pending special stone bonuses:", error);
+    res.status(500).json({ message: "Failed to fetch pending bonus approvals" });
+  }
+});
+
+// Approve a special stone bonus - admin only
+router.post("/approve-bonus/:transactionId", authenticateAdmin, async (req, res) => {
+  try {
+    const transactionId = parseInt(req.params.transactionId);
+    if (isNaN(transactionId)) {
+      return res.status(400).json({ message: "Invalid transaction ID" });
+    }
+    
+    // Get the pending transaction
+    const [pendingTransaction] = await db.select()
+      .from(schema.transactions)
+      .where(
+        and(
+          eq(schema.transactions.id, transactionId),
+          eq(schema.transactions.type, "special_win_pending"),
+          eq(schema.transactions.status, "pending")
+        )
+      );
+    
+    if (!pendingTransaction) {
+      return res.status(404).json({ message: "Pending bonus transaction not found" });
+    }
+    
+    // Get user and admin
+    const user = await db.query.users.findFirst({
+      where: eq(schema.users.id, pendingTransaction.userId)
+    });
+    
+    const admin = await db.query.users.findFirst({
+      where: eq(schema.users.id, req.user!.id)
+    });
+    
+    if (!user || !admin) {
+      return res.status(404).json({ message: "User or admin not found" });
+    }
+    
+    // Update transaction to completed
+    await db.update(schema.transactions)
+      .set({
+        status: "completed",
+        description: `${pendingTransaction.description} - Approved by admin on ${new Date().toLocaleDateString()}`
+      })
+      .where(eq(schema.transactions.id, transactionId));
+    
+    // Update user balance
+    const newUserBalance = user.walletBalance + pendingTransaction.amount;
+    await db.update(schema.users)
+      .set({ walletBalance: newUserBalance })
+      .where(eq(schema.users.id, user.id));
+    
+    // Deduct from admin balance
+    const newAdminBalance = admin.walletBalance - pendingTransaction.amount;
+    await db.update(schema.users)
+      .set({ walletBalance: newAdminBalance })
+      .where(eq(schema.users.id, admin.id));
+    
+    // Create admin transaction record
+    await db.insert(schema.transactions)
+      .values({
+        userId: admin.id,
+        amount: -pendingTransaction.amount,
+        type: "admin_bonus_payout",
+        status: "completed",
+        reference: `special-stone-bonus-${transactionId}`,
+        description: `Special stone bonus payout for ${user.username} (Transaction #${transactionId})`,
+        currency: pendingTransaction.currency || "NGN"
+      });
+    
+    // Update bot game statistics to remove from pending payouts
+    const today = new Date();
+    const [todayStats] = await db.select()
+      .from(botGameStatistics)
+      .where(
+        and(
+          gte(botGameStatistics.date, startOfDay(today)),
+          lte(botGameStatistics.date, endOfDay(today))
+        )
+      );
+    
+    if (todayStats) {
+      await db.update(botGameStatistics)
+        .set({
+          pendingPayouts: todayStats.pendingPayouts - pendingTransaction.amount,
+          totalPayouts: todayStats.totalPayouts + pendingTransaction.amount
+        })
+        .where(eq(botGameStatistics.id, todayStats.id));
+    }
+    
+    // Send notification email to user
+    // This can be implemented later
+    
+    res.json({ success: true, message: "Special stone bonus approved and credited to player" });
+  } catch (error) {
+    console.error("Error approving special stone bonus:", error);
+    res.status(500).json({ message: "Failed to approve bonus" });
+  }
+});
+
 export default router;
