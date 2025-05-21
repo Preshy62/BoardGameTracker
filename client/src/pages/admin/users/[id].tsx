@@ -706,8 +706,10 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
                 className="w-full justify-start"
                 variant={user.isActive ? "destructive" : "outline"}
                 onClick={() => {
-                  // Create a copy of the message to show in the toast later
-                  const actionMessage = user.isActive ? "deactivating" : "activating";
+                  // Save current status to compare after update
+                  const wasActive = user.isActive;
+                  const newStatus = !wasActive;
+                  const actionMessage = wasActive ? "deactivating" : "activating";
                   
                   // Show immediate toast so user knows something is happening
                   toast({
@@ -717,11 +719,38 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
                   
                   // Execute the API call
                   updateUserStatusMutation.mutate({ 
-                    isActive: !user.isActive 
+                    isActive: newStatus 
                   }, {
                     onSuccess: (data) => {
-                      // Force refresh the page once the API call is complete
-                      window.location.reload();
+                      // Update local state without page reload
+                      if (data) {
+                        queryClient.setQueryData(["/api/admin/users", userId], (oldData: any) => {
+                          if (!oldData) return oldData;
+                          
+                          // Create updated user data
+                          const updatedUser = {
+                            ...oldData.user,
+                            isActive: data.isActive
+                          };
+                          
+                          // Success toast with updated status
+                          toast({
+                            title: data.isActive ? "User Activated" : "User Deactivated",
+                            description: `${data.username}'s account has been ${data.isActive ? "activated" : "deactivated"} successfully.`,
+                            variant: "default",
+                          });
+                          
+                          return {
+                            ...oldData,
+                            user: updatedUser
+                          };
+                        });
+                        
+                        // Also update users list if it's cached
+                        queryClient.invalidateQueries({ 
+                          queryKey: ["/api/admin/users"]
+                        });
+                      }
                     }
                   });
                 }}
