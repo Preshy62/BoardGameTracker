@@ -6,6 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 import DemoVoiceChat from "@/components/game/DemoVoiceChat";
 import DemoTextChat from "@/components/game/DemoTextChat";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import { 
+  playBackgroundMusic, 
+  stopBackgroundMusic, 
+  updateSoundSettings, 
+  soundSettings
+} from "@/lib/sounds";
+import { Volume2, VolumeX, Music } from "lucide-react";
 
 // Import the enhanced GameStone component instead of creating a separate demo version
 import GameStone from "@/components/game/GameStone";
@@ -40,6 +47,10 @@ export default function DemoPage() {
   // State for voice chat demo
   const [showVoiceChat, setShowVoiceChat] = useState<boolean>(true);
   const [voiceChatStake, setVoiceChatStake] = useState<number>(50000);
+  
+  // State for background music
+  const [musicEnabled, setMusicEnabled] = useState<boolean>(true);
+  const [currentMusic, setCurrentMusic] = useState<'BG_MUSIC_MAIN' | 'BG_MUSIC_INTENSE' | 'BG_MUSIC_CALM'>('BG_MUSIC_MAIN');
   
   // Speech synthesis for winner announcements
   const [announceText, setAnnounceText] = useState<string>('');
@@ -426,6 +437,51 @@ export default function DemoPage() {
       11, 37, 72, 17, 42, 8, 30, 91, 27, 5, 40,
       6, 80, 3, 26, 100, 19, 14, 43, 16, 71, 10
     ];
+  };
+  
+  // Initialize background music when component mounts
+  useEffect(() => {
+    // Start playing background music
+    if (musicEnabled) {
+      playBackgroundMusic(currentMusic, 0.3);
+    }
+    
+    // Cleanup function to stop background music when component unmounts
+    return () => {
+      stopBackgroundMusic();
+    };
+  }, [musicEnabled, currentMusic]);
+  
+  // Handle toggling background music
+  const toggleMusic = () => {
+    const newState = !musicEnabled;
+    setMusicEnabled(newState);
+    
+    if (newState) {
+      playBackgroundMusic(currentMusic, 0.3);
+      toast({
+        title: "Music Enabled",
+        description: "Background music is now playing",
+      });
+    } else {
+      stopBackgroundMusic();
+      toast({
+        title: "Music Disabled",
+        description: "Background music is now muted",
+      });
+    }
+  };
+  
+  // Change the background music track
+  const changeBackgroundMusic = (musicType: 'BG_MUSIC_MAIN' | 'BG_MUSIC_INTENSE' | 'BG_MUSIC_CALM') => {
+    setCurrentMusic(musicType);
+    if (musicEnabled) {
+      playBackgroundMusic(musicType, 0.3);
+      toast({
+        title: "Music Changed",
+        description: `Now playing ${musicType.replace('BG_MUSIC_', '').toLowerCase()} music`,
+      });
+    }
   };
   
   // Define the dice path to travel through numbers rather than around the edge
@@ -884,7 +940,50 @@ export default function DemoPage() {
             <h1 className="text-2xl font-bold">Big Boys Game</h1>
             <span className="ml-2 px-2 py-1 bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse">DEMO MODE</span>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 items-center">
+            <div className="flex items-center mr-4 gap-2">
+              <Button 
+                variant="ghost"
+                size="icon"
+                onClick={toggleMusic}
+                title={musicEnabled ? "Mute Background Music" : "Play Background Music"}
+                className="text-white hover:bg-primary-dark rounded-full"
+              >
+                {musicEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+              </Button>
+              
+              {/* Music selection buttons - only show when music is enabled */}
+              {musicEnabled && (
+                <div className="flex gap-1">
+                  <Button 
+                    variant={currentMusic === 'BG_MUSIC_MAIN' ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => changeBackgroundMusic('BG_MUSIC_MAIN')}
+                    className="text-white hover:bg-primary-dark text-xs py-1"
+                  >
+                    Default
+                  </Button>
+                  
+                  <Button 
+                    variant={currentMusic === 'BG_MUSIC_INTENSE' ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => changeBackgroundMusic('BG_MUSIC_INTENSE')}
+                    className="text-white hover:bg-primary-dark text-xs py-1"
+                  >
+                    Intense
+                  </Button>
+                  
+                  <Button 
+                    variant={currentMusic === 'BG_MUSIC_CALM' ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => changeBackgroundMusic('BG_MUSIC_CALM')}
+                    className="text-white hover:bg-primary-dark text-xs py-1"
+                  >
+                    Calm
+                  </Button>
+                </div>
+              )}
+            </div>
             <Button 
               onClick={() => setLocation('/')} 
               className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
