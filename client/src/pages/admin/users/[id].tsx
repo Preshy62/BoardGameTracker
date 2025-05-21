@@ -234,18 +234,43 @@ export default function UserDetailPage({ id: propsId }: UserDetailPageProps) {
   // Mutation for updating user status
   const updateUserStatusMutation = useMutation({
     mutationFn: async (updates: { isActive: boolean }) => {
-      const response = await apiRequest(
-        "PATCH", 
-        `/api/admin/users/${userId}/status`,
-        updates
-      );
-      return response.json();
+      try {
+        const response = await apiRequest(
+          "PATCH", 
+          `/api/admin/users/${userId}/status`,
+          updates
+        );
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to update user status");
+        }
+        
+        return response.json();
+      } catch (error: any) {
+        console.error("Status update error:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Success",
-        description: "The user status has been successfully updated",
+        title: data.isActive ? "User Activated" : "User Deactivated",
+        description: `${data.username}'s account has been ${data.isActive ? "activated" : "deactivated"} successfully.`,
       });
+      
+      // Update local data immediately
+      if (data && user) {
+        queryClient.setQueryData(["/api/admin/users", userId], (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            user: {
+              ...oldData.user,
+              isActive: data.isActive
+            }
+          };
+        });
+      }
       
       // Invalidate relevant queries
       queryClient.invalidateQueries({ 
