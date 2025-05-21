@@ -8,7 +8,7 @@ import {
   botGameStatistics,
   InsertTransaction
 } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { startOfDay, endOfDay } from "date-fns";
 
 /**
@@ -92,11 +92,16 @@ export class BotGameManager {
       
       // Get today's stats
       const today = new Date();
+      const startDay = startOfDay(today);
+      const endDay = endOfDay(today);
+      
       const [todayStats] = await db.select()
         .from(botGameStatistics)
-        .where(({ date }) => 
-          date >= startOfDay(today) && 
-          date <= endOfDay(today)
+        .where(
+          and(
+            gte(botGameStatistics.date, sql`${startDay}`),
+            lte(botGameStatistics.date, sql`${endDay}`)
+          )
         );
       
       // If no stats for today or wins less than limit, we can accept more
@@ -295,13 +300,17 @@ export class BotGameManager {
   ): Promise<void> {
     try {
       const today = new Date();
+      const startDay = startOfDay(today);
+      const endDay = endOfDay(today);
       
       // Get today's stats or create new entry
       const [todayStats] = await db.select()
         .from(botGameStatistics)
-        .where(({ date }) => 
-          date >= startOfDay(today) && 
-          date <= endOfDay(today)
+        .where(
+          and(
+            gte(botGameStatistics.date, sql`${startDay}`),
+            lte(botGameStatistics.date, sql`${endDay}`)
+          )
         );
       
       if (todayStats) {
@@ -337,13 +346,17 @@ export class BotGameManager {
    */
   async getDailyBotGameStatistics(date?: Date): Promise<any> {
     const targetDate = date || new Date();
+    const startDay = startOfDay(targetDate);
+    const endDay = endOfDay(targetDate);
     
     try {
       const [stats] = await db.select()
         .from(botGameStatistics)
-        .where(({ date }) => 
-          date >= startOfDay(targetDate) && 
-          date <= endOfDay(targetDate)
+        .where(
+          and(
+            gte(botGameStatistics.date, sql`${startDay}`),
+            lte(botGameStatistics.date, sql`${endDay}`)
+          )
         );
       
       return stats || {
