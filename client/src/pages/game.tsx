@@ -33,6 +33,10 @@ export default function GamePage() {
   const { user } = useAuth();
   const [chatMessage, setChatMessage] = useState('');
   const [hasShownVoiceChatNotice, setHasShownVoiceChatNotice] = useState(false);
+  
+  // Background music for the game
+  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
 
   const {
     data,
