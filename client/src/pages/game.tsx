@@ -190,10 +190,10 @@ export default function GamePage() {
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header user={user} />
       
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <main className="flex-grow container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Game Info */}
-          <div className="lg:w-1/3">
+          <div className="lg:w-1/3 order-2 lg:order-1">
             <Card className="mb-6">
               <CardHeader className={`${
                 game.status === 'waiting' ? 'bg-blue-500' : 
@@ -291,11 +291,11 @@ export default function GamePage() {
           </div>
           
           {/* Game Board & Chat */}
-          <div className="lg:w-2/3">
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Game Board</CardTitle>
-                <CardDescription>
+          <div className="lg:w-2/3 order-1 lg:order-2">
+            <Card className="mb-4 lg:mb-6">
+              <CardHeader className="pb-3 lg:pb-6">
+                <CardTitle className="text-lg lg:text-xl">Game Board</CardTitle>
+                <CardDescription className="text-sm lg:text-base">
                   {game.status === 'waiting' ? 
                     'Game will start once enough players have joined' : 
                     game.status === 'in_progress' ?
@@ -305,8 +305,8 @@ export default function GamePage() {
                 </CardDescription>
               </CardHeader>
               
-              <CardContent className="p-6">
-                <div className="bg-gray-100 rounded-xl p-8 min-h-[300px] flex items-center justify-center">
+              <CardContent className="p-3 lg:p-6">
+                <div className="bg-gray-100 rounded-xl p-4 lg:p-8 min-h-[250px] lg:min-h-[300px] flex items-center justify-center">
                   {game.status === 'waiting' ? (
                     <div className="text-center">
                       <h3 className="text-xl font-medium mb-2">Waiting for Players</h3>
@@ -327,14 +327,14 @@ export default function GamePage() {
                 </div>
               </CardContent>
               
-              <CardFooter className="px-6 py-4 border-t">
-                <div className="w-full flex justify-between">
-                  <Button variant="outline" disabled={game.status !== 'waiting'}>
+              <CardFooter className="px-3 lg:px-6 py-3 lg:py-4 border-t">
+                <div className="w-full flex flex-col sm:flex-row gap-3 sm:justify-between">
+                  <Button variant="outline" disabled={game.status !== 'waiting'} className="w-full sm:w-auto">
                     {game.status === 'waiting' ? 'Ready' : 'Waiting...'}
                   </Button>
                   
                   <Button 
-                    className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
+                    className="bg-secondary hover:bg-secondary-dark text-primary font-bold w-full sm:w-auto"
                     disabled={game.status !== 'in_progress'}
                   >
                     Roll Stone
