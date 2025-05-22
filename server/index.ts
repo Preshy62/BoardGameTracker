@@ -46,11 +46,18 @@ async function createDemoUser() {
 }
 
 const app = express();
+
+// Serve static files FIRST (including music files)
+app.use(express.static('public', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.mp3')) {
+      res.setHeader('Content-Type', 'audio/mpeg');
+    }
+  }
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-// Serve static files from public directory (including music files)
-app.use(express.static('public'));
 
 // Apply maintenance mode middleware
 app.use(maintenanceMiddleware);
