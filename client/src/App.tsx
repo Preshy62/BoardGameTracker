@@ -33,6 +33,10 @@ import { AdminLayout } from "@/layouts/AdminLayout";
 import VerifyEmail from "@/pages/auth/verify-email";
 import ResetPassword from "@/pages/auth/reset-password";
 import AboutPage from "@/pages/about";
+import TermsPage from "@/pages/terms";
+import PrivacyPage from "@/pages/privacy";
+import ContactPage from "@/pages/contact";
+import ResponsibleGamingPage from "@/pages/responsible-gaming";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
