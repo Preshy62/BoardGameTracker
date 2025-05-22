@@ -252,3 +252,28 @@ export const botGameStatistics = pgTable("bot_game_statistics", {
   platformFees: doublePrecision("platform_fees").notNull().default(0),
   pendingPayouts: doublePrecision("pending_payouts").notNull().default(0),
 });
+
+// Monthly lottery system for multiplayer games
+export const monthlyLottery = pgTable("monthly_lottery", {
+  id: serial("id").primaryKey(),
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  lotteryDate: integer("lottery_date").notNull(), // Day of month (1-31)
+  isActive: boolean("is_active").default(false),
+  multiplier500: doublePrecision("multiplier_500").default(2.0), // 2x for 500
+  multiplier1000: doublePrecision("multiplier_1000").default(3.0), // 3x for 1000
+  announcementSent: boolean("announcement_sent").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User notifications for lottery announcements
+export const userNotifications = pgTable("user_notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").notNull(), // 'lottery', 'system', 'game', etc.
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
