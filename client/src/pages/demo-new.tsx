@@ -480,17 +480,31 @@ export default function DemoPage() {
           oscillator.stop(startTime + duration);
         };
         
-        // Simple melody pattern
+        // Gaming-style intense melody pattern
         const playMelody = () => {
           const now = audioContext.currentTime;
-          const notes = [440, 523, 587, 523, 440, 392, 440]; // A, C, D, C, A, G, A
+          // More exciting gaming frequencies - fast-paced electronic style
+          const bassNotes = [110, 146.83, 174.61, 220]; // Bass frequencies
+          const leadNotes = [659, 783, 880, 1047, 1175, 880, 783, 659]; // High energy lead
           
-          notes.forEach((freq, i) => {
-            createTone(freq, now + i * 0.5, 0.4);
+          // Play bass pattern (faster tempo)
+          bassNotes.forEach((freq, i) => {
+            createTone(freq, now + i * 0.25, 0.2);
+            createTone(freq, now + i * 0.25 + 1, 0.2); // Repeat for rhythm
           });
           
-          // Loop the melody
-          setTimeout(playMelody, 4000);
+          // Play lead melody over bass
+          leadNotes.forEach((freq, i) => {
+            createTone(freq, now + 0.5 + i * 0.15, 0.1);
+          });
+          
+          // Add some percussive elements with noise
+          for(let i = 0; i < 8; i++) {
+            createTone(80 + Math.random() * 40, now + i * 0.25, 0.05);
+          }
+          
+          // Loop faster for more intensity
+          setTimeout(playMelody, 2500);
         };
         
         playMelody();
