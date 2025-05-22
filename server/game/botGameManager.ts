@@ -157,19 +157,19 @@ export class BotGameManager {
       let pendingAdminApproval = false;
       let adminPayoutAmount = 0;
       
-      // Check if double or triple stone
-      // Double stones: 500, 1000 (Special stones)
-      if (rolledNumber === 500 || rolledNumber === 1000) {
-        multiplier = doubleMultiplier;
+      // Check if special multiplier stones (BOT GAMES ONLY)
+      // 500 = 2x multiplier, 1000 = 3x multiplier
+      if (rolledNumber === 500) {
+        multiplier = 2; // Always 2x for 500
         stoneType = 'double';
         pendingAdminApproval = true;
       } 
-      // Triple stones: 3355, 6624 (Super stones)
-      else if (rolledNumber === 3355 || rolledNumber === 6624) {
-        multiplier = tripleMultiplier;
+      else if (rolledNumber === 1000) {
+        multiplier = 3; // Always 3x for 1000
         stoneType = 'triple';
         pendingAdminApproval = true;
       }
+      // Note: 3355, 6624 are now regular stones in bot games
       
       // Calculate payout and fee
       const basePayout = game.stake * multiplier;
