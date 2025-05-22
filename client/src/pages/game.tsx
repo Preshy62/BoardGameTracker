@@ -115,6 +115,47 @@ export default function GamePage() {
     }
   }, [data?.game, hasShownVoiceChatNotice, toast]);
 
+  // Start background music when game is in progress
+  useEffect(() => {
+    if (data?.game && data.game.status === 'in_progress' && musicEnabled && !audioElement) {
+      const audio = new Audio();
+      const rockTracks = [
+        'https://www.bensound.com/bensound-music/bensound-energy.mp3',
+        'https://www.bensound.com/bensound-music/bensound-punky.mp3',
+        'https://www.bensound.com/bensound-music/bensound-actionable.mp3'
+      ];
+      
+      let currentTrack = 0;
+      const tryNextTrack = () => {
+        if (currentTrack < rockTracks.length) {
+          audio.src = rockTracks[currentTrack];
+          currentTrack++;
+        }
+      };
+      
+      audio.addEventListener('error', tryNextTrack);
+      tryNextTrack();
+      
+      audio.volume = 0.2;
+      audio.loop = true;
+      
+      audio.play().then(() => {
+        setAudioElement(audio);
+      }).catch(() => {
+        // Silent fail - no toast needed for background music
+      });
+    }
+    
+    // Stop music when game ends or user leaves
+    return () => {
+      if (audioElement && (data?.game?.status === 'completed' || !data?.game)) {
+        audioElement.pause();
+        audioElement.src = '';
+        setAudioElement(null);
+      }
+    };
+  }, [data?.game, musicEnabled, audioElement]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
