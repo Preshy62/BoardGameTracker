@@ -32,6 +32,7 @@ import DebugTransaction from "@/pages/admin/debug-transaction";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import VerifyEmail from "@/pages/auth/verify-email";
 import ResetPassword from "@/pages/auth/reset-password";
+import AboutPage from "@/pages/about";
 import { useEffect } from "react";
 
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -50,6 +51,7 @@ function Router() {
       {/* Public routes */}
       <Route path="/landing" component={LandingPage} />
       <Route path="/" component={HomeOrLanding} />
+      <Route path="/about" component={AboutPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/verify-email/:token" component={VerifyEmail} />
       <Route path="/reset-password/:token" component={ResetPassword} />
