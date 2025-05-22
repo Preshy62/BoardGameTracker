@@ -481,9 +481,15 @@ export class GameManager {
         }
       }
       
-      // Calculate prize
+      // Calculate prize with new commission structure
       const totalPool = game.stake * players.length;
-      const commission = totalPool * game.commissionPercentage;
+      
+      // Determine commission rate based on stake amount
+      // Lower stakes: 5%, Higher stakes: 10% (you can adjust threshold as needed)
+      const STAKE_THRESHOLD = 10000; // ₦10,000 threshold for higher commission
+      const commissionRate = game.stake >= STAKE_THRESHOLD ? 0.10 : 0.05; // 10% for high stakes, 5% for low stakes
+      
+      const commission = totalPool * commissionRate;
       const prizeMoney = totalPool - commission;
       
       // Distribute prize (if tie, split evenly)
