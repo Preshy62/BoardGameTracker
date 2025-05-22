@@ -232,6 +232,150 @@ export default function AdminSettings() {
           </Card>
         </TabsContent>
         
+        <TabsContent value="lottery">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Trophy className="mr-2 h-5 w-5" />
+                Monthly Lottery Management
+              </CardTitle>
+              <CardDescription>
+                Control special multipliers for multiplayer games (once per month)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Current Status */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <Gift className="h-6 w-6 text-purple-600 mr-2" />
+                    <h3 className="text-lg font-semibold">Lottery Status</h3>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    lotteryEnabled 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {lotteryEnabled ? 'ACTIVE' : 'INACTIVE'}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600">Current Multiplier</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {lotteryEnabled ? lotteryMultiplier : 'None'}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600">Last Activated</p>
+                    <p className="text-sm font-medium">
+                      {lastLotteryDate 
+                        ? new Date(lastLotteryDate).toLocaleDateString()
+                        : 'Never'
+                      }
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600">Can Activate</p>
+                    <p className="text-sm font-medium">
+                      {canActivateLottery ? 'Yes' : 'Wait until next month'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lottery Controls */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <Label htmlFor="multiplier-select">Multiplier Amount</Label>
+                    <div className="mt-2">
+                      <select
+                        id="multiplier-select"
+                        value={lotteryMultiplier}
+                        onChange={(e) => setLotteryMultiplier(e.target.value)}
+                        className="w-full p-2 border rounded-md"
+                        disabled={lotteryEnabled}
+                      >
+                        <option value="2x">2x Multiplier</option>
+                        <option value="3x">3x Multiplier</option>
+                      </select>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Choose the multiplier that will apply to all multiplayer games
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button
+                    onClick={() => activateLotteryMutation.mutate()}
+                    disabled={!canActivateLottery || lotteryEnabled || activateLotteryMutation.isPending}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    size="lg"
+                  >
+                    {activateLotteryMutation.isPending ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Activating...
+                      </>
+                    ) : (
+                      <>
+                        <Gift className="mr-2 h-4 w-4" />
+                        Activate Monthly Lottery
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={() => deactivateLotteryMutation.mutate()}
+                    disabled={!lotteryEnabled || deactivateLotteryMutation.isPending}
+                    variant="outline"
+                    size="lg"
+                  >
+                    {deactivateLotteryMutation.isPending ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Deactivating...
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Deactivate Lottery
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Information Box */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-800 mb-2">How Monthly Lottery Works:</h4>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• Can only be activated once per calendar month</li>
+                    <li>• Applies {lotteryMultiplier} multiplier to ALL multiplayer games</li>
+                    <li>• Does not affect bot games (they have separate multipliers)</li>
+                    <li>• Players will see lottery notifications during active period</li>
+                    <li>• Automatically resets permission at start of new month</li>
+                  </ul>
+                </div>
+
+                {!canActivateLottery && !lotteryEnabled && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-amber-800">
+                      <strong>Monthly limit reached:</strong> You have already used the monthly lottery feature this month. 
+                      You can activate it again starting next month.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
         <TabsContent value="security">
           <Card>
             <CardHeader>

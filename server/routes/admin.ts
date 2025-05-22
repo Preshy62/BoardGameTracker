@@ -271,4 +271,121 @@ router.post("/maintenance", ensureAdmin, async (req: Request, res: Response) => 
   }
 });
 
+// Monthly Lottery Management Endpoints
+let lotterySettings = {
+  enabled: false,
+  multiplier: "2x",
+  lastActivated: null as string | null,
+  canActivate: true,
+  activatedThisMonth: false
+};
+
+// Reset lottery permission at start of new month
+const checkMonthlyReset = () => {
+  if (lotterySettings.lastActivated) {
+    const lastDate = new Date(lotterySettings.lastActivated);
+    const now = new Date();
+    
+    // If we're in a new month, reset permission
+    if (lastDate.getMonth() !== now.getMonth() || lastDate.getFullYear() !== now.getFullYear()) {
+      lotterySettings.canActivate = true;
+      lotterySettings.activatedThisMonth = false;
+    }
+  }
+};
+
+// Get lottery status
+router.get("/lottery/status", ensureAdmin, async (req: Request, res: Response) => {
+  try {
+    checkMonthlyReset();
+    res.json(lotterySettings);
+  } catch (error) {
+    console.error(`Error getting lottery status: ${error}`);
+    res.status(500).json({ message: "Error getting lottery status" });
+  }
+});
+
+// Activate monthly lottery
+router.post("/lottery/activate", ensureAdmin, async (req: Request, res: Response) => {
+  try {
+    checkMonthlyReset();
+    
+    if (!lotterySettings.canActivate) {
+      return res.status(400).json({ 
+        message: "Monthly lottery has already been used this month" 
+      });
+    }
+    
+    if (lotterySettings.enabled) {
+      return res.status(400).json({ 
+        message: "Lottery is already active" 
+      });
+    }
+    
+    const { multiplier } = req.body;
+    
+    // Validate multiplier
+    if (!multiplier || !["2x", "3x"].includes(multiplier)) {
+      return res.status(400).json({ 
+        message: "Invalid multiplier. Must be 2x or 3x" 
+      });
+    }
+    
+    // Activate lottery
+    lotterySettings.enabled = true;
+    lotterySettings.multiplier = multiplier;
+    lotterySettings.lastActivated = new Date().toISOString();
+    lotterySettings.canActivate = false;
+    lotterySettings.activatedThisMonth = true;
+    
+    res.json({
+      success: true,
+      message: `Monthly lottery activated with ${multiplier} multiplier`,
+      activatedAt: lotterySettings.lastActivated,
+      settings: lotterySettings
+    });
+  } catch (error) {
+    console.error(`Error activating lottery: ${error}`);
+    res.status(500).json({ message: "Error activating lottery" });
+  }
+});
+
+// Deactivate lottery
+router.post("/lottery/deactivate", ensureAdmin, async (req: Request, res: Response) => {
+  try {
+    if (!lotterySettings.enabled) {
+      return res.status(400).json({ 
+        message: "Lottery is not currently active" 
+      });
+    }
+    
+    lotterySettings.enabled = false;
+    
+    res.json({
+      success: true,
+      message: "Monthly lottery deactivated",
+      settings: lotterySettings
+    });
+  } catch (error) {
+    console.error(`Error deactivating lottery: ${error}`);
+    res.status(500).json({ message: "Error deactivating lottery" });
+  }
+});
+
+// Get current lottery multiplier (for game logic)
+router.get("/lottery/multiplier", async (req: Request, res: Response) => {
+  try {
+    checkMonthlyReset();
+    res.json({
+      enabled: lotterySettings.enabled,
+      multiplier: lotterySettings.multiplier,
+      multiplierValue: lotterySettings.enabled ? 
+        (lotterySettings.multiplier === "3x" ? 3 : 2) : 1
+    });
+  } catch (error) {
+    console.error(`Error getting lottery multiplier: ${error}`);
+    res.status(500).json({ message: "Error getting lottery multiplier" });
+  }
+});
+
 export default router;
