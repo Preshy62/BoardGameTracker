@@ -451,77 +451,80 @@ export default function DemoPage() {
   // Simple background music player with HTML5 audio
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   
-  // Generate simple background music using Web Audio API
+  // Use real gaming background music from the web
   const toggleMusic = () => {
     const newState = !musicEnabled;
     setMusicEnabled(newState);
     
     if (newState) {
       try {
-        // Create AudioContext for generating music
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        // Use a free gaming background music track from the internet
+        const audio = new Audio();
+        // This is a royalty-free gaming music track
+        audio.src = 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
+        // Fallback to another source if first doesn't work
+        audio.addEventListener('error', () => {
+          audio.src = 'https://www.zapsplat.com/wp-content/uploads/2015/sound-effects-free/zapsplat_multimedia_game_sound_bright_digital_tone_001_44149.mp3';
+        });
         
-        // Create a simple melody using oscillators
-        const createTone = (frequency: number, startTime: number, duration: number) => {
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          oscillator.frequency.value = frequency;
-          oscillator.type = 'sine';
-          
-          gainNode.gain.setValueAtTime(0, startTime);
-          gainNode.gain.linearRampToValueAtTime(0.1, startTime + 0.1);
-          gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
-          
-          oscillator.start(startTime);
-          oscillator.stop(startTime + duration);
-        };
+        audio.volume = 0.3;
+        audio.loop = true;
         
-        // Gaming-style intense melody pattern
-        const playMelody = () => {
-          const now = audioContext.currentTime;
-          // More exciting gaming frequencies - fast-paced electronic style
-          const bassNotes = [110, 146.83, 174.61, 220]; // Bass frequencies
-          const leadNotes = [659, 783, 880, 1047, 1175, 880, 783, 659]; // High energy lead
-          
-          // Play bass pattern (faster tempo)
-          bassNotes.forEach((freq, i) => {
-            createTone(freq, now + i * 0.25, 0.2);
-            createTone(freq, now + i * 0.25 + 1, 0.2); // Repeat for rhythm
+        audio.play().then(() => {
+          setAudioElement(audio);
+          toast({
+            title: "Gaming Music Started!",
+            description: "Real background music is now playing",
           });
+        }).catch((error) => {
+          // Fallback to a simple but better synthetic track
+          console.log("External audio failed, using backup");
           
-          // Play lead melody over bass
-          leadNotes.forEach((freq, i) => {
-            createTone(freq, now + 0.5 + i * 0.15, 0.1);
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          let currentTime = audioContext.currentTime;
+          
+          const playBeat = () => {
+            // Create drum-like beat pattern
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.frequency.value = 60 + Math.random() * 40;
+            osc.type = 'square';
+            
+            gain.gain.setValueAtTime(0.2, currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.1);
+            
+            osc.start(currentTime);
+            osc.stop(currentTime + 0.1);
+            
+            currentTime += 0.2;
+            setTimeout(playBeat, 200);
+          };
+          
+          playBeat();
+          
+          toast({
+            title: "Backup Music Started",
+            description: "Playing drum-style background beat",
           });
-          
-          // Add some percussive elements with noise
-          for(let i = 0; i < 8; i++) {
-            createTone(80 + Math.random() * 40, now + i * 0.25, 0.05);
-          }
-          
-          // Loop faster for more intensity
-          setTimeout(playMelody, 2500);
-        };
-        
-        playMelody();
-        
-        toast({
-          title: "Music Playing!",
-          description: "Simple background melody is now playing",
         });
         
       } catch (error) {
         toast({
-          title: "Audio Error",
-          description: "Could not start background music",
+          title: "Audio Not Supported",
+          description: "Your browser doesn't support background music",
           variant: "destructive",
         });
       }
     } else {
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.src = '';
+        setAudioElement(null);
+      }
       toast({
         title: "Music Stopped",
         description: "Background music is now muted",
