@@ -3,9 +3,10 @@ import { Link } from "wouter";
 import WalletButton from "../WalletButton";
 import ProfileButton from "../ProfileButton";
 import { User } from "@shared/schema";
-import { Home, LayoutDashboard, LogOut, Wallet, User as UserIcon, Shield, Settings } from "lucide-react";
+import { Home, LayoutDashboard, LogOut, Wallet, User as UserIcon, Shield, Settings, Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
+import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   user: User;

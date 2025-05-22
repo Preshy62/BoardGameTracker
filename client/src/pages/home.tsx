@@ -81,25 +81,25 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header user={user} />
       
-      <main className="flex-grow container mx-auto px-4 py-8">
+      <main className="flex-grow container mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {/* Welcome Header with User Info */}
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <div className="flex flex-col md:flex-row justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Welcome, {user.username}</h1>
-              <div className="flex items-center gap-4">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6 sm:mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start">
+            <div className="w-full lg:w-auto">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-2">Welcome, {user.username}</h1>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <div className="flex items-center">
-                  <Wallet className="h-5 w-5 mr-1 text-green-500" />
-                  <span className="text-gray-600">Balance: <span className="font-semibold text-green-600">{formatCurrency(user.walletBalance)}</span></span>
+                  <Wallet className="h-4 w-4 sm:h-5 sm:w-5 mr-1 text-green-500" />
+                  <span className="text-sm sm:text-base text-gray-600">Balance: <span className="font-semibold text-green-600">{formatCurrency(user.walletBalance)}</span></span>
                 </div>
                 <div className="flex items-center">
-                  <Globe2 className="h-5 w-5 mr-1 text-blue-500" />
-                  <span className="text-gray-600">Location: <span className="font-semibold">{user.countryCode || 'Global'}</span></span>
+                  <Globe2 className="h-4 w-4 sm:h-5 sm:w-5 mr-1 text-blue-500" />
+                  <span className="text-sm sm:text-base text-gray-600">Location: <span className="font-semibold">{user.countryCode || 'Global'}</span></span>
                 </div>
               </div>
             </div>
             
-            <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
+            <div className="mt-4 lg:mt-0 flex flex-col sm:flex-row w-full lg:w-auto gap-2">
               <Button 
                 onClick={handleQuickDemo}
                 variant="outline"
@@ -130,16 +130,16 @@ export default function Home() {
         </div>
         
         {/* Quick Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Card className="bg-blue-500 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="mr-4 p-3 bg-white bg-opacity-20 rounded-full">
-                  <Trophy className="h-6 w-6"/>
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center">
+                <div className="mb-2 sm:mb-0 sm:mr-4 p-2 sm:p-3 bg-white bg-opacity-20 rounded-full w-fit">
+                  <Trophy className="h-4 w-4 sm:h-6 sm:w-6"/>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-blue-100">Games Won</p>
-                  <h3 className="text-2xl font-bold">0</h3>
+                  <p className="text-xs sm:text-sm font-medium text-blue-100">Games Won</p>
+                  <h3 className="text-lg sm:text-2xl font-bold">0</h3>
                 </div>
               </div>
             </CardContent>
@@ -189,57 +189,60 @@ export default function Home() {
         </div>
         
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="bg-blue-100 text-blue-700 rounded-full p-4 mx-auto mb-4 w-16">
-                <BarChart4 className="h-8 w-8" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="bg-blue-100 text-blue-700 rounded-full p-3 sm:p-4 mx-auto mb-3 sm:mb-4 w-12 sm:w-16">
+                <BarChart4 className="h-6 w-6 sm:h-8 sm:w-8" />
               </div>
-              <h3 className="text-xl font-bold mb-2">View Statistics</h3>
-              <p className="text-gray-500 mb-4">
+              <h3 className="text-lg sm:text-xl font-bold mb-2">View Statistics</h3>
+              <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">
                 Check your game history and performance statistics
               </p>
               <Button 
                 onClick={handleViewDashboard}
                 className="w-full"
                 variant="outline"
+                size="sm"
               >
                 View Dashboard
               </Button>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="bg-secondary/20 text-secondary rounded-full p-4 mx-auto mb-4 w-16">
-                <Gamepad2 className="h-8 w-8" />
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="bg-secondary/20 text-secondary rounded-full p-3 sm:p-4 mx-auto mb-3 sm:mb-4 w-12 sm:w-16">
+                <Gamepad2 className="h-6 w-6 sm:h-8 sm:w-8" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Play Now</h3>
-              <p className="text-gray-500 mb-4">
+              <h3 className="text-lg sm:text-xl font-bold mb-2">Play Now</h3>
+              <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">
                 Create a new game and invite players to join
               </p>
               <Button 
                 onClick={handleCreateGame}
                 className="w-full bg-secondary text-primary font-bold"
+                size="sm"
               >
                 Create Game
               </Button>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="bg-green-100 text-green-700 rounded-full p-4 mx-auto mb-4 w-16">
-                <Wallet className="h-8 w-8" />
+          <Card className="hover:shadow-lg transition-shadow sm:col-span-2 lg:col-span-1">
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="bg-green-100 text-green-700 rounded-full p-3 sm:p-4 mx-auto mb-3 sm:mb-4 w-12 sm:w-16">
+                <Wallet className="h-6 w-6 sm:h-8 sm:w-8" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Manage Wallet</h3>
-              <p className="text-gray-500 mb-4">
+              <h3 className="text-lg sm:text-xl font-bold mb-2">Manage Wallet</h3>
+              <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">
                 Deposit funds or withdraw your winnings
               </p>
               <Button 
                 onClick={handleViewWallet}
                 className="w-full"
                 variant="outline"
+                size="sm"
               >
                 Open Wallet
               </Button>
