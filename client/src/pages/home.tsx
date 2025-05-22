@@ -100,16 +100,6 @@ export default function Home() {
             
             <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
               <Button 
-                onClick={() => demoDepositMutation.mutate()}
-                variant="outline"
-                className="border-green-500 text-green-600"
-                disabled={demoDepositMutation.isPending}
-              >
-                <DollarSign className="h-4 w-4 mr-2" />
-                Add Demo Funds
-              </Button>
-              
-              <Button 
                 onClick={handleQuickDemo}
                 variant="outline"
                 className="border-purple-500 text-purple-600"
@@ -123,8 +113,8 @@ export default function Home() {
                 variant="outline"
                 className="border-blue-500 text-blue-600"
               >
-                <Globe2 className="h-4 w-4 mr-2" />
-                View Landing Page
+                <Home className="h-4 w-4 mr-2" />
+                Home
               </Button>
               
               <Button 
