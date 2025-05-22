@@ -441,16 +441,12 @@ export default function DemoPage() {
   
   // Initialize background music when component mounts
   useEffect(() => {
-    // Start playing background music
-    if (musicEnabled) {
-      playBackgroundMusic(currentMusic, 0.3);
-    }
-    
+    // Don't auto-play music on load - wait for user interaction
     // Cleanup function to stop background music when component unmounts
     return () => {
       stopBackgroundMusic();
     };
-  }, [musicEnabled, currentMusic]);
+  }, []);
   
   // Handle toggling background music
   const toggleMusic = () => {
@@ -458,11 +454,21 @@ export default function DemoPage() {
     setMusicEnabled(newState);
     
     if (newState) {
-      playBackgroundMusic(currentMusic, 0.3);
-      toast({
-        title: "Music Enabled",
-        description: "Background music is now playing",
-      });
+      // Initialize audio context on user interaction
+      try {
+        playBackgroundMusic(currentMusic, 0.3);
+        toast({
+          title: "Music Enabled",
+          description: "Background music is now playing",
+        });
+      } catch (error) {
+        console.error("Failed to start music:", error);
+        toast({
+          title: "Music Error",
+          description: "Could not start background music",
+          variant: "destructive",
+        });
+      }
     } else {
       stopBackgroundMusic();
       toast({
@@ -717,6 +723,15 @@ export default function DemoPage() {
     if (isRolling || rollingStoneIndex !== null) return; // Prevent multiple rolls
     
     console.log('Starting dice roll animation');
+    
+    // Start background music on first user interaction if enabled
+    if (musicEnabled) {
+      try {
+        playBackgroundMusic(currentMusic, 0.3);
+      } catch (error) {
+        console.log("Background music will start after interaction");
+      }
+    }
     
     // Reset states
     setIsRolling(true);
