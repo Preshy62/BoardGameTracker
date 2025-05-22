@@ -450,17 +450,37 @@ export default function DemoPage() {
   
   // Handle toggling background music
   const toggleMusic = () => {
+    console.log("Toggle music clicked, current state:", musicEnabled);
     const newState = !musicEnabled;
     setMusicEnabled(newState);
     
     if (newState) {
-      // Initialize audio context on user interaction
+      // Test if we can create and play a simple audio element first
       try {
-        playBackgroundMusic(currentMusic, 0.3);
-        toast({
-          title: "Music Enabled",
-          description: "Background music is now playing",
+        console.log("Testing direct audio playback...");
+        const testAudio = new Audio('/bg-music-main.mp3');
+        testAudio.volume = 0.3;
+        testAudio.loop = true;
+        
+        testAudio.addEventListener('loadstart', () => console.log('Audio loading started'));
+        testAudio.addEventListener('canplaythrough', () => console.log('Audio can play through'));
+        testAudio.addEventListener('error', (e) => console.error('Audio error:', e));
+        
+        testAudio.play().then(() => {
+          console.log('Direct audio playback successful!');
+          toast({
+            title: "Music Enabled",
+            description: "Background music is now playing",
+          });
+        }).catch((error) => {
+          console.error('Direct audio playback failed:', error);
+          toast({
+            title: "Music Error", 
+            description: "Could not start background music: " + error.message,
+            variant: "destructive",
+          });
         });
+        
       } catch (error) {
         console.error("Failed to start music:", error);
         toast({
@@ -470,6 +490,7 @@ export default function DemoPage() {
         });
       }
     } else {
+      console.log("Stopping background music");
       stopBackgroundMusic();
       toast({
         title: "Music Disabled",
@@ -727,9 +748,11 @@ export default function DemoPage() {
     // Start background music on first user interaction if enabled
     if (musicEnabled) {
       try {
+        console.log("Attempting to start background music:", currentMusic);
         playBackgroundMusic(currentMusic, 0.3);
+        console.log("Background music started successfully");
       } catch (error) {
-        console.log("Background music will start after interaction");
+        console.error("Failed to start background music:", error);
       }
     }
     

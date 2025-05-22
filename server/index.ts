@@ -49,6 +49,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Serve static files from public directory (including music files)
+app.use(express.static('public'));
+
 // Apply maintenance mode middleware
 app.use(maintenanceMiddleware);
 
