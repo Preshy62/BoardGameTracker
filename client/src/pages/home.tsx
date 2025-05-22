@@ -13,6 +13,7 @@ import {
   CreditCard, 
   Gamepad2,
   BarChart4,
+  Home as HomeIcon,
   Globe2,
   Trophy,
   Wallet
@@ -27,9 +28,9 @@ export default function Home() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Function to view the landing page for testing
-  const viewLandingPage = () => {
-    setLocation('/landing');
+  // Function to go to user home dashboard
+  const goToHome = () => {
+    setLocation('/');
   };
   
   // Demo deposit mutation (for testing)
@@ -109,11 +110,11 @@ export default function Home() {
               </Button>
               
               <Button 
-                onClick={viewLandingPage}
+                onClick={goToHome}
                 variant="outline"
                 className="border-blue-500 text-blue-600"
               >
-                <Home className="h-4 w-4 mr-2" />
+                <HomeIcon className="h-4 w-4 mr-2" />
                 Home
               </Button>
               
