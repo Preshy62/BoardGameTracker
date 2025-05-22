@@ -451,49 +451,63 @@ export default function DemoPage() {
   // Simple background music player with HTML5 audio
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   
-  // Handle toggling background music with simple approach
+  // Generate simple background music using Web Audio API
   const toggleMusic = () => {
-    console.log("Toggle music clicked, current state:", musicEnabled);
     const newState = !musicEnabled;
     setMusicEnabled(newState);
     
     if (newState) {
       try {
-        // Create a simple audio element
-        const audio = new Audio();
-        audio.src = '/bg-music-main.mp3';
-        audio.volume = 0.2;
-        audio.loop = true;
+        // Create AudioContext for generating music
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         
-        // Start playing
-        audio.play().then(() => {
-          setAudioElement(audio);
-          toast({
-            title: "Music Started!",
-            description: "Background music is now playing",
+        // Create a simple melody using oscillators
+        const createTone = (frequency: number, startTime: number, duration: number) => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = frequency;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0, startTime);
+          gainNode.gain.linearRampToValueAtTime(0.1, startTime + 0.1);
+          gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+          
+          oscillator.start(startTime);
+          oscillator.stop(startTime + duration);
+        };
+        
+        // Simple melody pattern
+        const playMelody = () => {
+          const now = audioContext.currentTime;
+          const notes = [440, 523, 587, 523, 440, 392, 440]; // A, C, D, C, A, G, A
+          
+          notes.forEach((freq, i) => {
+            createTone(freq, now + i * 0.5, 0.4);
           });
-        }).catch((error) => {
-          console.error('Audio failed:', error);
-          toast({
-            title: "Click to Enable Music", 
-            description: "Browser requires interaction to play audio",
-          });
+          
+          // Loop the melody
+          setTimeout(playMelody, 4000);
+        };
+        
+        playMelody();
+        
+        toast({
+          title: "Music Playing!",
+          description: "Simple background melody is now playing",
         });
         
       } catch (error) {
         toast({
-          title: "Audio Not Supported",
-          description: "Your browser doesn't support background music",
+          title: "Audio Error",
+          description: "Could not start background music",
           variant: "destructive",
         });
       }
     } else {
-      // Stop music
-      if (audioElement) {
-        audioElement.pause();
-        audioElement.src = '';
-        setAudioElement(null);
-      }
       toast({
         title: "Music Stopped",
         description: "Background music is now muted",
