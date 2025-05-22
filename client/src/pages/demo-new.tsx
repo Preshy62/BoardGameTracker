@@ -448,52 +448,54 @@ export default function DemoPage() {
     };
   }, []);
   
-  // Handle toggling background music
+  // Simple background music player with HTML5 audio
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  
+  // Handle toggling background music with simple approach
   const toggleMusic = () => {
     console.log("Toggle music clicked, current state:", musicEnabled);
     const newState = !musicEnabled;
     setMusicEnabled(newState);
     
     if (newState) {
-      // Test if we can create and play a simple audio element first
       try {
-        console.log("Testing direct audio playback...");
-        const testAudio = new Audio('/bg-music-main.mp3');
-        testAudio.volume = 0.3;
-        testAudio.loop = true;
+        // Create a simple audio element
+        const audio = new Audio();
+        audio.src = '/bg-music-main.mp3';
+        audio.volume = 0.2;
+        audio.loop = true;
         
-        testAudio.addEventListener('loadstart', () => console.log('Audio loading started'));
-        testAudio.addEventListener('canplaythrough', () => console.log('Audio can play through'));
-        testAudio.addEventListener('error', (e) => console.error('Audio error:', e));
-        
-        testAudio.play().then(() => {
-          console.log('Direct audio playback successful!');
+        // Start playing
+        audio.play().then(() => {
+          setAudioElement(audio);
           toast({
-            title: "Music Enabled",
+            title: "Music Started!",
             description: "Background music is now playing",
           });
         }).catch((error) => {
-          console.error('Direct audio playback failed:', error);
+          console.error('Audio failed:', error);
           toast({
-            title: "Music Error", 
-            description: "Could not start background music: " + error.message,
-            variant: "destructive",
+            title: "Click to Enable Music", 
+            description: "Browser requires interaction to play audio",
           });
         });
         
       } catch (error) {
-        console.error("Failed to start music:", error);
         toast({
-          title: "Music Error",
-          description: "Could not start background music",
+          title: "Audio Not Supported",
+          description: "Your browser doesn't support background music",
           variant: "destructive",
         });
       }
     } else {
-      console.log("Stopping background music");
-      stopBackgroundMusic();
+      // Stop music
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.src = '';
+        setAudioElement(null);
+      }
       toast({
-        title: "Music Disabled",
+        title: "Music Stopped",
         description: "Background music is now muted",
       });
     }
