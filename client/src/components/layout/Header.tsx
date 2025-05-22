@@ -14,24 +14,26 @@ interface HeaderProps {
 
 const Header = ({ user }: HeaderProps) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { logoutMutation } = useAuth();
   const { isAdmin } = useAdmin();
 
   const handleLogout = () => {
     logoutMutation.mutate();
+    setIsMobileMenuOpen(false);
   };
 
   return (
     <header className="bg-primary text-white shadow-lg">
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div className="container mx-auto px-2 sm:px-4 py-3 flex justify-between items-center">
         <div className="flex items-center">
           <Link href="/">
-            <h1 className="text-2xl font-bold font-sans tracking-wider cursor-pointer">
+            <h1 className="text-lg sm:text-2xl font-bold font-sans tracking-wider cursor-pointer">
               <span className="text-secondary">BIG BOYS</span> GAME
             </h1>
           </Link>
           
-          <nav className="hidden md:flex ml-10 space-x-6">
+          <nav className="hidden lg:flex ml-6 xl:ml-10 space-x-6">
             <Link href="/" className="flex items-center text-white hover:text-secondary transition-colors">
               <Home className="h-4 w-4 mr-1" />
               Games
@@ -57,10 +59,20 @@ const Header = ({ user }: HeaderProps) => {
           </nav>
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <WalletButton balance={user.walletBalance} />
           
-          <div className="relative">
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden p-2 text-white hover:text-secondary hover:bg-white/10"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+          
+          <div className="relative hidden lg:block">
             <ProfileButton 
               initials={user.avatarInitials} 
               onClick={() => setIsDropdownOpen(!isDropdownOpen)} 
@@ -108,6 +120,73 @@ const Header = ({ user }: HeaderProps) => {
             )}
           </div>
         </div>
+        
+        {/* Mobile Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden bg-primary border-t border-white/20">
+            <div className="container mx-auto px-2 sm:px-4 py-4">
+              <nav className="space-y-2">
+                <Link 
+                  href="/" 
+                  className="flex items-center py-3 px-3 text-white hover:text-secondary hover:bg-white/10 rounded-lg transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Home className="h-5 w-5 mr-3" />
+                  Games
+                </Link>
+                <Link 
+                  href="/dashboard" 
+                  className="flex items-center py-3 px-3 text-white hover:text-secondary hover:bg-white/10 rounded-lg transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <LayoutDashboard className="h-5 w-5 mr-3" />
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/wallet" 
+                  className="flex items-center py-3 px-3 text-white hover:text-secondary hover:bg-white/10 rounded-lg transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Wallet className="h-5 w-5 mr-3" />
+                  Wallet
+                </Link>
+                <Link 
+                  href="/settings" 
+                  className="flex items-center py-3 px-3 text-white hover:text-secondary hover:bg-white/10 rounded-lg transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Settings className="h-5 w-5 mr-3" />
+                  Settings
+                </Link>
+                {isAdmin && (
+                  <Link 
+                    href="/admin" 
+                    className="flex items-center py-3 px-3 text-white hover:text-secondary hover:bg-white/10 rounded-lg transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Shield className="h-5 w-5 mr-3" />
+                    Admin Panel
+                  </Link>
+                )}
+                
+                <div className="border-t border-white/20 my-2"></div>
+                
+                <div className="px-3 py-2 text-sm text-white/70">
+                  <div className="font-medium">{user.username}</div>
+                  <div className="text-xs">{user.email}</div>
+                </div>
+                
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center w-full py-3 px-3 text-white hover:text-red-300 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <LogOut className="h-5 w-5 mr-3" />
+                  Logout
+                </button>
+              </nav>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );
