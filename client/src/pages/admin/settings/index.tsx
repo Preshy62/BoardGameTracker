@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Settings, Save, RefreshCw } from "lucide-react";
+import { Settings, Save, RefreshCw, Trophy, Gift, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -21,6 +21,12 @@ export default function AdminSettings() {
   const [maintenanceMessage, setMaintenanceMessage] = useState(
     "We're currently performing scheduled maintenance. Please check back soon."
   );
+  
+  // Monthly Lottery State
+  const [lotteryEnabled, setLotteryEnabled] = useState(false);
+  const [lotteryMultiplier, setLotteryMultiplier] = useState("2x");
+  const [lastLotteryDate, setLastLotteryDate] = useState<string | null>(null);
+  const [canActivateLottery, setCanActivateLottery] = useState(true);
   
   // Redirect if not admin
   if (!isAdmin && !isLoading) {
@@ -42,10 +48,25 @@ export default function AdminSettings() {
     }
   };
   
+  // Fetch lottery status
+  const fetchLotteryStatus = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/admin/lottery/status");
+      const data = await response.json();
+      setLotteryEnabled(data.enabled);
+      setLotteryMultiplier(data.multiplier || "2x");
+      setLastLotteryDate(data.lastActivated);
+      setCanActivateLottery(data.canActivate);
+    } catch (error) {
+      console.error("Failed to fetch lottery status", error);
+    }
+  };
+
   // Fetch maintenance status on component mount
   useEffect(() => {
     if (isAdmin) {
       fetchMaintenanceStatus();
+      fetchLotteryStatus();
     }
   }, [isAdmin]);
   
@@ -89,6 +110,55 @@ export default function AdminSettings() {
       });
     }
   });
+
+  // Monthly Lottery Mutations
+  const activateLotteryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/lottery/activate", {
+        multiplier: lotteryMultiplier
+      });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setLotteryEnabled(true);
+      setLastLotteryDate(data.activatedAt);
+      setCanActivateLottery(false);
+      toast({
+        title: "Monthly Lottery Activated!",
+        description: `${lotteryMultiplier} multiplier is now active for all multiplayer games this month.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/lottery"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to activate lottery",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deactivateLotteryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/lottery/deactivate");
+      return await response.json();
+    },
+    onSuccess: () => {
+      setLotteryEnabled(false);
+      toast({
+        title: "Monthly Lottery Deactivated",
+        description: "Multiplayer games will now use normal payout rates.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/lottery"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to deactivate lottery",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  });
   
   return (
     <div>
@@ -99,6 +169,7 @@ export default function AdminSettings() {
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="lottery">Monthly Lottery</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
