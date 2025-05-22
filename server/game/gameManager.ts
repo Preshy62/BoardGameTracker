@@ -492,6 +492,27 @@ export class GameManager {
       const commission = totalPool * commissionRate;
       const prizeMoney = totalPool - commission;
       
+      // Transfer commission to admin account FIRST
+      const ADMIN_USER_ID = 7; // Admin account ID
+      const admin = await this.storage.getUser(ADMIN_USER_ID);
+      if (admin) {
+        // Add commission to admin wallet
+        await this.storage.updateUserBalance(
+          ADMIN_USER_ID,
+          admin.walletBalance + commission
+        );
+        
+        // Create commission transaction record
+        await this.storage.createTransaction({
+          userId: ADMIN_USER_ID,
+          amount: commission,
+          type: "winnings", // Platform commission earnings
+          status: "completed",
+          reference: `game-${gameId}-commission`,
+          description: `Platform commission from game ${gameId} (${commissionRate * 100}% of ₦${totalPool})`
+        });
+      }
+      
       // Distribute prize (if tie, split evenly)
       const prizePerWinner = prizeMoney / winnerIds.length;
       
@@ -511,6 +532,7 @@ export class GameManager {
             type: "winnings",
             status: "completed",
             reference: `game-${gameId}-winnings`,
+            description: `Game winnings from game ${gameId}`
           });
         }
       }
