@@ -458,14 +458,26 @@ export default function DemoPage() {
     
     if (newState) {
       try {
-        // Use a free gaming background music track from the internet
+        // Use rock and roll background music from the internet
         const audio = new Audio();
-        // This is a royalty-free gaming music track
-        audio.src = 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
-        // Fallback to another source if first doesn't work
-        audio.addEventListener('error', () => {
-          audio.src = 'https://www.zapsplat.com/wp-content/uploads/2015/sound-effects-free/zapsplat_multimedia_game_sound_bright_digital_tone_001_44149.mp3';
-        });
+        // Try different rock music sources
+        const rockTracks = [
+          'https://www.bensound.com/bensound-music/bensound-energy.mp3',
+          'https://www.bensound.com/bensound-music/bensound-punky.mp3',
+          'https://www.bensound.com/bensound-music/bensound-actionable.mp3',
+          'https://freesound.org/data/previews/316/316847_2948036-lq.mp3'
+        ];
+        
+        let currentTrack = 0;
+        const tryNextTrack = () => {
+          if (currentTrack < rockTracks.length) {
+            audio.src = rockTracks[currentTrack];
+            currentTrack++;
+          }
+        };
+        
+        audio.addEventListener('error', tryNextTrack);
+        tryNextTrack(); // Start with first track
         
         audio.volume = 0.3;
         audio.loop = true;
