@@ -28,10 +28,9 @@ export default function Home() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Function to refresh/stay on current user dashboard
+  // Function to go to landing page
   const goToHome = () => {
-    // Stay on the current page (user dashboard) or refresh it
-    window.location.reload();
+    setLocation('/landing');
   };
   
   // Demo deposit mutation (for testing)
