@@ -56,6 +56,10 @@ function Router() {
       <Route path="/landing" component={LandingPage} />
       <Route path="/" component={HomeOrLanding} />
       <Route path="/about" component={AboutPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/contact" component={ContactPage} />
+      <Route path="/responsible-gaming" component={ResponsibleGamingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/verify-email/:token" component={VerifyEmail} />
       <Route path="/reset-password/:token" component={ResetPassword} />

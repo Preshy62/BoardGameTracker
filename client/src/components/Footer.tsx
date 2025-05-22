@@ -127,32 +127,44 @@ export function Footer() {
             <ul className="space-y-3">
               <li>
                 <button 
-                  onClick={handleEmailContact}
-                  className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center"
+                  onClick={() => setLocation('/contact')}
+                  className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center text-left"
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   Contact Support
                 </button>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
+                <button 
+                  onClick={() => setLocation('/terms')}
+                  className="text-gray-400 hover:text-white transition-colors duration-200 text-left"
+                >
                   Terms & Conditions
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
+                <button 
+                  onClick={() => setLocation('/privacy')}
+                  className="text-gray-400 hover:text-white transition-colors duration-200 text-left"
+                >
                   Privacy Policy
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
+                <button 
+                  onClick={() => setLocation('/responsible-gaming')}
+                  className="text-gray-400 hover:text-white transition-colors duration-200 text-left"
+                >
                   Responsible Gaming
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
-                  Security
-                </a>
+                <button 
+                  onClick={() => setLocation('/about')}
+                  className="text-gray-400 hover:text-white transition-colors duration-200 text-left"
+                >
+                  Security & Fair Play
+                </button>
               </li>
             </ul>
           </div>
