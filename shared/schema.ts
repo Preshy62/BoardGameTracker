@@ -113,6 +113,9 @@ export const games = pgTable("games", {
   // For international games
   region: text("region"),
   language: text("language").default('en'),
+  
+  // Auto-expiration for waiting games (1 hour)
+  expiresAt: timestamp("expires_at"),
 });
 
 export const insertGameSchema = createInsertSchema(games).omit({
@@ -200,7 +203,7 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
 
 // Domain specific types
-export type GameStatus = 'waiting' | 'in_progress' | 'completed';
+export type GameStatus = 'waiting' | 'in_progress' | 'completed' | 'expired' | 'cancelled';
 export type TransactionType = 'deposit' | 'withdrawal' | 'winnings' | 'stake' | 'refund';
 export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'disputed';
 export type MessageType = 'chat' | 'system';

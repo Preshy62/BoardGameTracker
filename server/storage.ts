@@ -26,6 +26,7 @@ export interface IStorage {
   getGame(id: number): Promise<Game | undefined>;
   getGames(): Promise<Game[]>;
   getGamesByStatus(status: GameStatus): Promise<Game[]>;
+  getWaitingGames(): Promise<Game[]>;
   getUserGames(userId: number): Promise<Game[]>;
   createGame(game: InsertGame): Promise<Game>;
   updateGame(gameId: number, updates: Partial<InsertGame>): Promise<Game>;
@@ -33,6 +34,7 @@ export interface IStorage {
   updateGameWinners(gameId: number, winnerIds: number[], winningNumber: number): Promise<Game>;
   endGame(gameId: number): Promise<Game>;
   getAvailableGames(currency?: string, minStake?: number, maxStake?: number): Promise<Game[]>;
+  refundStake(userId: number, amount: number, description: string): Promise<void>;
   
   // GamePlayer operations
   getGamePlayer(gameId: number, userId: number): Promise<GamePlayer | undefined>;
@@ -718,6 +720,10 @@ export class DatabaseStorage implements IStorage {
 
   async getGamesByStatus(status: GameStatus): Promise<Game[]> {
     return await db.select().from(games).where(eq(games.status, status));
+  }
+
+  async getWaitingGames(): Promise<Game[]> {
+    return await db.select().from(games).where(eq(games.status, 'waiting'));
   }
 
   async getAvailableGames(currency?: string, minStake?: number, maxStake?: number): Promise<Game[]> {
