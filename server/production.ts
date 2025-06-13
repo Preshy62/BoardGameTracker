@@ -230,27 +230,21 @@ app.post('/api/games', authenticate, async (req, res) => {
   }
 });
 
-// Static file serving - serve from multiple possible locations
-const staticPaths = [
-  path.join(__dirname, '..', 'dist', 'public'),
-  path.join(__dirname, '..', 'client'),
-  path.join(__dirname, '..', 'public')
-];
+// Only serve built production assets, never development files
+const distPath = path.join(__dirname, '..', 'dist');
+const publicPath = path.join(__dirname, '..', 'public');
 
-let staticServed = false;
-for (const staticPath of staticPaths) {
-  try {
-    app.use(express.static(staticPath));
-    console.log(`✓ Serving static files from: ${staticPath}`);
-    staticServed = true;
-    break;
-  } catch (error) {
-    console.log(`✗ Could not serve from: ${staticPath}`);
+// Only serve static files if they exist and are production-ready
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  console.log(`✓ Serving built frontend from: ${distPath}`);
+} else {
+  // Serve only CSS/JS/image assets from public, not HTML
+  if (fs.existsSync(publicPath)) {
+    app.use('/assets', express.static(publicPath));
+    console.log(`✓ Serving assets from: ${publicPath}`);
   }
-}
-
-if (!staticServed) {
-  console.log('Warning: No static files found to serve');
+  console.log('⚠ No built frontend found, using embedded interface');
 }
 
 // Create a complete gaming interface when static files aren't available
@@ -623,22 +617,20 @@ const createGameInterface = () => `<!DOCTYPE html>
 </body>
 </html>`;
 
-// Catch-all for SPA routing
+// Catch-all for SPA routing - only serve embedded interface
 app.get('*', (req, res) => {
-  // Try to serve static files first
-  for (const staticPath of staticPaths) {
-    const indexPath = path.join(staticPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      try {
-        res.sendFile(indexPath);
-        return;
-      } catch (error) {
-        continue;
-      }
+  // Only serve built production index.html from dist if it exists
+  const distIndexPath = path.join(distPath, 'index.html');
+  if (fs.existsSync(distIndexPath)) {
+    try {
+      res.sendFile(distIndexPath);
+      return;
+    } catch (error) {
+      console.log('Could not serve dist index.html:', error.message);
     }
   }
   
-  // Fallback to complete gaming interface
+  // Always fallback to embedded gaming interface (never serve development files)
   res.send(createGameInterface());
 });
 
