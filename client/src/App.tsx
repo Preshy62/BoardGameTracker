@@ -44,7 +44,7 @@ import { queryClient } from "@/lib/queryClient";
 import AuthProvider, { useAuth } from "./hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import DirectLanding from "@/components/DirectLanding";
+import TestLanding from "@/components/TestLanding";
 
 function HomeOrLanding() {
   try {
@@ -52,7 +52,7 @@ function HomeOrLanding() {
     
     // Fast path: if auth has error or no user, show landing immediately
     if (error || (!isLoading && !user)) {
-      return <DirectLanding />;
+      return <TestLanding />;
     }
     
     // Show loading only briefly
@@ -67,10 +67,10 @@ function HomeOrLanding() {
       );
     }
     
-    return user ? <Home /> : <DirectLanding />;
+    return user ? <Home /> : <TestLanding />;
   } catch (authError) {
     console.warn('Auth hook error, showing landing page:', authError);
-    return <DirectLanding />;
+    return <TestLanding />;
   }
 }
 
@@ -79,7 +79,7 @@ function Router() {
     <Switch>
       {/* Public routes */}
       <Route path="/landing" component={LandingPage} />
-      <Route path="/" component={DirectLanding} />
+      <Route path="/" component={TestLanding} />
       <Route path="/about" component={AboutPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
