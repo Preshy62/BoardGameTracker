@@ -48,17 +48,17 @@ import { storage } from "./storage-simple";
 // Configure the session middleware with memory store - optimized for Replit
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "bbg-game-secret",
-  resave: false,
-  saveUninitialized: false,
+  resave: true, // Force session save on each request
+  saveUninitialized: true, // Save uninitialized sessions
   store: storage.sessionStore,
   name: 'connect.sid',
+  rolling: true, // Reset expiry on each request
   cookie: {
     httpOnly: false, // Allow frontend access in Replit environment
     secure: false,
-    sameSite: 'none', // Required for cross-origin in Replit
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/',
-    domain: undefined // Let browser set automatically
+    sameSite: 'lax', // More permissive for Replit
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    path: '/'
   }
 });
 
@@ -159,6 +159,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
   
+  // Session bridge endpoint for cross-domain authentication
+  app.post("/api/auth/bridge", async (req, res) => {
+    try {
+      const { sessionId } = req.body;
+      if (!sessionId) {
+        return res.status(400).json({ message: "Session ID required" });
+      }
+      
+      // Set the session manually
+      req.session.id = sessionId;
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session bridge error:", err);
+          return res.status(500).json({ message: "Session bridge failed" });
+        }
+        res.json({ success: true });
+      });
+    } catch (error) {
+      console.error("Session bridge error:", error);
+      res.status(500).json({ message: "Session bridge failed" });
+    }
+  });
+
   // Authentication routes
   app.post("/api/register", async (req, res) => {
     try {
@@ -305,7 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       console.log(`Set session userId to ${user.id}, session ID: ${req.session.id}`);
       
-      // Save session explicitly
+      // Save session explicitly with enhanced cookie handling
       req.session.save((err) => {
         if (err) {
           console.error('Session save error:', err);
@@ -314,10 +337,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`Session saved successfully for user ${user.id}`);
         
-        // Remove password from response
+        // Set additional cookie headers for cross-domain compatibility
+        res.setHeader('Set-Cookie', [
+          `connect.sid=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400`,
+          `bbg-session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400`
+        ]);
+        
+        // Remove password from response and include session info
         const { password: _, ...userWithoutPassword } = user;
         console.log('User logged in:', user.id);
-        res.json(userWithoutPassword);
+        res.json({
+          ...userWithoutPassword,
+          sessionId: req.sessionID,
+          authenticated: true
+        });
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -352,21 +385,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/user", authenticate, async (req, res) => {
+  app.get("/api/user", async (req, res) => {
     try {
-      // Since authenticate middleware ensures userId exists, we can safely use the type guard
-      ensureUserIdExists(req.session.userId);
+      // Enhanced session validation for Replit environment
+      const sessionId = req.sessionID;
+      const userId = req.session.userId;
       
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        req.session.destroy(() => {});
-        return res.status(401).json({ message: "User not found" });
+      console.log(`User endpoint - Session ID: ${sessionId}, User ID: ${userId || 'not logged in'}`);
+      
+      if (!userId) {
+        // Clear invalid cookies and return clean 401
+        res.clearCookie('connect.sid');
+        res.clearCookie('bbg-session');
+        return res.status(401).json({ 
+          message: "Unauthorized",
+          sessionExpired: true,
+          action: "login_required"
+        });
       }
       
-      // Remove password from response
+      const user = await storage.getUser(userId);
+      if (!user) {
+        req.session.destroy(() => {});
+        res.clearCookie('connect.sid');
+        res.clearCookie('bbg-session');
+        return res.status(401).json({ 
+          message: "User not found",
+          sessionExpired: true,
+          action: "login_required"
+        });
+      }
+      
+      // Refresh session on successful validation
+      req.session.touch();
+      
+      // Remove password from response and include session info
       const { password, ...userWithoutPassword } = user;
       
-      res.json(userWithoutPassword);
+      res.json({
+        ...userWithoutPassword,
+        sessionId: sessionId,
+        authenticated: true
+      });
     } catch (error) {
       console.error('Error fetching user:', error);
       res.status(500).json({ message: "Internal server error" });
