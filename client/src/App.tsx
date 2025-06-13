@@ -79,7 +79,7 @@ function Router() {
     <Switch>
       {/* Public routes */}
       <Route path="/landing" component={LandingPage} />
-      <Route path="/" component={HomeOrLanding} />
+      <Route path="/" component={DirectLanding} />
       <Route path="/about" component={AboutPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
