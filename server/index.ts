@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage-simple";
@@ -52,6 +53,9 @@ async function createDemoUser() {
 }
 
 const app = express();
+
+// Add cookie parser middleware
+app.use(cookieParser());
 
 // Configure CORS to allow cookies with Replit domain support
 app.use((req, res, next) => {

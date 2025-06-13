@@ -45,22 +45,39 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 // Use memory session store for development (instead of PostgreSQL)
 import { storage } from "./storage-simple";
 
-// Configure the session middleware with memory store - optimized for Replit
-const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET || "bbg-game-secret",
-  resave: true, // Force session save on each request
-  saveUninitialized: true, // Save uninitialized sessions
-  store: storage.sessionStore,
-  name: 'connect.sid',
-  rolling: true, // Reset expiry on each request
-  cookie: {
-    httpOnly: false, // Allow frontend access in Replit environment
-    secure: false,
-    sameSite: 'lax', // More permissive for Replit
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    path: '/'
+// Simple JWT-based authentication for Replit environment
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.SESSION_SECRET || "bbg-game-secret-jwt-2025";
+
+// Create simple session middleware
+const sessionMiddleware = (req: any, res: any, next: any) => {
+  // Check for JWT token in cookies
+  const token = req.cookies?.['bbg-auth-token'];
+  
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      req.session = { userId: decoded.userId };
+      req.sessionID = decoded.sessionId || 'jwt-session';
+    } catch (error) {
+      // Invalid token, clear it
+      res.clearCookie('bbg-auth-token');
+      req.session = {};
+    }
+  } else {
+    req.session = {};
   }
-});
+  
+  req.session.save = (callback: Function) => callback();
+  req.session.destroy = (callback: Function) => {
+    res.clearCookie('bbg-auth-token');
+    callback();
+  };
+  req.session.touch = () => {};
+  
+  next();
+};
 
 declare module 'express-session' {
   interface SessionData {
@@ -328,29 +345,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       console.log(`Set session userId to ${user.id}, session ID: ${req.session.id}`);
       
-      // Save session explicitly with enhanced cookie handling
-      req.session.save((err) => {
-        if (err) {
-          console.error('Session save error:', err);
-          return res.status(500).json({ message: "Failed to create session" });
-        }
-        
-        console.log(`Session saved successfully for user ${user.id}`);
-        
-        // Set additional cookie headers for cross-domain compatibility
-        res.setHeader('Set-Cookie', [
-          `connect.sid=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400`,
-          `bbg-session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400`
-        ]);
-        
-        // Remove password from response and include session info
-        const { password: _, ...userWithoutPassword } = user;
-        console.log('User logged in:', user.id);
-        res.json({
-          ...userWithoutPassword,
-          sessionId: req.sessionID,
-          authenticated: true
-        });
+      // Create JWT token for persistent authentication
+      const token = jwt.sign(
+        { userId: user.id, sessionId: `jwt-${Date.now()}` },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+      
+      // Set JWT cookie
+      res.cookie('bbg-auth-token', token, {
+        httpOnly: false,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/'
+      });
+      
+      console.log(`JWT token created for user ${user.id}`);
+      
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = user;
+      console.log('User logged in:', user.id);
+      res.json({
+        ...userWithoutPassword,
+        authenticated: true
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -387,44 +405,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/user", async (req, res) => {
     try {
-      // Enhanced session validation for Replit environment
-      const sessionId = req.sessionID;
       const userId = req.session.userId;
       
-      console.log(`User endpoint - Session ID: ${sessionId}, User ID: ${userId || 'not logged in'}`);
+      console.log(`User endpoint - User ID: ${userId || 'not logged in'}`);
       
       if (!userId) {
-        // Clear invalid cookies and return clean 401
-        res.clearCookie('connect.sid');
-        res.clearCookie('bbg-session');
+        res.clearCookie('bbg-auth-token');
         return res.status(401).json({ 
-          message: "Unauthorized",
-          sessionExpired: true,
-          action: "login_required"
+          message: "Unauthorized"
         });
       }
       
       const user = await storage.getUser(userId);
       if (!user) {
-        req.session.destroy(() => {});
-        res.clearCookie('connect.sid');
-        res.clearCookie('bbg-session');
+        res.clearCookie('bbg-auth-token');
         return res.status(401).json({ 
-          message: "User not found",
-          sessionExpired: true,
-          action: "login_required"
+          message: "User not found"
         });
       }
       
-      // Refresh session on successful validation
-      req.session.touch();
-      
-      // Remove password from response and include session info
+      // Remove password from response
       const { password, ...userWithoutPassword } = user;
       
       res.json({
         ...userWithoutPassword,
-        sessionId: sessionId,
         authenticated: true
       });
     } catch (error) {
