@@ -25,12 +25,12 @@ async function copyDir(src, dest) {
 
 async function fixStaticFiles() {
   try {
-    const viteOutDir = path.join(__dirname, 'dist', 'public');
+    const distDir = path.join(__dirname, 'dist');
     const targetDir = path.join(__dirname, 'server', 'public');
 
-    // Check if Vite output exists
-    if (!fs.existsSync(viteOutDir)) {
-      console.log('Vite build output not found at dist/public, skipping static file fix');
+    // Check if dist directory exists
+    if (!fs.existsSync(distDir)) {
+      console.log('Dist directory not found, skipping static file fix');
       return;
     }
 
@@ -39,9 +39,12 @@ async function fixStaticFiles() {
       await fs.promises.rm(targetDir, { recursive: true, force: true });
     }
 
-    // Copy Vite build output to server/public
-    await copyDir(viteOutDir, targetDir);
-    console.log('Static files copied successfully from dist/public to server/public');
+    // Create target directory
+    await fs.promises.mkdir(targetDir, { recursive: true });
+
+    // Copy all files from dist to server/public
+    await copyDir(distDir, targetDir);
+    console.log('Static files copied successfully from dist to server/public');
   } catch (error) {
     console.error('Error fixing static files:', error.message);
   }
