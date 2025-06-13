@@ -410,17 +410,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`User endpoint - User ID: ${userId || 'not logged in'}`);
       
       if (!userId) {
+        // Clear all old cookies from previous session system
         res.clearCookie('bbg-auth-token');
+        res.clearCookie('connect.sid');
+        res.clearCookie('bbg-session');
         return res.status(401).json({ 
-          message: "Unauthorized"
+          message: "Unauthorized",
+          action: "clear_cookies"
         });
       }
       
       const user = await storage.getUser(userId);
       if (!user) {
         res.clearCookie('bbg-auth-token');
+        res.clearCookie('connect.sid');
+        res.clearCookie('bbg-session');
         return res.status(401).json({ 
-          message: "User not found"
+          message: "User not found",
+          action: "clear_cookies"
         });
       }
       
