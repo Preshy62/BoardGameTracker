@@ -1397,22 +1397,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Parse sessions from WebSocket upgrade requests
-  wss.on('headers', (headers, req) => {
-    headers.push('Set-Cookie: ' + req.headers.cookie);
-  });
-  
-  // WebSocket connection handling
+  // WebSocket connection handling with proper session parsing
   wss.on('connection', (ws, req) => {
     let userId: number | null = null;
     let gameId: number | null = null;
     
-    // Extract session and session data
+    console.log('WebSocket connection attempt from:', req.url);
+    console.log('WebSocket headers:', req.headers.cookie);
+    
+    // Extract session data from upgrade request
     const getSessionData = () => {
       return new Promise<number | null>((resolve) => {
-        sessionMiddleware(req as any, {} as any, () => {
-          if ((req as any).session && (req as any).session.userId) {
-            resolve((req as any).session.userId);
+        // Create a mock response object for session middleware
+        const mockRes = {
+          setHeader: () => {},
+          getHeader: () => {},
+          end: () => {}
+        };
+        
+        sessionMiddleware(req as any, mockRes as any, () => {
+          const session = (req as any).session;
+          console.log('WebSocket session data:', session?.id, session?.userId);
+          
+          if (session && session.userId) {
+            resolve(session.userId);
           } else {
             resolve(null);
           }
@@ -1425,7 +1433,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (sessionUserId) {
         userId = sessionUserId;
         console.log(`WebSocket authenticated for user ${userId}`);
+        
+        // Send authentication success message
+        ws.send(JSON.stringify({
+          type: 'auth_success',
+          payload: { userId }
+        }));
+      } else {
+        console.log('WebSocket authentication failed - no session userId');
+        
+        // Send authentication failure message
+        ws.send(JSON.stringify({
+          type: 'auth_failed',
+          payload: { message: 'Not authenticated' }
+        }));
       }
+    }).catch(error => {
+      console.error('WebSocket session parsing error:', error);
+      ws.send(JSON.stringify({
+        type: 'auth_error',
+        payload: { message: 'Session parsing failed' }
+      }));
     });
     
     ws.on('message', async (message) => {
