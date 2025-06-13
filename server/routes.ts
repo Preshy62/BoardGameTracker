@@ -42,15 +42,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: "2023-10-16" as any,
 });
 
-// Import the PostgreSQL session store
-import { sessionStore } from "./storage";
+// Use memory session store for development (instead of PostgreSQL)
+import { storage } from "./storage-simple";
 
-// Configure the session middleware
+// Configure the session middleware with memory store
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "bbg-game-secret",
   resave: false,
   saveUninitialized: false,
-  store: sessionStore,
+  store: storage.sessionStore,
   cookie: {
     httpOnly: true,
     secure: false, // Set to false for development to work with http
