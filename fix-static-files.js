@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 
 // Fix for static file serving - copies Vite build output to expected location
-const fs = require('fs-extra');
-const path = require('path');
+import fs from 'fs-extra';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function fixStaticFiles() {
   try {
@@ -23,8 +26,6 @@ async function fixStaticFiles() {
   }
 }
 
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   fixStaticFiles();
 }
-
-module.exports = { fixStaticFiles };
