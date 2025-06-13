@@ -60,7 +60,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
-      setLocation("/home");
+      setLocation("/");
     },
     onError: (error: Error) => {
       toast({
