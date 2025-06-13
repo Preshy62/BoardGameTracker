@@ -144,17 +144,30 @@
       const message = document.getElementById('message');
       let isLoginMode = true;
 
-      // Check if already authenticated
-      fetch('/api/user')
-        .then(res => res.json())
-        .then(user => {
-          if (user && user.id) {
-            showDashboard(user);
-          }
-        })
-        .catch(() => {
-          // Not authenticated, show login form
-        });
+      // Check if already authenticated immediately
+      function checkAuthentication() {
+        fetch('/api/user')
+          .then(res => {
+            if (res.ok) {
+              return res.json();
+            }
+            throw new Error('Not authenticated');
+          })
+          .then(user => {
+            if (user && user.id) {
+              console.log('User authenticated:', user.username);
+              showDashboard(user);
+            }
+          })
+          .catch((error) => {
+            console.log('User not authenticated, showing login form');
+            // Not authenticated, show login form
+          });
+      }
+
+      // Run authentication check immediately and on page load
+      checkAuthentication();
+      window.addEventListener('load', checkAuthentication);
 
       switchForm.addEventListener('click', () => {
         isLoginMode = !isLoginMode;
