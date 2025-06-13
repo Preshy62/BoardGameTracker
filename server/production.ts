@@ -5,6 +5,7 @@ import express from 'express';
 import { createServer } from 'http';
 import session from 'express-session';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { storage } from './storage-simple.js';
 
@@ -627,11 +628,13 @@ app.get('*', (req, res) => {
   // Try to serve static files first
   for (const staticPath of staticPaths) {
     const indexPath = path.join(staticPath, 'index.html');
-    try {
-      res.sendFile(indexPath);
-      return;
-    } catch (error) {
-      continue;
+    if (fs.existsSync(indexPath)) {
+      try {
+        res.sendFile(indexPath);
+        return;
+      } catch (error) {
+        continue;
+      }
     }
   }
   
