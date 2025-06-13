@@ -241,16 +241,124 @@
                 ${user.preferredCurrency} ${user.balance?.toLocaleString() || '0'}
               </div>
             </div>
+            
             <div style="background: #e3f2fd; padding: 20px; border-radius: 5px; margin: 20px 0;">
+              <h3>Game Actions</h3>
+              <div style="display: grid; gap: 10px; margin-top: 15px;">
+                <button onclick="joinGame()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
+                  Join Game
+                </button>
+                <button onclick="createGame()" style="background: #007bff; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
+                  Create Game
+                </button>
+                <button onclick="viewGames()" style="background: #17a2b8; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
+                  View Available Games
+                </button>
+                <button onclick="manageWallet()" style="background: #ffc107; color: #000; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
+                  Manage Wallet
+                </button>
+              </div>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
               <h3>Game Features</h3>
               <p>✓ JWT Authentication System Active</p>
               <p>✓ Wallet Management Available</p>
               <p>✓ Real-time Gaming Ready</p>
               <p>✓ Multi-currency Support</p>
             </div>
-            <button onclick="logout()" style="background: #e74c3c;">Logout</button>
+            
+            <button onclick="logout()" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 5px; cursor: pointer; width: 100%;">
+              Logout
+            </button>
           </div>
         `;
+      }
+
+      function joinGame() {
+        fetch('/api/games')
+          .then(res => res.json())
+          .then(games => {
+            if (games.length === 0) {
+              alert('No games available. Create a new game first!');
+              return;
+            }
+            const gameList = games.map(g => `Game ${g.id}: ${g.name || 'Unnamed'} (${g.currentPlayers}/${g.maxPlayers})`).join('\\n');
+            const gameId = prompt(`Available Games:\\n${gameList}\\n\\nEnter Game ID to join:`);
+            if (gameId) {
+              fetch(`/api/games/${gameId}/join`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => alert('Joined game successfully!'))
+                .catch(err => alert('Failed to join game'));
+            }
+          });
+      }
+
+      function createGame() {
+        const name = prompt('Enter game name:');
+        const stake = prompt('Enter stake amount (NGN):');
+        if (name && stake) {
+          fetch('/api/games', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              name, 
+              stake: parseInt(stake),
+              currency: 'NGN',
+              maxPlayers: 6
+            })
+          })
+          .then(res => res.json())
+          .then(data => alert(`Game "${name}" created successfully!`))
+          .catch(err => alert('Failed to create game'));
+        }
+      }
+
+      function viewGames() {
+        fetch('/api/games')
+          .then(res => res.json())
+          .then(games => {
+            if (games.length === 0) {
+              alert('No games available');
+              return;
+            }
+            const gameInfo = games.map(g => 
+              `Game ${g.id}: ${g.name || 'Unnamed'}\\n` +
+              `Players: ${g.currentPlayers}/${g.maxPlayers}\\n` +
+              `Stake: ${g.currency} ${g.stake}\\n` +
+              `Status: ${g.status}\\n`
+            ).join('\\n');
+            alert(`Available Games:\\n\\n${gameInfo}`);
+          });
+      }
+
+      function manageWallet() {
+        const action = prompt('Wallet Actions:\\n1. View Balance\\n2. Add Funds\\n3. View Transactions\\n\\nEnter number:');
+        
+        if (action === '1') {
+          fetch('/api/user')
+            .then(res => res.json())
+            .then(user => alert(`Current Balance: ${user.preferredCurrency} ${user.walletBalance?.toLocaleString()}`));
+        } else if (action === '2') {
+          const amount = prompt('Enter amount to add (NGN):');
+          if (amount) {
+            alert('In a real application, this would redirect to payment gateway');
+          }
+        } else if (action === '3') {
+          fetch('/api/transactions')
+            .then(res => res.json())
+            .then(transactions => {
+              if (transactions.length === 0) {
+                alert('No transactions found');
+                return;
+              }
+              const txInfo = transactions.slice(0, 5).map(tx => 
+                `${tx.type}: ${tx.currency} ${tx.amount} - ${tx.status}`
+              ).join('\\n');
+              alert(`Recent Transactions:\\n\\n${txInfo}`);
+            })
+            .catch(() => alert('No transactions available'));
+        }
       }
 
       function logout() {
