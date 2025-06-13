@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { storage } from "./storage";
+import { storage } from "./storage-simple";
 import bcrypt from "bcrypt";
 import { runMigration } from "./utils/migrate-email-fields";
 import { initializeEmailTransport } from "./utils/email";
