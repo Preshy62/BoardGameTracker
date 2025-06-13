@@ -1708,17 +1708,14 @@ export class DatabaseStorage implements IStorage {
 }
 
 // Create a session store for express-session
-import connectPg from "connect-pg-simple";
-import { pool } from "./db";
 import session from "express-session";
+import createMemoryStore from "memorystore";
 
-const PostgresSessionStore = connectPg(session);
+const MemoryStore = createMemoryStore(session);
 
-// Create a session store instance
-export const sessionStore = new PostgresSessionStore({
-  pool,
-  tableName: 'session', // Default session table name
-  createTableIfMissing: true
+// Use in-memory session store due to database connection issues
+export const sessionStore = new MemoryStore({
+  checkPeriod: 86400000, // Prune expired entries every 24h
 });
 
 // Temporarily use in-memory storage due to database connection issues

@@ -95,23 +95,8 @@ app.use((req, res, next) => {
 (async () => {
   let server: any;
   try {
-    // Run database migrations with error handling
-    log("Running database migrations...", "startup");
-    try {
-      const migrationResult = await runMigration();
-      if (!migrationResult) {
-        log("Database migration failed. Proceeding with caution...", "startup");
-      }
-    } catch (migrationError) {
-      log("Database migration failed, continuing with existing schema...", "startup");
-    }
-    
-    // Run transaction description field migration with error handling
-    try {
-      await addTransactionDescriptionField();
-    } catch (migrationError) {
-      log("Transaction migration failed, continuing...", "startup");
-    }
+    // Skip database migrations when using in-memory storage
+    log("Using in-memory storage - skipping database migrations", "startup");
     
     // Initialize email transport
     log("Initializing email transport...", "startup");
