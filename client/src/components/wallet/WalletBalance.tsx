@@ -48,6 +48,24 @@ export default function WalletBalance({ user, totalEarnings = 0, className }: Wa
   
   // Calculate progress for the progress bar (arbitrary goal of 100,000)
   const goalAmount = 100000;
+  const progressValue = Math.min((user.walletBalance / goalAmount) * 100, 100);
+  
+  // Quick action handlers
+  const handleQuickDeposit = () => {
+    // Scroll to deposit section or trigger deposit modal
+    const depositSection = document.querySelector('[data-testid="deposit-section"]');
+    if (depositSection) {
+      depositSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+  
+  const handleQuickWithdraw = () => {
+    // Scroll to withdraw section or trigger withdraw modal
+    const withdrawSection = document.querySelector('[data-testid="withdraw-section"]');
+    if (withdrawSection) {
+      withdrawSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
   const progressPercentage = Math.min(Math.round((user.walletBalance / goalAmount) * 100), 100);
   
   return (
@@ -113,7 +131,7 @@ export default function WalletBalance({ user, totalEarnings = 0, className }: Wa
                     <Lock className="h-5 w-5 text-amber-300/80" />
                   </div>
                 ) : (
-                  formatCurrency(user.walletBalance)
+                  formatCurrency(user.walletBalance, user.preferredCurrency || 'NGN')
                 )}
               </div>
               <div className="text-white/60 text-sm mt-1 flex items-center">
@@ -138,7 +156,7 @@ export default function WalletBalance({ user, totalEarnings = 0, className }: Wa
                       <div className="bg-white/10 rounded px-2 py-0.5 text-sm">•••••</div>
                     </div>
                   ) : (
-                    formatCurrency(totalEarnings)
+                    formatCurrency(totalEarnings, user.preferredCurrency || 'NGN')
                   )}
                 </div>
               </div>
@@ -162,6 +180,29 @@ export default function WalletBalance({ user, totalEarnings = 0, className }: Wa
               <span>{progressPercentage}%</span>
             </div>
             <Progress value={progressPercentage} className="h-2 bg-white/20" />
+            
+            {/* Quick Action Buttons */}
+            <div className="mt-4 flex gap-2">
+              <Button
+                onClick={handleQuickDeposit}
+                variant="secondary"
+                size="sm"
+                className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Quick Deposit
+              </Button>
+              <Button
+                onClick={handleQuickWithdraw}
+                variant="outline"
+                size="sm"
+                className="flex-1 bg-transparent hover:bg-white/10 text-white border-white/30 hover:border-white/50"
+                disabled={user.walletBalance <= 0}
+              >
+                <WalletIcon className="h-4 w-4 mr-2" />
+                Withdraw
+              </Button>
+            </div>
           </div>
         </div>
         

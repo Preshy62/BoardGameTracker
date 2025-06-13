@@ -28,6 +28,8 @@ import AdminTransactions from "@/pages/admin/transactions/index";
 import AdminTransactionDetail from "@/pages/admin/transactions/[id]";
 import AdminSettings from "@/pages/admin/settings/index";
 import AdminGames from "@/pages/admin/games/index";
+import BotGamePage from "@/pages/bot-game";
+import SingleBotGamePage from "@/pages/single-bot-game";
 import DebugTransaction from "@/pages/admin/debug-transaction";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import VerifyEmail from "@/pages/auth/verify-email";
@@ -78,6 +80,8 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/create-game" component={CreateGame} />
       <ProtectedRoute path="/game/:id" component={GamePage} />
+      <ProtectedRoute path="/bot-game/:id" component={BotGamePage} />
+      <ProtectedRoute path="/single-bot-game/:id" component={SingleBotGamePage} />
       <ProtectedRoute path="/wallet" component={WalletPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/checkout/:amount" component={Checkout} />

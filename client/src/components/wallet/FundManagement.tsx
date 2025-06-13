@@ -408,12 +408,19 @@ export default function FundManagement({ user }: FundManagementProps) {
     });
   };
   
-  // Predefined deposit amounts
-  const quickDepositAmounts = [1000, 5000, 10000, 50000];
+  // Predefined deposit amounts - Enhanced with more options
+  const quickDepositAmounts = [1000, 2500, 5000, 10000, 25000, 50000, 100000, 200000];
+  
+  // Quick withdrawal amounts based on user's balance
+  const quickWithdrawAmounts = [1000, 5000, 10000, 25000, 50000].filter(amount => amount <= user.walletBalance);
   
   // Helper to set predefined amounts
   const setQuickDepositAmount = (amount: number) => {
     setDepositAmount(amount.toString());
+  };
+  
+  const setQuickWithdrawAmount = (amount: number) => {
+    setWithdrawAmount(amount.toString());
   };
   
   // Calculate maximum withdrawal amount (user's balance)
@@ -447,7 +454,7 @@ export default function FundManagement({ user }: FundManagementProps) {
           </TabsList>
           
           {/* Deposit Tab */}
-          <TabsContent value="deposit" className="space-y-4">
+          <TabsContent value="deposit" className="space-y-4" data-testid="deposit-section">
             <div className="space-y-1.5">
               <Label htmlFor="deposit-amount">Amount</Label>
               <div className="relative">
@@ -469,10 +476,10 @@ export default function FundManagement({ user }: FundManagementProps) {
               </div>
             </div>
             
-            {/* Quick deposit amounts */}
+            {/* Quick deposit amounts - Enhanced grid layout */}
             <div>
-              <Label className="text-xs text-gray-500 mb-2 block">Quick Amounts</Label>
-              <div className="grid grid-cols-4 gap-2">
+              <Label className="text-xs text-gray-500 mb-3 block">Quick Amounts</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {quickDepositAmounts.map(amount => (
                   <Button
                     key={amount}
@@ -481,8 +488,9 @@ export default function FundManagement({ user }: FundManagementProps) {
                     size="sm"
                     onClick={() => setQuickDepositAmount(amount)}
                     className={cn(
-                      "text-xs h-9",
-                      depositAmount === amount.toString() && "border-primary bg-primary/10"
+                      "text-xs sm:text-sm h-10 sm:h-9 font-medium transition-all duration-200",
+                      "active:scale-95 touch-manipulation hover:bg-primary/5",
+                      depositAmount === amount.toString() && "border-primary bg-primary/10 shadow-md text-primary"
                     )}
                   >
                     {formatCurrency(amount)}
@@ -509,12 +517,14 @@ export default function FundManagement({ user }: FundManagementProps) {
                     setDepositAmount("");
                   }}
                   variant="default"
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-600 hover:bg-green-700 text-white h-14 text-lg font-semibold 
+                           shadow-lg hover:shadow-xl transition-all duration-200 active:scale-98 
+                           touch-manipulation border-0"
                   disabled={paystackDepositMutation.isPending || !depositAmount || parseFloat(depositAmount) <= 0}
                 >
-                  <CreditCard className="h-4 w-4 mr-2" />
+                  <CreditCard className="h-5 w-5 mr-3" />
                   Pay with Paystack
-                  <ChevronRight className="h-4 w-4 ml-2" />
+                  <ChevronRight className="h-5 w-5 ml-3" />
                 </PaystackButton>
               ) : (
                 <Button 
@@ -542,7 +552,7 @@ export default function FundManagement({ user }: FundManagementProps) {
           </TabsContent>
           
           {/* Withdraw Tab */}
-          <TabsContent value="withdraw" className="space-y-4">
+          <TabsContent value="withdraw" className="space-y-4" data-testid="withdraw-section">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="withdraw-amount">Amount</Label>
@@ -575,6 +585,31 @@ export default function FundManagement({ user }: FundManagementProps) {
                 Available: {formatCurrency(user.walletBalance)}
               </p>
             </div>
+            
+            {/* Quick withdrawal amounts */}
+            {quickWithdrawAmounts.length > 0 && (
+              <div>
+                <Label className="text-xs text-gray-500 mb-3 block">Quick Amounts</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                  {quickWithdrawAmounts.map(amount => (
+                    <Button
+                      key={amount}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setQuickWithdrawAmount(amount)}
+                      className={cn(
+                        "text-xs sm:text-sm h-10 sm:h-9 font-medium transition-all duration-200",
+                        "active:scale-95 touch-manipulation hover:bg-red-50",
+                        withdrawAmount === amount.toString() && "border-red-500 bg-red-50 shadow-md text-red-700"
+                      )}
+                    >
+                      {formatCurrency(amount)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Bank Account Details */}
             <div className={`space-y-3 ${user.walletBalance <= 0 ? 'opacity-60 pointer-events-none' : ''}`}>

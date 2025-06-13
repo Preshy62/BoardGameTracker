@@ -25,19 +25,9 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const headers: Record<string, string> = {
-    ...(data ? { "Content-Type": "application/json" } : {}),
-  };
-
-  // Add explicit session handling for Replit environment
-  const sessionId = document.cookie
-    .split('; ')
-    .find(row => row.startsWith('connect.sid='))
-    ?.split('=')[1];
-
   const res = await fetch(url, {
     method,
-    headers,
+    headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

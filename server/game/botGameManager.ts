@@ -119,7 +119,7 @@ export class BotGameManager {
 
   /**
    * Calculate payout for a bot game based on the stone rolled
-   * and configured multipliers
+   * and configured multipliers (including monthly lottery)
    */
   async calculateBotGamePayout(
     game: Game, 
@@ -132,10 +132,19 @@ export class BotGameManager {
     type: 'normal' | 'double' | 'triple';
     pendingAdminApproval?: boolean;
     adminPayoutAmount?: number;
+    lotteryActive?: boolean;
+    lotteryMultiplier?: number;
   }> {
     try {
       // Get current settings
       const [settings] = await db.select().from(botGameSettings).limit(1);
+      
+      // Import lottery settings from admin routes
+      const adminRoutes = await import('../routes/admin');
+      const lotteryStatus = adminRoutes.getCurrentLotteryStatus();
+      const monthlyLotteryActive = lotteryStatus.enabled;
+      const monthlyMultiplier = lotteryStatus.enabled ? 
+        (lotteryStatus.multiplier === "3x" ? 3 : 2) : 1;
       
       const platformFeePercent = settings?.platformFeePercent || 5;
       const doubleMultiplier = settings?.doubleStoneMultiplier || 2;
@@ -158,35 +167,49 @@ export class BotGameManager {
       let adminPayoutAmount = 0;
       
       // Check if special multiplier stones (BOT GAMES ONLY)
-      // 500 = 2x multiplier, 1000 = 3x multiplier
+      // 500 = 2x multiplier, 1000 = 3x multiplier, 3355 = 3x multiplier, 6624 = 3x multiplier
+      // Apply monthly lottery bonus if active
       if (rolledNumber === 500) {
-        multiplier = 2; // Always 2x for 500
+        multiplier = doubleMultiplier; // Base 2x for 500
+        if (monthlyLotteryActive) {
+          multiplier = doubleMultiplier * monthlyMultiplier; // Apply lottery bonus
+        }
         stoneType = 'double';
         pendingAdminApproval = true;
       } 
-      else if (rolledNumber === 1000) {
-        multiplier = 3; // Always 3x for 1000
+      else if (rolledNumber === 1000 || rolledNumber === 3355 || rolledNumber === 6624) {
+        multiplier = tripleMultiplier; // Base 3x for 1000, 3355, 6624
+        if (monthlyLotteryActive) {
+          multiplier = tripleMultiplier * monthlyMultiplier; // Apply lottery bonus
+        }
         stoneType = 'triple';
         pendingAdminApproval = true;
       }
-      // Note: 3355, 6624 are now regular stones in bot games
       
       // Calculate payout and fee
       const basePayout = game.stake * multiplier;
       const feeAmount = basePayout * (platformFeePercent / 100);
       let finalPayout = basePayout - feeAmount;
       
-      // For double/triple stones, 20% of the payout needs admin approval
+      // For double/triple stones, 80% goes to player, 20% goes to admin
       if (pendingAdminApproval) {
-        adminPayoutAmount = finalPayout * 0.2; // 20% pending admin approval
-        finalPayout = finalPayout * 0.8; // Player gets 80% immediately
+        adminPayoutAmount = finalPayout * 0.2; // 20% goes to admin account
+        finalPayout = finalPayout * 0.8; // Player gets 80% as winnings
       }
       
       let description = `Won against computer with a ${rolledNumber}`;
       if (stoneType === 'double') {
-        description = `Won with double stone (${rolledNumber})! ${doubleMultiplier}x payout (80% auto, 20% admin approval)`;
+        if (monthlyLotteryActive) {
+          description = `Won with double stone (${rolledNumber})! ${doubleMultiplier}x × ${monthlyMultiplier}x LOTTERY = ${multiplier}x total payout! (80% auto, 20% admin approval)`;
+        } else {
+          description = `Won with double stone (${rolledNumber})! ${doubleMultiplier}x payout (80% auto, 20% admin approval)`;
+        }
       } else if (stoneType === 'triple') {
-        description = `Won with triple stone (${rolledNumber})! ${tripleMultiplier}x payout (80% auto, 20% admin approval)`;
+        if (monthlyLotteryActive) {
+          description = `Won with triple stone (${rolledNumber})! ${tripleMultiplier}x × ${monthlyMultiplier}x LOTTERY = ${multiplier}x total payout! (80% auto, 20% admin approval)`;
+        } else {
+          description = `Won with triple stone (${rolledNumber})! ${tripleMultiplier}x payout (80% auto, 20% admin approval)`;
+        }
       }
       
       return {
@@ -195,7 +218,9 @@ export class BotGameManager {
         description,
         type: stoneType,
         pendingAdminApproval,
-        adminPayoutAmount
+        adminPayoutAmount,
+        lotteryActive: monthlyLotteryActive,
+        lotteryMultiplier: monthlyLotteryActive ? monthlyMultiplier : undefined
       };
     } catch (error) {
       console.error("Error calculating bot game payout:", error);
@@ -214,8 +239,8 @@ export class BotGameManager {
    * the configured win chance percentage
    */
   determineIfPlayerWins(): boolean {
-    // Default 25% chance of winning
-    const winPercentage = 25;
+    // Updated to 45% chance of winning for better player experience
+    const winPercentage = 45;
     
     // Generate a random number between 0-100
     const roll = Math.random() * 100;
@@ -288,16 +313,22 @@ export class BotGameManager {
           description: payoutDetails.description,
         });
         
-        // Check if this is a special stone win with pending admin approval portion
+        // Check if this is a special stone win - credit 20% to admin account immediately
         if (payoutDetails.pendingAdminApproval && payoutDetails.adminPayoutAmount && payoutDetails.adminPayoutAmount > 0) {
-          // Create a pending transaction for the 20% that requires admin approval
+          // Credit 20% to admin account
+          await this.storage.updateUserBalance(
+            admin.id,
+            admin.walletBalance + payoutDetails.adminPayoutAmount
+          );
+          
+          // Create admin transaction for the 20% share
           await this.storage.createTransaction({
-            userId: player.id,
+            userId: this.ADMIN_USER_ID,
             amount: payoutDetails.adminPayoutAmount,
-            type: "special_win_pending",
-            status: "pending",
-            reference: `bot-game-${gameId}-special-win-pending`,
-            description: `Pending 20% special stone bonus for ${rolledNumber} (requires admin approval)`,
+            type: "winnings",
+            status: "completed",
+            reference: `bot-game-${gameId}-admin-share`,
+            description: `Admin 20% share from special stone ${rolledNumber} in game ${gameId}`,
           });
         }
         
@@ -309,7 +340,23 @@ export class BotGameManager {
           payoutDetails.pendingAdminApproval ? payoutDetails.adminPayoutAmount : 0
         );
       } else {
-        // Player lost, update statistics
+        // Player lost - credit their stake to admin account
+        await this.storage.updateUserBalance(
+          admin.id,
+          admin.walletBalance + game.stake
+        );
+        
+        // Create transaction record for admin receiving the lost stake
+        await this.storage.createTransaction({
+          userId: this.ADMIN_USER_ID,
+          amount: game.stake,
+          type: "winnings",
+          status: "completed",
+          reference: `bot-game-${gameId}-admin-stake`,
+          description: `Received stake from lost bot game ${gameId}`,
+        });
+        
+        // Update statistics
         await this.updateBotGameStatistics(game.stake, 0, false);
       }
       

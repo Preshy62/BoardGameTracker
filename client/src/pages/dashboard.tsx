@@ -49,19 +49,25 @@ import {
 export default function Dashboard() {
   const [, navigate] = useLocation();
 
-  // Fetch current user
+  // Fetch current user with fresh data
   const { data: user, isLoading: isUserLoading } = useQuery<User>({
     queryKey: ["/api/user"],
+    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 0, // Always consider data stale
   });
 
-  // Fetch user's active games
+  // Fetch user's active games with real-time updates
   const { data: userGames, isLoading: isUserGamesLoading } = useQuery<Game[]>({
     queryKey: ["/api/games/user"],
+    refetchInterval: 10000, // Refresh every 10 seconds
+    staleTime: 0, // Always consider data stale
   });
 
-  // Fetch transactions
+  // Fetch transactions with fresh data
   const { data: transactions, isLoading: isTransactionsLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
+    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 0, // Always consider data stale
   });
 
   if (isUserLoading) {
@@ -76,14 +82,86 @@ export default function Dashboard() {
     return null;
   }
 
-  // Calculate user stats
-  const activeGames = userGames?.filter(game => game.status === "in_progress") || [];
-  const completedGames = userGames?.filter(game => game.status === "completed") || [];
-  const winCount = completedGames.filter(game => game.winnerId === user.id).length;
-  const totalDeposits = transactions?.filter(t => t.type === "deposit" && t.status === "completed").reduce((sum, t) => sum + t.amount, 0) || 0;
-  const totalWithdrawals = transactions?.filter(t => t.type === "withdrawal" && t.status === "completed").reduce((sum, t) => sum + t.amount, 0) || 0;
-  const totalWinnings = transactions?.filter(t => t.type === "winnings" && t.status === "completed").reduce((sum, t) => sum + t.amount, 0) || 0;
-  const winRate = completedGames.length > 0 ? (winCount / completedGames.length) * 100 : 0;
+  // Calculate user stats with enhanced error handling and accurate filtering
+  let activeGames = 0;
+  let totalGamesPlayed = 0;
+  let winCount = 0;
+  let completedGamesCount = 0;
+  
+  try {
+    if (userGames && Array.isArray(userGames)) {
+      // Only count games that have been played (completed or currently in progress)
+      const playedGames = userGames.filter(game => 
+        game.status === "completed" || game.status === "in_progress"
+      );
+      totalGamesPlayed = playedGames.length;
+      
+      const activeGamesList = userGames.filter(game => 
+        game.status === "active" || game.status === "in_progress" || game.status === "waiting"
+      );
+      activeGames = activeGamesList.length;
+      
+      const completedGames = userGames.filter(game => game.status === "completed");
+      completedGamesCount = completedGames.length;
+      
+      winCount = completedGames.filter(game => {
+        if (!game.winnerIds) return false;
+        
+        // Handle array format
+        if (Array.isArray(game.winnerIds)) {
+          return game.winnerIds.includes(user.id);
+        }
+        
+        // Handle string format (JSON array)
+        if (typeof game.winnerIds === 'string') {
+          try {
+            const parsed = JSON.parse(game.winnerIds);
+            return Array.isArray(parsed) && parsed.includes(user.id);
+          } catch {
+            return false;
+          }
+        }
+        
+        // Handle single winner ID (legacy format)
+        if (typeof game.winnerIds === 'number') {
+          return game.winnerIds === user.id;
+        }
+        
+        return false;
+      }).length;
+    }
+  } catch (error) {
+    console.error('Error calculating game stats:', error);
+  }
+  
+  // Calculate financial stats with safe fallbacks
+  let totalDeposits = 0;
+  let totalWithdrawals = 0;
+  let totalWinnings = 0;
+  
+  try {
+    if (transactions && Array.isArray(transactions)) {
+      totalDeposits = transactions
+        .filter(t => t.type === "deposit" && t.status === "completed")
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      
+      totalWithdrawals = transactions
+        .filter(t => t.type === "withdrawal" && t.status === "completed")
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      
+      totalWinnings = transactions
+        .filter(t => 
+          (t.type === "winnings" || t.type === "lottery_win") && 
+          t.status === "completed" &&
+          t.amount > 0
+        )
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    }
+  } catch (error) {
+    console.error('Error calculating financial stats:', error);
+  }
+  
+  const winRate = completedGamesCount > 0 ? Math.round((winCount / completedGamesCount) * 100) : 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -95,7 +173,7 @@ export default function Dashboard() {
           <p className="text-gray-600">Manage your account and view your game statistics</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* User Profile Card */}
           <Card>
             <CardHeader className="pb-2">
@@ -106,11 +184,11 @@ export default function Dashboard() {
               <div className="flex flex-col space-y-4">
                 <div className="flex items-center">
                   <div className="h-16 w-16 rounded-full flex items-center justify-center bg-primary text-white font-bold text-2xl mr-4">
-                    {user.avatarInitials}
+                    {user.avatarInitials || 'AD'}
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold">{user.username}</h3>
-                    <p className="text-gray-500">{user.email}</p>
+                    <h3 className="text-xl font-semibold">{user.username || 'Unknown'}</h3>
+                    <p className="text-gray-500">{user.email || 'No email'}</p>
                   </div>
                 </div>
                 <div className="flex items-center mt-2">
@@ -166,7 +244,7 @@ export default function Dashboard() {
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div className="bg-gray-50 p-3 rounded-md">
                     <div className="text-gray-500 text-sm">Games Played</div>
-                    <div className="text-2xl font-bold">{completedGames.length}</div>
+                    <div className="text-2xl font-bold">{totalGamesPlayed}</div>
                   </div>
                   <div className="bg-gray-50 p-3 rounded-md">
                     <div className="text-gray-500 text-sm">Games Won</div>
@@ -178,7 +256,7 @@ export default function Dashboard() {
                   </div>
                   <div className="bg-gray-50 p-3 rounded-md">
                     <div className="text-gray-500 text-sm">Active Games</div>
-                    <div className="text-2xl font-bold text-primary">{activeGames.length}</div>
+                    <div className="text-2xl font-bold text-primary">{activeGames}</div>
                   </div>
                 </div>
               </div>
@@ -376,7 +454,7 @@ export default function Dashboard() {
                             </CustomBadge>
                           </TableCell>
                           <TableCell className="font-mono text-xs">
-                            {transaction.reference.substring(0, 12)}...
+                            {transaction.reference ? transaction.reference.substring(0, 12) + '...' : 'N/A'}
                           </TableCell>
                         </TableRow>
                       ))}

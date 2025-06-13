@@ -377,7 +377,62 @@ export default function TransactionHistory({
         
         {showControls && (
           <div className="px-6 py-4 space-y-4">
-            {/* Search and basic filters */}
+            {/* Quick Filter Bar */}
+            <div className="flex flex-wrap gap-2 pb-2 border-b">
+              <span className="text-sm text-gray-500 font-medium flex items-center">Quick Filters:</span>
+              <Button
+                variant={typeFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTypeFilter('all')}
+                className="h-8 text-xs"
+              >
+                All
+              </Button>
+              <Button
+                variant={typeFilter === 'deposit' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTypeFilter('deposit')}
+                className="h-8 text-xs bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+              >
+                <ArrowDown className="h-3 w-3 mr-1" />
+                Deposits
+              </Button>
+              <Button
+                variant={typeFilter === 'withdrawal' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTypeFilter('withdrawal')}
+                className="h-8 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200"
+              >
+                <ArrowUp className="h-3 w-3 mr-1" />
+                Withdrawals
+              </Button>
+              <Button
+                variant={typeFilter === 'winnings' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTypeFilter('winnings')}
+                className="h-8 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+              >
+                <Trophy className="h-3 w-3 mr-1" />
+                Winnings
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTypeFilter('all');
+                  setStatusFilter('all');
+                  setSearchQuery('');
+                  setStartDate(undefined);
+                  setEndDate(undefined);
+                }}
+                className="h-8 text-xs text-gray-600"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear All
+              </Button>
+            </div>
+            
+            {/* Search and advanced filters */}
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-grow">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />

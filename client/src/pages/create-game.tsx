@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { queryClient } from "@/lib/queryClient";
 import {
   Card,
   CardContent,
@@ -41,8 +42,6 @@ import { formatCurrency } from "@/lib/utils";
 const gameSchema = z.object({
   maxPlayers: z.coerce.number().min(2, "Minimum 2 players").max(10, "Maximum 10 players"),
   stake: z.coerce.number().min(1000, "Minimum stake is ₦1,000"),
-  playWithBot: z.boolean().default(false),
-  voiceChatEnabled: z.boolean().default(false),
   currency: z.string().default("NGN"),
 });
 
@@ -60,8 +59,6 @@ export default function CreateGame() {
     defaultValues: {
       maxPlayers: 4,
       stake: 5000,
-      playWithBot: false,
-      voiceChatEnabled: false,
       currency: "NGN",
     },
   });
@@ -74,11 +71,6 @@ export default function CreateGame() {
     
     // Update local state
     setStakeAmount(currentStake);
-    
-    // Auto-enable voice chat for high-stakes games
-    if (currentStake >= HIGH_STAKES_THRESHOLD) {
-      form.setValue('voiceChatEnabled', true);
-    }
   }, [form.watch('stake'), form]);
   
   const createGameMutation = useMutation({
@@ -91,10 +83,21 @@ export default function CreateGame() {
       return response.json();
     },
     onSuccess: (data) => {
-      toast({
-        title: "Game Created",
-        description: "Your game has been created successfully!",
-      });
+      // Check if user was joined to existing game or new game was created
+      if (data.message && data.message.includes("Joined existing game")) {
+        toast({
+          title: "Joined Existing Game",
+          description: "Found a matching game and joined you automatically!",
+        });
+      } else {
+        toast({
+          title: "Game Created",
+          description: "Your game has been created successfully!",
+        });
+      }
+      // Invalidate games query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/games"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/games/available"] });
       // Redirect to the game page
       setLocation(`/game/${data.id}`);
     },
@@ -108,16 +111,6 @@ export default function CreateGame() {
   });
 
   const onSubmit = (data: GameFormValues) => {
-    // If play with bot is selected, redirect to demo-new page
-    if (data.playWithBot) {
-      toast({
-        title: "Demo Mode",
-        description: "Starting a quick demo game with virtual opponent.",
-      });
-      setLocation('/demo-new');
-      return;
-    }
-    
     // Regular game creation flow
     if (user && user.walletBalance < data.stake) {
       toast({
@@ -221,78 +214,8 @@ export default function CreateGame() {
                     )}
                   />
                   
-                  <FormField
-                    control={form.control}
-                    name="playWithBot"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Play with Bot</FormLabel>
-                          <FormDescription>
-                            Play against the computer with special payouts:
-                            <ul className="list-disc ml-5 mt-1 space-y-1">
-                              <li>25% chance to win against the bot</li>
-                              <li>Double stone win (500, 1000): 2x payout</li> 
-                              <li>Triple stone win (3355, 6624): 3x payout</li>
-                              <li>Stakes between ₦500 and ₦20,000</li>
-                            </ul>
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={(checked) => {
-                              field.onChange(checked);
-                              
-                              // If bot mode is enabled, adjust stake if needed
-                              if (checked) {
-                                const currentStake = form.getValues("stake");
-                                if (currentStake > 20000) {
-                                  form.setValue("stake", 20000);
-                                } else if (currentStake < 500) {
-                                  form.setValue("stake", 500);
-                                }
-                                
-                                // Set max players to 1 for bot games (UI only, server handles adding bot)
-                                form.setValue("maxPlayers", 2);
-                              }
-                            }}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="voiceChatEnabled"
-                    render={({ field }) => (
-                      <FormItem className={`flex flex-row items-center justify-between rounded-lg border p-4 ${stakeAmount >= HIGH_STAKES_THRESHOLD ? 'bg-amber-50 border-amber-200' : ''}`}>
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <FormLabel className="text-base">Enable Voice Chat</FormLabel>
-                            {stakeAmount >= HIGH_STAKES_THRESHOLD && (
-                              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-800">
-                                Auto-enabled
-                              </span>
-                            )}
-                          </div>
-                          <FormDescription>
-                            {stakeAmount >= HIGH_STAKES_THRESHOLD 
-                              ? "Voice chat is automatically enabled for high-stakes games (₦20,000+)"
-                              : "Allow players to communicate via voice"}
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={stakeAmount >= HIGH_STAKES_THRESHOLD}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+
+
                   
                   <div className="flex items-center justify-between pt-6">
                     <Button 

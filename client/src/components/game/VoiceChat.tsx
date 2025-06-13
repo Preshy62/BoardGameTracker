@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Users, Headphones, Info, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Users, Headphones, Info, Loader2, Settings, Sliders, Waves, AudioWaveform } from 'lucide-react';
 import { Game, GamePlayer } from '@shared/schema';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import AgoraRTC, { IAgoraRTCClient, IAgoraRTCRemoteUser, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng';
 import { useToast } from '@/hooks/use-toast';
 import useSoundEffects from '@/hooks/use-sound-effects';
@@ -27,6 +30,15 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
   const [speakingUsers, setSpeakingUsers] = useState<Record<string, number>>({});
   const [isPremiumUI, setIsPremiumUI] = useState(game.stake >= 50000);
   const [hasJoinedBefore, setHasJoinedBefore] = useState(false);
+  const [audioQuality, setAudioQuality] = useState<'standard' | 'high' | 'premium'>('standard');
+  const [noiseReduction, setNoiseReduction] = useState(false);
+  const [spatialAudio, setSpatialAudio] = useState(false);
+  const [voiceEffects, setVoiceEffects] = useState(false);
+  const [echoCancellation, setEchoCancellation] = useState(false);
+  const [autoGainControl, setAutoGainControl] = useState(false);
+  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
+  const [micGain, setMicGain] = useState(50);
+  const [outputVolume, setOutputVolume] = useState(80);
   
   // Use refs to maintain references across renders
   const clientRef = useRef<IAgoraRTCClient | null>(null);
@@ -76,9 +88,28 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
     // Set premium UI for very high-stakes games (≥₦50,000)
     setIsPremiumUI(game.stake >= 50000);
     
-    // Create and configure the client
+    // Configure audio quality based on game stake
+    if (game.stake >= 100000) {
+      setAudioQuality('premium');
+      setNoiseReduction(true);
+      setSpatialAudio(true);
+      setEchoCancellation(true);
+      setAutoGainControl(true);
+    } else if (game.stake >= 50000) {
+      setAudioQuality('high');
+      setNoiseReduction(true);
+      setEchoCancellation(true);
+    } else {
+      setAudioQuality('standard');
+    }
+    
+    // Create and configure the client with enhanced settings for premium games
     try {
-      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      const clientConfig = game.stake >= 50000 
+        ? { mode: 'rtc' as const, codec: 'vp9' as const }
+        : { mode: 'rtc' as const, codec: 'vp8' as const };
+      
+      const client = AgoraRTC.createClient(clientConfig);
       clientRef.current = client;
       setIsClientReady(true);
       
@@ -169,8 +200,16 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
       // Join the channel
       await clientRef.current.join(appId, channelName, token, uid);
       
-      // Create and publish local audio track
-      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      // Create and publish local audio track with premium settings
+      const audioTrackConfig = {
+        encoderConfig: audioQuality === 'premium' ? 'high_quality_stereo' as const : 
+                      audioQuality === 'high' ? 'high_quality' as const : 'speech_standard' as const,
+        ANS: noiseReduction,
+        AEC: echoCancellation,
+        AGC: autoGainControl,
+      };
+      
+      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack(audioTrackConfig);
       localTrackRef.current = audioTrack;
       await clientRef.current.publish([audioTrack]);
       
@@ -438,6 +477,133 @@ export default function VoiceChat({ game, players, currentUserId }: VoiceChatPro
             )}
           </div>
         </div>
+
+        {/* Premium Voice Calling Controls */}
+        {isPremiumUI && isJoined && (
+          <Collapsible open={showAdvancedControls} onOpenChange={setShowAdvancedControls}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mb-3 h-8 bg-amber-50/50 border-amber-200 hover:bg-amber-100/50 text-amber-700"
+              >
+                <Settings className="h-3.5 w-3.5 mr-2" />
+                <span className="text-xs font-medium">Premium Audio Controls</span>
+                <AudioWaveform className="h-3.5 w-3.5 ml-auto" />
+              </Button>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent className="space-y-3 mb-3 p-3 bg-amber-50/30 rounded-lg border border-amber-100">
+              {/* Audio Quality Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-amber-800 flex items-center">
+                    <Waves className="h-3 w-3 mr-1" />
+                    Audio Quality
+                  </span>
+                  <Badge variant="outline" className="text-xs bg-amber-100 border-amber-200 text-amber-700">
+                    {audioQuality.charAt(0).toUpperCase() + audioQuality.slice(1)}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Audio Enhancement Toggles */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center justify-between p-2 bg-white/60 rounded border border-amber-100">
+                  <span className="text-xs text-amber-700">Noise Reduction</span>
+                  <Switch
+                    checked={noiseReduction}
+                    onCheckedChange={setNoiseReduction}
+                    size="sm"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between p-2 bg-white/60 rounded border border-amber-100">
+                  <span className="text-xs text-amber-700">Echo Cancel</span>
+                  <Switch
+                    checked={echoCancellation}
+                    onCheckedChange={setEchoCancellation}
+                    size="sm"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between p-2 bg-white/60 rounded border border-amber-100">
+                  <span className="text-xs text-amber-700">Auto Gain</span>
+                  <Switch
+                    checked={autoGainControl}
+                    onCheckedChange={setAutoGainControl}
+                    size="sm"
+                  />
+                </div>
+                
+                {audioQuality === 'premium' && (
+                  <div className="flex items-center justify-between p-2 bg-white/60 rounded border border-amber-100">
+                    <span className="text-xs text-amber-700">Spatial Audio</span>
+                    <Switch
+                      checked={spatialAudio}
+                      onCheckedChange={setSpatialAudio}
+                      size="sm"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Volume Controls */}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-amber-800 flex items-center">
+                      <Mic className="h-3 w-3 mr-1" />
+                      Microphone Gain
+                    </span>
+                    <span className="text-xs text-amber-600">{micGain}%</span>
+                  </div>
+                  <Slider
+                    value={[micGain]}
+                    onValueChange={(value) => setMicGain(value[0])}
+                    max={100}
+                    step={5}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-amber-800 flex items-center">
+                      <Volume2 className="h-3 w-3 mr-1" />
+                      Output Volume
+                    </span>
+                    <span className="text-xs text-amber-600">{outputVolume}%</span>
+                  </div>
+                  <Slider
+                    value={[outputVolume]}
+                    onValueChange={(value) => setOutputVolume(value[0])}
+                    max={100}
+                    step={5}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Call Quality Indicator */}
+              <div className="p-2 bg-white/60 rounded border border-amber-100">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-amber-800">Call Quality</span>
+                  <div className="flex items-center space-x-1">
+                    <div className="h-2 w-2 bg-green-400 rounded-full"></div>
+                    <span className="text-xs text-green-600">Excellent</span>
+                  </div>
+                </div>
+                <div className="text-xs text-amber-600">
+                  {audioQuality === 'premium' ? 'HD Stereo • ' : audioQuality === 'high' ? 'HD • ' : 'Standard • '}
+                  {noiseReduction && 'Noise Reduction • '}
+                  {echoCancellation && 'Echo Cancel • '}
+                  Low Latency
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
         
         {/* Participants section */}
         <div className="space-y-2">

@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
 import WebSocket from "ws";
-import { storage } from "./storage-simple";
+import { storage } from "./storage";
 import { GameManager } from "./game/gameManager";
 import { z } from "zod";
 import * as schema from "@shared/schema";
@@ -17,6 +17,7 @@ import transactionRoutes from "./routes/transactions";
 import currencyRoutes from "./routes/currency";
 import adminRoutes from "./routes/admin";
 import botGamesRoutes from "./routes/bot-games";
+import { TransactionManager } from "./services/transactionManager";
 import { AVAILABLE_CURRENCIES } from "./routes/currency";
 import { addMinutes, addHours, addDays } from "date-fns";
 import { 
@@ -42,42 +43,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: "2023-10-16" as any,
 });
 
-// Use memory session store for development (instead of PostgreSQL)
-import { storage } from "./storage-simple";
+// Import the PostgreSQL session store
+import { sessionStore } from "./storage";
 
-// Simple JWT-based authentication for Replit environment
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.SESSION_SECRET || "bbg-game-secret-jwt-2025";
-
-// Create simple session middleware
-const sessionMiddleware = (req: any, res: any, next: any) => {
-  // Check for JWT token in cookies
-  const token = req.cookies?.['bbg-auth-token'];
-  
-  if (token) {
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      req.session = { userId: decoded.userId };
-      req.sessionID = decoded.sessionId || 'jwt-session';
-    } catch (error) {
-      // Invalid token, clear it
-      res.clearCookie('bbg-auth-token');
-      req.session = {};
-    }
-  } else {
-    req.session = {};
+// Configure the session middleware
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET || "bbg-game-secret",
+  resave: true, // Force session to be saved even when unmodified
+  saveUninitialized: true, // Force uninitialized sessions to be saved
+  store: sessionStore,
+  name: 'connect.sid', // Explicit session cookie name
+  cookie: {
+    httpOnly: true,
+    secure: false, // Set to false for development to work with http
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for longer session persistence
+    path: '/',
+    domain: undefined // Allow cookies to work across all subdomains
   }
-  
-  req.session.save = (callback: Function) => callback();
-  req.session.destroy = (callback: Function) => {
-    res.clearCookie('bbg-auth-token');
-    callback();
-  };
-  req.session.touch = () => {};
-  
-  next();
-};
+});
 
 declare module 'express-session' {
   interface SessionData {
@@ -103,10 +87,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Map to store voice chat rooms (roomId -> Map of peerId -> WebSocket)
   const voiceRooms = new Map<string, Map<string, WebSocket>>();
   
-  // Initialize WebSocket server with proper configuration
-  const wss = new WebSocketServer({ 
-    server: httpServer, 
-    path: '/api/ws'
+  // Initialize WebSocket server
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  console.log('WebSocket server initialized on path: /ws');
+  
+  // Add error handling for WebSocket server
+  wss.on('error', (error) => {
+    console.error('WebSocket server error:', error);
+  });
+  
+  // Listen for upgrade events
+  httpServer.on('upgrade', (request, socket, head) => {
+    console.log('WebSocket upgrade attempt:', request.url);
+    
+    if (request.url === '/ws') {
+      console.log('Handling WebSocket upgrade for /ws');
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    } else {
+      console.log('Ignoring upgrade for non-WebSocket path:', request.url);
+      socket.destroy();
+    }
   });
   
   // Session middleware
@@ -115,17 +117,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug session middleware to track session initialization
   app.use((req, res, next) => {
     // Skip logging for static assets and HMR requests to reduce noise
-    if (!req.path.includes('.') && !req.path.includes('__vite') && !req.path.includes('@')) {
+    if (!req.path.includes('.') && !req.path.includes('__vite')) {
       console.log(`Debug - Session check - Path: ${req.method} ${req.path} | Session ID: ${req.session.id}, User ID: ${req.session.userId || 'not logged in'}`);
-      
-      // Log headers for authentication debugging
-      if (req.path.includes('/api/')) {
-        console.log('Request headers:', {
-          cookie: req.headers.cookie,
-          origin: req.headers.origin,
-          referer: req.headers.referer
-        });
-      }
     }
     next();
   });
@@ -138,9 +131,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Authentication middleware
   const authenticate = (req: Request, res: Response, next: Function) => {
+    console.log(`Auth check - Session ID: ${req.session.id}, User ID: ${req.session.userId}, Path: ${req.path}`);
     if (!req.session.userId) {
+      console.log(`Authentication failed for ${req.path} - no userId in session`);
       return res.status(401).json({ message: "Unauthorized" });
     }
+    console.log(`Authentication successful for user ${req.session.userId} on ${req.path}`);
     // At this point, userId is guaranteed to exist
     next();
   };
@@ -176,29 +172,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
   
-  // Session bridge endpoint for cross-domain authentication
-  app.post("/api/auth/bridge", async (req, res) => {
-    try {
-      const { sessionId } = req.body;
-      if (!sessionId) {
-        return res.status(400).json({ message: "Session ID required" });
-      }
-      
-      // Set the session manually
-      req.session.id = sessionId;
-      req.session.save((err) => {
-        if (err) {
-          console.error("Session bridge error:", err);
-          return res.status(500).json({ message: "Session bridge failed" });
-        }
-        res.json({ success: true });
-      });
-    } catch (error) {
-      console.error("Session bridge error:", error);
-      res.status(500).json({ message: "Session bridge failed" });
-    }
-  });
-
   // Authentication routes
   app.post("/api/register", async (req, res) => {
     try {
@@ -345,30 +318,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       console.log(`Set session userId to ${user.id}, session ID: ${req.session.id}`);
       
-      // Create JWT token for persistent authentication
-      const token = jwt.sign(
-        { userId: user.id, sessionId: `jwt-${Date.now()}` },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-      
-      // Set JWT cookie
-      res.cookie('bbg-auth-token', token, {
-        httpOnly: false,
-        secure: false,
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/'
-      });
-      
-      console.log(`JWT token created for user ${user.id}`);
-      
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
-      console.log('User logged in:', user.id);
-      res.json({
-        ...userWithoutPassword,
-        authenticated: true
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: "Failed to create session" });
+        }
+        
+        console.log(`Session saved successfully for user ${user.id}`);
+        
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = user;
+        console.log('User logged in:', user.id);
+        res.json(userWithoutPassword);
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -385,59 +347,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // Debug endpoint to check users (temporary)
-  app.get("/api/debug/users", async (req, res) => {
+  app.get("/api/user", authenticate, async (req, res) => {
     try {
-      const users = await storage.getAllUsers();
-      const safeUsers = users.map(user => ({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        isActive: user.isActive,
-        walletBalance: user.walletBalance
-      }));
-      res.json({ users: safeUsers, count: users.length });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get("/api/user", async (req, res) => {
-    try {
-      const userId = req.session.userId;
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
       
-      console.log(`User endpoint - User ID: ${userId || 'not logged in'}`);
-      
-      if (!userId) {
-        // Clear all old cookies from previous session system
-        res.clearCookie('bbg-auth-token');
-        res.clearCookie('connect.sid');
-        res.clearCookie('bbg-session');
-        return res.status(401).json({ 
-          message: "Unauthorized",
-          action: "clear_cookies"
-        });
-      }
-      
-      const user = await storage.getUser(userId);
+      const user = await storage.getUser(req.session.userId);
       if (!user) {
-        res.clearCookie('bbg-auth-token');
-        res.clearCookie('connect.sid');
-        res.clearCookie('bbg-session');
-        return res.status(401).json({ 
-          message: "User not found",
-          action: "clear_cookies"
-        });
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "User not found" });
       }
       
       // Remove password from response
       const { password, ...userWithoutPassword } = user;
       
-      res.json({
-        ...userWithoutPassword,
-        authenticated: true
-      });
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error('Error fetching user:', error);
       res.status(500).json({ message: "Internal server error" });
@@ -908,31 +832,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isSinglePlayerGame = req.body.playWithBot === true;
       console.log('Creating game with params:', req.body);
       
-      // For bot games, validate stake amounts according to bot game settings
+      // For bot games, validate stake amounts (simplified validation for now)
       if (isSinglePlayerGame) {
-        try {
-          // Get the bot game manager from the game manager
-          const botGameManager = gameManager.getBotGameManager();
-          
-          // Validate the stake for bot games
-          const validation = await botGameManager.validateBotGameStake(
-            validatedData.stake, 
-            validatedData.currency || 'NGN'
-          );
-          
-          if (!validation.valid) {
-            return res.status(400).json({ 
-              message: validation.message || "Invalid stake for bot game" 
-            });
-          }
-          
-          // Use converted stake if provided
-          if (validation.convertedStake) {
-            validatedData.stake = validation.convertedStake;
-          }
-        } catch (error) {
-          console.error("Error validating bot game stake:", error);
-          return res.status(500).json({ message: "Failed to validate bot game stake" });
+        // Simple validation - bot games between 500 and 20,000 NGN
+        if (validatedData.stake < 500 || validatedData.stake > 20000) {
+          return res.status(400).json({ 
+            message: "Bot game stakes must be between ₦500 and ₦20,000" 
+          });
         }
       }
       
@@ -987,7 +893,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Insufficient wallet balance" });
       }
       
-      // Create game with the validated data
+      // Check for existing games with matching stake and maxPlayers (unless it's a bot game)
+      if (!isSinglePlayerGame) {
+        const existingGames = await storage.getAvailableGames(
+          validatedData.currency, 
+          validatedData.stake, 
+          validatedData.stake
+        );
+        
+        // Find a matching game that's not full
+        for (const existingGame of existingGames) {
+          if (existingGame.maxPlayers === validatedData.maxPlayers && existingGame.status === 'waiting') {
+            const players = await storage.getGamePlayers(existingGame.id);
+            if (players.length < existingGame.maxPlayers) {
+              // Check if user is already in this game
+              const userInGame = players.some(p => p.userId === req.session.userId);
+              if (!userInGame) {
+                try {
+                  // Join existing game instead of creating new one
+                  await gameManager.joinGame(existingGame.id, req.session.userId);
+                  
+                  // Get updated game data
+                  const updatedGame = await storage.getGame(existingGame.id);
+                  return res.status(200).json({
+                    ...updatedGame,
+                    message: "Joined existing game with matching stake and players"
+                  });
+                } catch (joinError) {
+                  // If joining fails, continue to try next game or create new one
+                  console.log(`Failed to join game ${existingGame.id}:`, joinError.message);
+                  continue;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // Create game with the validated data (only if no matching game found)
       const game = await gameManager.createGame(gameData, req.session.userId);
       
       res.status(201).json(game);
@@ -1002,9 +945,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/games/available", authenticate, async (req, res) => {
     try {
-      const games = await gameManager.getAvailableGames();
-      res.json(games);
+      ensureUserIdExists(req.session.userId);
+      
+      // Only get waiting games (truly available for joining)
+      const waitingGames = await gameManager.getAvailableGames();
+      
+      // Filter out games that are full (have reached maxPlayers)
+      const availableGames = [];
+      for (const game of waitingGames) {
+        const players = await storage.getGamePlayers(game.id);
+        if (players.length < game.maxPlayers) {
+          availableGames.push(game);
+        }
+      }
+      
+      console.log(`Available games fetched: ${availableGames.length} games found`);
+      availableGames.forEach(game => {
+        console.log(`Game ${game.id}: ${game.status}, ${game.maxPlayers} max players, stake: ${game.stake}`);
+      });
+      res.json(availableGames);
     } catch (error) {
+      console.error("Error fetching available games:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -1023,6 +984,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/games/:id", authenticate, async (req, res) => {
     try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
       const gameId = parseInt(req.params.id);
       
       // Validate game ID
@@ -1030,17 +994,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid game ID" });
       }
       
+      console.log(`Fetching game ${gameId} data for user ${req.session.userId}...`);
+      console.log(`Session ID: ${req.sessionID}, Auth status: authenticated`);
+      
       // Get game
       const game = await storage.getGame(gameId);
       if (!game) {
+        console.log(`Game ${gameId} not found`);
         return res.status(404).json({ message: "Game not found" });
       }
       
+      console.log(`Game ${gameId} found - status: ${game.status}`);
+      
       // Get players
       const players = await storage.getGamePlayers(gameId);
+      console.log(`Game ${gameId} has ${players.length} players`);
+      
+      // Check if the current user is a player in this game
+      const currentPlayer = players.find(p => p.userId === req.session.userId);
+      console.log(`User ${req.session.userId} player check:`, currentPlayer ? `is player ${currentPlayer.id}` : 'not a player yet');
+      
+      // For bot games, ensure the user who created the game can access it
+      if (!currentPlayer && game.creatorId === req.session.userId) {
+        console.log(`User ${req.session.userId} is the creator of bot game ${gameId}, allowing access`);
+      }
       
       // Get messages
       const messages = await storage.getGameMessages(gameId);
+      console.log(`Game ${gameId} has ${messages.length} messages`);
       
       res.json({
         game,
@@ -1048,6 +1029,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messages
       });
     } catch (error) {
+      console.error('Error fetching game data:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get game players (needed for bot game page)
+  app.get("/api/games/:id/players", authenticate, async (req, res) => {
+    try {
+      const gameId = parseInt(req.params.id);
+      if (isNaN(gameId)) {
+        return res.status(400).json({ message: "Invalid game ID" });
+      }
+      
+      const players = await storage.getGamePlayers(gameId);
+      res.json(players);
+    } catch (error) {
+      console.error('Error fetching game players:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get game messages (needed for bot game page)
+  app.get("/api/games/:id/messages", authenticate, async (req, res) => {
+    try {
+      const gameId = parseInt(req.params.id);
+      if (isNaN(gameId)) {
+        return res.status(400).json({ message: "Invalid game ID" });
+      }
+      
+      const messages = await storage.getGameMessages(gameId);
+      res.json(messages);
+    } catch (error) {
+      console.error('Error fetching game messages:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Join a game
+  app.post("/api/games/:id/join", authenticate, async (req, res) => {
+    try {
+      // Since authenticate middleware ensures userId exists, we can safely use the type guard
+      ensureUserIdExists(req.session.userId);
+      
+      const gameId = parseInt(req.params.id);
+      
+      // Validate game ID
+      if (isNaN(gameId)) {
+        return res.status(400).json({ message: "Invalid game ID" });
+      }
+      
+      console.log(`User ${req.session.userId} attempting to join game ${gameId}...`);
+      
+      // Get game
+      const game = await storage.getGame(gameId);
+      if (!game) {
+        console.log(`Game ${gameId} not found`);
+        return res.status(404).json({ message: "Game not found" });
+      }
+      
+      // Check if user is already a player
+      const existingPlayer = await storage.getGamePlayer(gameId, req.session.userId);
+      if (existingPlayer) {
+        console.log(`User ${req.session.userId} is already a player in game ${gameId}`);
+        return res.json({ message: "Already joined", player: existingPlayer });
+      }
+      
+      // Check if game has space
+      const players = await storage.getGamePlayers(gameId);
+      if (players.length >= game.maxPlayers) {
+        return res.status(400).json({ message: "Game is full" });
+      }
+      
+      // Check if game is still waiting
+      if (game.status !== 'waiting') {
+        return res.status(400).json({ message: "Game has already started" });
+      }
+      
+      // Get user and check balance
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      if (user.walletBalance < game.stake) {
+        return res.status(400).json({ message: "Insufficient wallet balance" });
+      }
+      
+      // Add player to game
+      const player = await storage.createGamePlayer({
+        gameId,
+        userId: req.session.userId,
+        turnOrder: players.length + 1,
+      });
+      
+      // Deduct stake from user's balance
+      await storage.updateUserBalance(
+        req.session.userId,
+        user.walletBalance - game.stake
+      );
+      
+      // Create a stake transaction
+      await storage.createTransaction({
+        userId: req.session.userId,
+        amount: game.stake,
+        type: "stake",
+        status: "completed",
+        reference: `game-${game.id}-stake`,
+      });
+      
+      console.log(`User ${req.session.userId} successfully joined game ${gameId}`);
+      
+      // Check if game is now full and should start
+      const updatedPlayers = await storage.getGamePlayers(gameId);
+      console.log(`Game ${gameId}: ${updatedPlayers.length}/${game.maxPlayers} players after join`);
+      
+      if (updatedPlayers.length === game.maxPlayers) {
+        console.log(`Starting game ${gameId} - full capacity reached via join`);
+        // Update game status to start the game
+        await storage.updateGameStatus(gameId, "in_progress");
+      }
+      
+      res.json({ message: "Joined game successfully", player });
+    } catch (error) {
+      console.error('Error joining game:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -1152,6 +1257,275 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+
+  // NEW CLEAN Roll Stone Endpoint - Big Boys Game
+  app.post("/api/games/:id/roll", authenticate, async (req, res) => {
+    try {
+      const gameId = parseInt(req.params.id);
+      const userId = req.session.userId!;
+
+      console.log(`🎲 NEW ENDPOINT: User ${userId} rolling stone in game ${gameId}`);
+
+      // Get game
+      const game = await storage.getGame(gameId);
+      if (!game) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+
+      // Get players
+      const players = await storage.getGamePlayers(gameId);
+      const gamePlayer = players.find(p => p.userId === userId);
+      
+      // Basic validations
+      if (!gamePlayer) {
+        return res.status(403).json({ error: "You are not a player in this game" });
+      }
+
+      if (gamePlayer.rolledNumber !== null) {
+        return res.status(400).json({ error: "You have already rolled" });
+      }
+
+      if (players.length < 2) {
+        return res.status(400).json({ error: "Not enough players to start the game" });
+      }
+
+      // Generate random Big Boys Game stone value
+      const stones = [1, 2, 3, 4, 5, 6, 500, 1000, 3355, 6624];
+      const rolledNumber = stones[Math.floor(Math.random() * stones.length)];
+      
+      console.log(`✅ User ${userId} rolled: ${rolledNumber}`);
+
+      // Update player's roll
+      await storage.updateGamePlayerRoll(gamePlayer.id, rolledNumber);
+
+      // Check if this is a bot game and auto-roll for computer if needed
+      let updatedPlayers = await storage.getGamePlayers(gameId);
+      const isBotGame = updatedPlayers.some(p => p.user.username === "Computer");
+      
+      if (isBotGame && updatedPlayers.length === 2) {
+        const computerPlayer = updatedPlayers.find(p => p.user.username === "Computer");
+        const humanPlayer = updatedPlayers.find(p => p.user.username !== "Computer");
+        
+        // If human just rolled and computer hasn't rolled yet
+        if (computerPlayer && computerPlayer.rolledNumber === null && humanPlayer && humanPlayer.rolledNumber !== null) {
+          console.log(`🤖 Auto-rolling for computer player in game ${gameId} (10 second delay)`);
+          
+          // Don't update players here since computer will roll in 10 seconds
+          // This prevents immediate completion below
+          
+          // Add 10 second delay for better user experience
+          setTimeout(async () => {
+            try {
+              // Announce computer is thinking
+              await storage.createMessage({
+                gameId,
+                userId: computerPlayer.userId,
+                content: `Computer is analyzing the game...`,
+                type: "system",
+              });
+              
+              // Generate computer's roll
+              const computerRoll = stones[Math.floor(Math.random() * stones.length)];
+              await storage.updateGamePlayerRoll(computerPlayer.id, computerRoll);
+              
+              console.log(`🤖 Computer rolled: ${computerRoll}`);
+              
+              // Create system message for computer's roll
+              await storage.createMessage({
+                gameId,
+                userId: computerPlayer.userId,
+                content: `Computer rolled ${computerRoll}!`,
+                type: "system",
+              });
+              
+              // Check if game should complete after computer roll
+              const finalPlayers = await storage.getGamePlayers(gameId);
+              const allPlayersRolled = finalPlayers.every(p => p.rolledNumber !== null);
+              
+              if (allPlayersRolled) {
+                // Determine winner(s) - highest number wins
+                const maxNumber = Math.max(...finalPlayers.map(p => p.rolledNumber!));
+                const winners = finalPlayers.filter(p => p.rolledNumber === maxNumber);
+                const winnerIds = winners.map(w => w.userId);
+                
+                // Get game for commission calculation
+                const currentGame = await storage.getGame(gameId);
+                if (currentGame) {
+                  // Calculate prize distribution with admin commission
+                  const totalPot = currentGame.stakePot;
+                  const commissionAmount = Math.floor(totalPot * currentGame.commissionPercentage);
+                  const prizePool = totalPot - commissionAmount;
+                  const prizePerWinner = Math.floor(prizePool / winners.length);
+
+                  // Update winners and distribute prizes
+                  for (const winner of winners) {
+                    await storage.markPlayerAsWinner(gameId, winner.userId, prizePerWinner);
+                    const user = await storage.getUser(winner.userId);
+                    if (user) {
+                      await storage.updateUserBalance(winner.userId, user.walletBalance + prizePerWinner);
+                    }
+
+                    // Create transaction record for winnings
+                    await storage.createTransaction({
+                      userId: winner.userId,
+                      type: 'game_win',
+                      amount: prizePerWinner,
+                      currency: currentGame.currency,
+                      status: 'completed',
+                      description: `Won Game #${gameId} with roll ${maxNumber}`,
+                      gameId: gameId
+                    });
+                  }
+
+                  // Record admin commission if there's an admin user
+                  if (commissionAmount > 0) {
+                    try {
+                      const adminUser = await storage.getUserByUsername('admin');
+                      if (adminUser) {
+                        await storage.updateUserBalance(adminUser.id, adminUser.walletBalance + commissionAmount);
+                        await storage.createTransaction({
+                          userId: adminUser.id,
+                          type: 'commission',
+                          amount: commissionAmount,
+                          currency: currentGame.currency,
+                          status: 'completed',
+                          description: `Commission from Game #${gameId}`,
+                          gameId: gameId
+                        });
+                      }
+                    } catch (error) {
+                      console.error('Error recording admin commission:', error);
+                    }
+                  }
+
+                  // End the game
+                  await storage.updateGameWinners(gameId, winnerIds, maxNumber);
+                  await storage.updateGameStatus(gameId, 'completed');
+                  
+                  // Announce the winner
+                  const winnerNames = [];
+                  for (const winnerId of winnerIds) {
+                    const winner = await storage.getUser(winnerId);
+                    if (winner) {
+                      winnerNames.push(winner.username);
+                    }
+                  }
+                  
+                  const winnerMessage = winnerNames.length === 1 
+                    ? `🏆 ${winnerNames[0]} wins with stone ${maxNumber}! Prize: ₦${prizePerWinner}`
+                    : `🏆 Tie! Winners: ${winnerNames.join(', ')} with stone ${maxNumber}! Prize each: ₦${prizePerWinner}`;
+                  
+                  await storage.createMessage({
+                    gameId,
+                    userId: computerPlayer.userId,
+                    content: winnerMessage,
+                    type: "system",
+                  });
+
+                  console.log(`🎉 Game #${gameId} completed after 10s delay! Winners: ${winnerIds.join(', ')} with roll ${maxNumber}. Prize per winner: ${prizePerWinner}, Commission: ${commissionAmount}`);
+                }
+              }
+            } catch (error) {
+              console.error('Error in delayed computer roll:', error);
+            }
+          }, 10000); // 10 second delay
+          
+          // Don't update players here since computer will roll in 10 seconds
+          // Return early to prevent immediate completion below
+          res.json({ 
+            message: "Roll submitted successfully. Computer will roll in 10 seconds.",
+            rolledNumber,
+            gameStatus: game.status
+          });
+          return;
+        }
+      }
+
+      // For bot games, don't complete immediately - the computer needs time to roll
+      // Only complete non-bot multiplayer games immediately
+      const allRolled = updatedPlayers.every(p => p.rolledNumber !== null);
+
+      if (allRolled && !isBotGame) {
+        // Complete multiplayer games immediately
+        const maxNumber = Math.max(...updatedPlayers.map(p => p.rolledNumber!));
+        const winners = updatedPlayers.filter(p => p.rolledNumber === maxNumber);
+        const winnerIds = winners.map(w => w.userId);
+
+        // Calculate prize distribution with admin commission
+        const totalPot = game.stakePot;
+        const commissionAmount = Math.floor(totalPot * game.commissionPercentage);
+        const prizePool = totalPot - commissionAmount;
+        const prizePerWinner = Math.floor(prizePool / winners.length);
+
+        // Update winners and distribute prizes
+        for (const winner of winners) {
+          await storage.markPlayerAsWinner(gameId, winner.userId, prizePerWinner);
+          const user = await storage.getUser(winner.userId);
+          if (user) {
+            const oldBalance = user.walletBalance;
+            const newBalance = oldBalance + prizePerWinner;
+            await storage.updateUserBalance(winner.userId, newBalance);
+            console.log(`💰 Winner ${winner.userId} balance updated: ₦${oldBalance} → ₦${newBalance} (+₦${prizePerWinner})`);
+          }
+
+          // Create transaction record for winnings
+          await storage.createTransaction({
+            userId: winner.userId,
+            type: 'winnings',
+            amount: prizePerWinner,
+            currency: game.currency || 'NGN',
+            status: 'completed',
+            reference: `game-${gameId}-winnings-${winner.userId}`,
+            description: `Won Game #${gameId} with roll ${maxNumber}`
+          });
+          console.log(`📝 Winnings transaction created for user ${winner.userId}: ₦${prizePerWinner}`);
+        }
+
+        // Record admin commission
+        if (commissionAmount > 0) {
+          try {
+            const adminUser = await storage.getUserByUsername('admin');
+            if (adminUser) {
+              const oldAdminBalance = adminUser.walletBalance;
+              const newAdminBalance = oldAdminBalance + commissionAmount;
+              await storage.updateUserBalance(adminUser.id, newAdminBalance);
+              console.log(`🏦 Admin commission: ₦${oldAdminBalance} → ₦${newAdminBalance} (+₦${commissionAmount})`);
+              
+              await storage.createTransaction({
+                userId: adminUser.id,
+                type: 'commission',
+                amount: commissionAmount,
+                currency: game.currency || 'NGN',
+                status: 'completed',
+                reference: `game-${gameId}-commission`,
+                description: `Commission from Game #${gameId}`
+              });
+              console.log(`📝 Admin commission transaction created: ₦${commissionAmount}`);
+            } else {
+              console.error('❌ Admin user not found for commission payment');
+            }
+          } catch (error) {
+            console.error('Error recording admin commission:', error);
+          }
+        }
+
+        // End the game
+        await storage.updateGameWinners(gameId, winnerIds, maxNumber);
+        await storage.updateGameStatus(gameId, 'completed');
+
+        console.log(`🎉 Multiplayer Game #${gameId} completed! Winners: ${winnerIds.join(', ')} with roll ${maxNumber}`);
+      }
+
+      res.json({ 
+        message: "Roll submitted successfully",
+        rolledNumber,
+        allPlayersRolled: allRolled
+      });
+    } catch (error) {
+      console.error('Error processing roll:', error);
+      res.status(500).json({ error: "Failed to process roll" });
+    }
+  });
   
   // Transaction routes
   // Stripe payment intent endpoint
@@ -1211,23 +1585,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get payment amount in currency (Naira)
         const amount = paymentIntent.amount / 100;
         
-        // Create transaction record
-        const transaction = await storage.createTransaction({
+        // Process deposit using unified TransactionManager
+        const result = await TransactionManager.processDeposit(
           userId,
           amount,
-          type: "deposit",
-          status: "completed",
-          reference: paymentIntent.id,
-        });
+          paymentIntent.id,
+          'stripe'
+        );
         
-        // Update user balance
-        const user = await storage.getUser(userId);
-        if (user) {
-          await storage.updateUserBalance(
-            userId,
-            user.walletBalance + amount
-          );
+        if (!result.success) {
+          console.error('Stripe webhook deposit failed:', result.error);
+          return res.status(400).json({ error: result.error });
         }
+        
+        console.log(`✅ Stripe payment processed: User ${userId}, Amount: ₦${amount}`);
       }
       
       res.json({ received: true });
@@ -1237,10 +1608,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Legacy deposit endpoint for demo/simulated deposits
+  // Streamlined deposit endpoint
   app.post("/api/transactions/deposit", authenticate, async (req, res) => {
     try {
-      // Since authenticate middleware ensures userId exists, we can safely use the type guard
       ensureUserIdExists(req.session.userId);
       
       const { amount, usePaystack } = req.body;
@@ -1250,7 +1620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid amount" });
       }
       
-      // Get user for email (needed for Paystack)
+      // Get user for email validation when using Paystack
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         return res.status(401).json({ message: "User not found" });
@@ -1274,45 +1644,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
             success: true,
             authorizationUrl: paymentResult.authorizationUrl,
             reference: paymentResult.reference,
-            message: "Payment initialized. Redirect to the authorization URL to complete payment."
+            message: "Payment initialized. Complete payment to credit your wallet."
           });
         }
       }
       
-      // If not using Paystack or using quick deposit fallback
-      const paymentResult = await paymentProcessing.processDeposit(
-        req.session.userId, 
-        amount
+      // Process quick deposit using unified TransactionManager
+      const result = await TransactionManager.processDeposit(
+        req.session.userId,
+        amount,
+        `quick-${Date.now()}`,
+        'quick_deposit'
       );
       
-      if (!paymentResult.success) {
-        return res.status(400).json({ message: paymentResult.message });
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
       }
       
-      // Create transaction
-      const transaction = await storage.createTransaction({
-        userId: req.session.userId,
-        amount,
-        type: "deposit",
-        status: "completed",
-        reference: paymentResult.reference,
-        currency: "NGN",
-        description: `Quick deposit of ${amount} NGN`,
-        paymentMethod: "quick_deposit",
-        paymentDetails: { source: "demo" }
-      });
-      
-      // Update user balance
-      const updatedUser = await storage.updateUserBalance(
-        req.session.userId,
-        user.walletBalance + amount
-      );
-      
       res.json({
-        transaction,
-        newBalance: updatedUser.walletBalance
+        success: true,
+        transaction: result.transaction,
+        newBalance: result.newBalance,
+        message: "Deposit completed successfully"
       });
     } catch (error) {
+      console.error('Deposit error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -1320,34 +1676,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Demo deposit (for testing only)
   app.post("/api/transactions/demo-deposit", authenticate, async (req, res) => {
     try {
-      // Since authenticate middleware ensures userId exists, we can safely use the type guard
       ensureUserIdExists(req.session.userId);
       
       const amount = 100000; // ₦100,000 demo amount
       
-      // Create transaction
-      const transaction = await storage.createTransaction({
-        userId: req.session.userId,
-        amount,
-        type: "deposit",
-        status: "completed",
-        reference: `demo-${Date.now()}`,
-      });
-      
-      // Update user balance
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-      
-      const updatedUser = await storage.updateUserBalance(
+      // Process demo deposit using unified TransactionManager
+      const result = await TransactionManager.processDeposit(
         req.session.userId,
-        user.walletBalance + amount
+        amount,
+        `demo-${Date.now()}`,
+        'quick_deposit'
       );
       
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+      
       res.json({
-        transaction,
-        newBalance: updatedUser.walletBalance,
+        success: true,
+        transaction: result.transaction,
+        newBalance: result.newBalance,
         message: "Demo funds added successfully"
       });
     } catch (error) {
@@ -1356,9 +1704,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Streamlined withdrawal endpoint
   app.post("/api/transactions/withdraw", authenticate, async (req, res) => {
     try {
-      // Since authenticate middleware ensures userId exists, we can safely use the type guard
       ensureUserIdExists(req.session.userId);
       
       const { amount, bankCode, accountNumber, accountName, usePaystack } = req.body;
@@ -1368,19 +1716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid amount" });
       }
       
-      // Check if user has enough balance
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-      
-      if (user.walletBalance < amount) {
-        return res.status(400).json({ message: "Insufficient wallet balance" });
-      }
-      
-      let withdrawalResult;
-      
-      // If using Paystack for real transfers, verify bank details first
+      // If using Paystack for real transfers
       if (usePaystack && bankCode && accountNumber) {
         const bankDetails = {
           accountNumber,
@@ -1389,147 +1725,237 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
         
         // Process withdrawal using Paystack
-        withdrawalResult = await paymentProcessing.processWithdrawal(
+        const paymentResult = await paymentProcessing.processWithdrawal(
           req.session.userId, 
           amount, 
           bankDetails
         );
         
-        if (!withdrawalResult.success) {
-          return res.status(400).json({ message: withdrawalResult.message });
+        if (!paymentResult.success) {
+          return res.status(400).json({ message: paymentResult.message });
         }
         
-        // Create pending transaction for Paystack withdrawal
-        const transaction = await storage.createTransaction({
-          userId: req.session.userId,
-          amount,
-          type: "withdrawal",
-          status: "pending", // Set to pending initially, will be updated on webhook callback
-          reference: withdrawalResult.reference,
-          currency: "NGN",
-          withdrawalMethod: "bank_transfer",
-          bankDetails: bankDetails,
-          paymentDetails: { provider: "paystack" }
-        });
-        
-        // Update user balance immediately to prevent double spending
-        const updatedUser = await storage.updateUserBalance(
+        // Process Paystack withdrawal using unified TransactionManager
+        const result = await TransactionManager.processWithdrawal(
           req.session.userId,
-          user.walletBalance - amount
+          amount,
+          paymentResult.reference,
+          bankDetails,
+          'paystack_transfer'
         );
         
+        if (!result.success) {
+          return res.status(400).json({ message: result.error });
+        }
+        
         return res.json({
-          transaction,
-          newBalance: updatedUser.walletBalance,
+          success: true,
+          transaction: result.transaction,
+          newBalance: result.newBalance,
           message: "Withdrawal initiated. You will be notified once processed."
         });
       }
       
-      // Fallback to demo withdrawal when not using Paystack
-      withdrawalResult = await paymentProcessing.processWithdrawal(
-        req.session.userId, 
-        amount
+      // Process quick withdrawal using unified TransactionManager
+      const result = await TransactionManager.processWithdrawal(
+        req.session.userId,
+        amount,
+        `quick-${Date.now()}`,
+        null,
+        'quick_withdrawal'
       );
       
-      if (!withdrawalResult.success) {
-        return res.status(400).json({ message: withdrawalResult.message });
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
       }
       
-      // Create transaction for demo withdrawal
-      const transaction = await storage.createTransaction({
-        userId: req.session.userId,
-        amount,
-        type: "withdrawal",
-        status: "completed",
-        reference: withdrawalResult.reference,
-        currency: "NGN",
-        description: `Withdrawal of ${amount} NGN to bank account`
-      });
-      
-      // Update user balance
-      const updatedUser = await storage.updateUserBalance(
-        req.session.userId,
-        user.walletBalance - amount
-      );
-      
       res.json({
-        transaction,
-        newBalance: updatedUser.walletBalance
+        success: true,
+        transaction: result.transaction,
+        newBalance: result.newBalance,
+        message: "Withdrawal completed successfully"
       });
     } catch (error) {
+      console.error('Withdrawal error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
   
+  // Get user transactions
   app.get("/api/transactions", authenticate, async (req, res) => {
     try {
-      // Since authenticate middleware ensures userId exists, we can safely use the type guard
       ensureUserIdExists(req.session.userId);
       
       const transactions = await storage.getUserTransactions(req.session.userId);
       res.json(transactions);
     } catch (error) {
+      console.error('Get transactions error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Admin endpoint to reverse failed transactions
+  app.post("/api/admin/transactions/:id/reverse", authenticateAdmin, async (req, res) => {
+    try {
+      const transactionId = parseInt(req.params.id);
+      const { reason } = req.body;
+      
+      if (!reason) {
+        return res.status(400).json({ message: "Reason is required for transaction reversal" });
+      }
+      
+      const result = await TransactionManager.reverseTransaction(transactionId, reason);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json({
+        success: true,
+        message: "Transaction reversed successfully"
+      });
+    } catch (error) {
+      console.error('Transaction reversal error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Admin endpoint to complete pending transactions
+  app.post("/api/admin/transactions/:id/complete", authenticateAdmin, async (req, res) => {
+    try {
+      const transactionId = parseInt(req.params.id);
+      
+      const result = await TransactionManager.completeTransaction(transactionId);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json({
+        success: true,
+        message: "Transaction completed successfully"
+      });
+    } catch (error) {
+      console.error('Transaction completion error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
   
-  // WebSocket connection handling with proper session parsing
+  // WebSocket connection handling with session authentication
   wss.on('connection', (ws, req) => {
     let userId: number | null = null;
     let gameId: number | null = null;
     
-    console.log('WebSocket connection attempt from:', req.url);
-    console.log('WebSocket headers:', req.headers.cookie);
+    console.log('WebSocket connection established successfully');
+    console.log('WebSocket headers:', req.headers.cookie ? 'Cookie present' : 'No cookie');
     
-    // Simplified session extraction using cookie parsing
-    const getSessionData = () => {
-      return new Promise<number | null>((resolve) => {
-        console.log('WebSocket connection headers:', req.headers.cookie);
-        
-        // Apply session middleware to parse the session
-        sessionMiddleware(req as any, {} as any, () => {
-          const session = (req as any).session;
-          console.log('WebSocket session parsed:', {
-            sessionId: session?.id,
-            userId: session?.userId
-          });
-          
-          resolve(session?.userId || null);
-        });
-      });
-    };
-    
-    // Initial authentication
-    getSessionData().then(sessionUserId => {
-      if (sessionUserId) {
-        userId = sessionUserId;
-        console.log(`WebSocket authenticated for user ${userId}`);
-        
-        // Send authentication success message
-        ws.send(JSON.stringify({
-          type: 'auth_success',
-          payload: { userId }
-        }));
-      } else {
-        console.log('WebSocket authentication failed - no session userId');
-        
-        // Send authentication failure message
-        ws.send(JSON.stringify({
-          type: 'auth_failed',
-          payload: { message: 'Not authenticated' }
-        }));
-      }
-    }).catch(error => {
-      console.error('WebSocket session parsing error:', error);
+    // Defer authentication - allow connection but require auth for actions
+    try {
       ws.send(JSON.stringify({
-        type: 'auth_error',
-        payload: { message: 'Session parsing failed' }
+        type: 'connection_established',
+        payload: { message: 'Connected, please authenticate' }
       }));
-    });
+      console.log('WebSocket connection_established message sent');
+    } catch (error) {
+      console.error('Error sending connection_established message:', error);
+    }
     
     ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
+        
+        // Handle authentication request
+        if (data.type === 'authenticate') {
+          console.log('Received authenticate request');
+          const cookieHeader = req.headers.cookie;
+          console.log('Cookie header:', cookieHeader ? 'Present' : 'Missing');
+          
+          if (!cookieHeader) {
+            console.log('No cookie header found');
+            ws.send(JSON.stringify({
+              type: 'auth_failed',
+              payload: { message: 'No session cookie found' }
+            }));
+            return;
+          }
+
+          // Parse session ID from cookies
+          const cookiePairs = cookieHeader.split(';').map(cookie => cookie.trim());
+          let sessionId = null;
+          
+          console.log('Parsing cookies:', cookiePairs);
+          
+          for (const pair of cookiePairs) {
+            const [name, value] = pair.split('=');
+            if (name === 'connect.sid') {
+              let decodedValue = decodeURIComponent(value);
+              console.log('Found session cookie, raw value:', decodedValue);
+              
+              if (decodedValue.startsWith('s:')) {
+                decodedValue = decodedValue.substring(2);
+                const parts = decodedValue.split('.');
+                if (parts.length >= 2) {
+                  sessionId = parts[0];
+                  console.log('Extracted signed session ID:', sessionId);
+                }
+              } else {
+                sessionId = decodedValue;
+                console.log('Using unsigned session ID:', sessionId);
+              }
+              break;
+            }
+          }
+
+          if (!sessionId) {
+            console.log('Failed to extract session ID');
+            ws.send(JSON.stringify({
+              type: 'auth_failed',
+              payload: { message: 'Invalid session cookie' }
+            }));
+            return;
+          }
+
+          // Lookup session in store
+          console.log('Looking up session in store:', sessionId);
+          sessionStore.get(sessionId, (err: any, sessionData: any) => {
+            if (err) {
+              console.error('Session store error:', err);
+              ws.send(JSON.stringify({
+                type: 'auth_failed',
+                payload: { message: 'Session store error' }
+              }));
+            } else if (!sessionData) {
+              console.log('No session data found');
+              ws.send(JSON.stringify({
+                type: 'auth_failed',
+                payload: { message: 'Session not found' }
+              }));
+            } else if (!sessionData.userId) {
+              console.log('Session found but no userId:', sessionData);
+              ws.send(JSON.stringify({
+                type: 'auth_failed',
+                payload: { message: 'Session has no user ID' }
+              }));
+            } else {
+              userId = sessionData.userId;
+              console.log(`WebSocket authenticated successfully for user ${userId}`);
+              ws.send(JSON.stringify({
+                type: 'auth_success',
+                payload: { userId: userId }
+              }));
+            }
+          });
+          return;
+        }
+        
+        // Require authentication for all other messages
+        if (!userId) {
+          ws.send(JSON.stringify({
+            type: 'error',
+            payload: { message: 'Authentication required' }
+          }));
+          return;
+        }
         
         // Handle voice chat messages
         if (data.type === 'join_voice') {

@@ -280,6 +280,12 @@ let lotterySettings = {
   activatedThisMonth: false
 };
 
+// Export function to get current lottery status
+export const getCurrentLotteryStatus = () => {
+  checkMonthlyReset();
+  return lotterySettings;
+};
+
 // Reset lottery permission at start of new month
 const checkMonthlyReset = () => {
   if (lotterySettings.lastActivated) {

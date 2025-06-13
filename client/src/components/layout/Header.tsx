@@ -60,7 +60,7 @@ const Header = ({ user }: HeaderProps) => {
         </div>
         
         <div className="flex items-center space-x-2 sm:space-x-4">
-          <WalletButton balance={user.walletBalance} />
+          <WalletButton balance={user.walletBalance} currency={user.preferredCurrency || 'NGN'} />
           
           {/* Mobile Menu Button */}
           <Button

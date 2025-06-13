@@ -6,7 +6,8 @@ import {
   transactions, Transaction, InsertTransaction,
   GameStatus
 } from "@shared/schema";
-// Import database conditionally to prevent crashes when DATABASE_URL is missing
+import { db } from "./db";
+import { eq, desc, gte, and, inArray, sql } from "drizzle-orm";
 
 // Interface for all storage operations
 export interface IStorage {
@@ -603,12 +604,11 @@ export class MemStorage implements IStorage {
 }
 
 // DatabaseStorage implementation
-import { eq, desc, gte, and, inArray, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    if (!db) throw new Error("Database not available");
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
@@ -1618,5 +1618,4 @@ export const sessionStore = new PostgresSessionStore({
 });
 
 // Use the database implementation
-// Use DatabaseStorage if DATABASE_URL is available, otherwise use MemStorage
-export const storage = process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage();
+export const storage = new DatabaseStorage();

@@ -32,12 +32,12 @@ export default function AdminDashboard() {
   }
   
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex items-center justify-between mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold">Admin Dashboard</h1>
       </div>
       
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center text-lg">
@@ -78,16 +78,16 @@ export default function AdminDashboard() {
         </Card>
       </div>
       
-      <div className="mt-8 grid gap-6 grid-cols-1 lg:grid-cols-2">
+      <div className="mt-6 sm:mt-8 grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Clock className="h-5 w-5 mr-2" />
+            <CardTitle className="flex items-center text-base sm:text-lg">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
               Recent Activity
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-[250px] sm:h-[300px]">
               <div className="space-y-4">
                 <div className="flex items-start pb-4 border-b">
                   <div className="w-2 h-2 mt-1 rounded-full bg-green-500 mr-3"></div>

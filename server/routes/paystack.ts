@@ -95,23 +95,21 @@ router.get('/verify', async (req: Request, res: Response) => {
     // Convert amount from kobo to naira
     const amount = paymentDetails.amount / 100;
     
-    // Record the transaction
-    await storage.createTransaction({
-      userId: Number(userId),
+    // Process deposit using unified TransactionManager
+    const { TransactionManager } = await import('../services/transactionManager');
+    const result = await TransactionManager.processDeposit(
+      Number(userId),
       amount,
-      type: 'deposit',
-      status: 'completed',
-      currency: 'NGN',
-      reference: ref,
-      bankDetails: {
-        paymentProvider: 'paystack',
-        paymentMethod: paymentDetails.channel || 'card',
-        paymentId: paymentDetails.id,
-      }
-    });
+      ref,
+      'paystack'
+    );
     
-    // Update user's wallet balance
-    await storage.updateUserBalance(Number(userId), user.walletBalance + amount);
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to process deposit'
+      });
+    }
     
     // Redirect to success page
     res.redirect(`/?payment=success&amount=${amount}`);
@@ -171,51 +169,34 @@ router.post('/webhook', async (req: Request, res: Response) => {
     // Handle different event types
     switch (event.event) {
       case 'charge.success':
-        // Process successful charge
+        // Process successful charge using unified TransactionManager
         if (userId) {
-          const user = await storage.getUser(Number(userId));
+          const { TransactionManager } = await import('../services/transactionManager');
           
-          if (user) {
-            if (transactionId) {
-              // Update existing transaction
-              log(`Updating existing transaction ${transactionId} to completed`, 'paystack');
-              await storage.updateTransactionStatus(transactionId, 'completed');
-              
-              // If this transaction was already processed, don't double-credit the user
-              const transaction = await storage.getTransaction(transactionId);
-              if (transaction && transaction.status !== 'completed') {
-                // Update user's wallet balance
-                await storage.updateUserBalance(Number(userId), user.walletBalance + amount);
-                log(`Updated user ${user.username} balance: +${amount} ${data.currency || 'NGN'}`, 'paystack');
-              }
+          if (transactionId) {
+            // Complete existing pending transaction
+            log(`Completing existing transaction ${transactionId}`, 'paystack');
+            const result = await TransactionManager.completeTransaction(transactionId);
+            
+            if (result.success) {
+              log(`Transaction ${transactionId} completed successfully`, 'paystack');
             } else {
-              // Create new transaction record
-              const newTransaction = await storage.createTransaction({
-                userId: Number(userId),
-                amount,
-                type: 'deposit',
-                status: 'completed',
-                currency: data.currency || 'NGN',
-                reference,
-                description: `Paystack payment via ${data.channel || 'card'}`,
-                paymentDetails: JSON.stringify({
-                  provider: 'paystack',
-                  method: data.channel || 'card',
-                  paymentId: data.id,
-                  customerCode: data.customer?.customer_code,
-                  email: data.customer?.email,
-                  authorizationCode: data.authorization?.authorization_code,
-                  cardLast4: data.authorization?.last4,
-                  cardType: data.authorization?.card_type
-                })
-              });
-              
-              // Update user's wallet balance
-              await storage.updateUserBalance(Number(userId), user.walletBalance + amount);
-              log(`Created new transaction and updated user ${user.username} balance: +${amount} ${data.currency || 'NGN'}`, 'paystack');
+              log(`Failed to complete transaction ${transactionId}: ${result.error}`, 'paystack');
             }
           } else {
-            log(`User with ID ${userId} not found for transaction ${reference}`, 'paystack');
+            // Process new deposit
+            const result = await TransactionManager.processDeposit(
+              Number(userId),
+              amount,
+              reference,
+              'paystack'
+            );
+            
+            if (result.success) {
+              log(`New Paystack deposit processed: User ${userId}, Amount: ₦${amount}`, 'paystack');
+            } else {
+              log(`Failed to process Paystack deposit: ${result.error}`, 'paystack');
+            }
           }
         } else {
           log(`No user ID found in metadata for transaction ${reference}`, 'paystack');
@@ -223,28 +204,25 @@ router.post('/webhook', async (req: Request, res: Response) => {
         break;
       
       case 'charge.failed':
-        // Process failed charge
-        if (transactionId) {
-          log(`Marking transaction ${transactionId} as failed`, 'paystack');
-          await storage.updateTransactionStatus(transactionId, 'failed');
-        } else if (userId) {
-          // Create a record of the failed transaction
-          await storage.createTransaction({
-            userId: Number(userId),
-            amount,
-            type: 'deposit',
-            status: 'failed',
-            currency: data.currency || 'NGN',
-            reference,
-            description: `Failed Paystack payment via ${data.channel || 'card'}: ${data.gateway_response || 'Payment failed'}`,
-            paymentDetails: JSON.stringify({
-              provider: 'paystack',
-              method: data.channel || 'card',
-              failureReason: data.gateway_response,
-              paymentId: data.id
-            })
-          });
-          log(`Created record of failed transaction for user ${userId}`, 'paystack');
+        // Process failed charge using unified TransactionManager
+        if (userId) {
+          const { TransactionManager } = await import('../services/transactionManager');
+          
+          if (transactionId) {
+            // Reverse existing pending transaction
+            const result = await TransactionManager.reverseTransaction(
+              transactionId, 
+              `Payment failed: ${data.gateway_response || 'Payment failed'}`
+            );
+            
+            if (result.success) {
+              log(`Transaction ${transactionId} reversed due to payment failure`, 'paystack');
+            } else {
+              log(`Failed to reverse transaction ${transactionId}: ${result.error}`, 'paystack');
+            }
+          } else {
+            log(`Failed payment recorded for user ${userId}: ${reference}`, 'paystack');
+          }
         }
         break;
       

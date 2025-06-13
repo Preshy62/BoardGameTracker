@@ -77,6 +77,7 @@ const ProfileEditForm = ({ user, onCancel, onSuccess }: ProfileEditFormProps) =>
       avatarInitials: user.avatarInitials || user.username.substring(0, 2).toUpperCase(),
       emailNotifications: user.emailNotifications || false,
       countryCode: user.countryCode || 'NG', // Default to Nigeria if not set
+      preferredCurrency: user.preferredCurrency || 'NGN',
     },
   });
 
@@ -158,7 +159,9 @@ const ProfileEditForm = ({ user, onCancel, onSuccess }: ProfileEditFormProps) =>
   // Form submission handler
   const onSubmit = (values: ProfileFormValues) => {
     try {
+      console.log('Profile form submission started');
       console.log('Form values to submit:', values);
+      console.log('Current user data:', user);
       
       // If currency update prompt is shown and country changed
       if (showCurrencyUpdatePrompt) {

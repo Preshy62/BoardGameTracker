@@ -186,7 +186,7 @@ The platform features a unique monthly lottery system:
 
 - **Admin Control**: Only admins can activate multipliers
 - **Limited Use**: Once per calendar month
-- **Multiplier Options**: 2x or 3x for all multiplayer games
+- **Multiplier Options**: 2x or 3x for all single player games
 - **Automatic Reset**: Permission resets monthly
 - **Player Visibility**: Clear notifications when active
 

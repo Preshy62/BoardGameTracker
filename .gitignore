@@ -54,3 +54,16 @@ replit.nix
 # Lock files (keep package-lock.json but ignore others)
 yarn.lock
 pnpm-lock.yaml
+
+# Production deployment files that should not be committed
+.env.production
+ecosystem.config.js
+
+# PM2 logs
+logs/
+.pm2/
+
+# SSL certificates
+*.pem
+*.crt
+*.key

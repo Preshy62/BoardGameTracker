@@ -19,30 +19,49 @@ export function useWebSocket() {
 
     setIsConnecting(true);
     const wsUrl = getWebSocketUrl();
+    console.log('Attempting WebSocket connection to:', wsUrl);
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-      console.log('WebSocket connected successfully to:', wsUrl);
+      console.log('WebSocket connected successfully');
       setIsConnected(true);
       setIsConnecting(false);
       setError(null);
+      
+      // Send authentication request immediately after connection
+      socket.send(JSON.stringify({
+        type: 'authenticate',
+        payload: {}
+      }));
     };
 
-    socket.onclose = (event) => {
-      console.log('WebSocket closed:', event.code, event.reason);
+    socket.onclose = () => {
       setIsConnected(false);
       setIsConnecting(false);
     };
 
     socket.onerror = (event) => {
-      console.error('WebSocket error:', event);
-      setError(new Error(`WebSocket connection failed to ${wsUrl}`));
+      setError(new Error('WebSocket error'));
       setIsConnecting(false);
     };
 
     socket.onmessage = (event) => {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
+        
+        // Handle authentication and connection messages
+        if (message.type === 'connection_established') {
+          console.log('WebSocket connection established, authenticating...');
+        } else if (message.type === 'auth_success') {
+          console.log('WebSocket authentication successful for user:', message.payload.userId);
+        } else if (message.type === 'auth_failed') {
+          console.warn('WebSocket authentication failed:', message.payload.message);
+          setError(new Error('Authentication failed'));
+        } else if (message.type === 'auth_error') {
+          console.error('WebSocket authentication error:', message.payload.message);
+          setError(new Error('Authentication error'));
+        }
+        
         const handlers = messageHandlersRef.current.get(message.type) || [];
         handlers.forEach(handler => handler(message.payload));
       } catch (err) {

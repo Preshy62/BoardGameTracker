@@ -1083,30 +1083,30 @@ export default function DemoPage() {
         </div>
       </header>
       
-      {/* Main content */}
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="mb-6">
+      {/* Main content - Mobile Optimized */}
+      <main className="flex-grow container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div className="mb-4 sm:mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Game Board Demo</h1>
-            <p className="text-gray-600">Watch the ball roll through the game numbers</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Game Board Demo</h1>
+            <p className="text-sm sm:text-base text-gray-600">Watch the ball roll through the game numbers</p>
           </div>
         </div>
         
-        {/* Game board container */}
-        <div className="w-full max-w-3xl mx-auto my-8 bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Enhanced Game Status Bar */}
-          <div className="bg-gradient-to-r from-primary to-primary-light p-4 text-white border-b-2 border-gray-700 relative">
-            <div className="flex flex-wrap justify-between items-center">
+        {/* Game board container - Mobile Responsive */}
+        <div className="w-full max-w-3xl mx-auto my-4 sm:my-8 bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Enhanced Game Status Bar - Mobile Optimized */}
+          <div className="bg-gradient-to-r from-primary to-primary-light p-3 sm:p-4 text-white border-b-2 border-gray-700 relative">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               {/* Left side - Game info */}
               <div className="flex items-center">
                 <div className="bg-primary-light p-2 rounded-lg mr-3 border border-gray-600 shadow-inner">
                   <div className="text-xs uppercase text-gray-400 mb-0.5">Demo</div>
-                  <div className="font-mono text-lg font-bold text-secondary">MODE</div>
+                  <div className="font-mono text-base sm:text-lg font-bold text-secondary">MODE</div>
                 </div>
                 
                 <div>
-                  <h2 className="font-sans font-bold text-lg">Big Boys Game</h2>
-                  <div className="flex items-center space-x-3 mt-1">
+                  <h2 className="font-sans font-bold text-base sm:text-lg">Big Boys Game</h2>
+                  <div className="flex items-center space-x-2 sm:space-x-3 mt-1">
                     <div className="flex items-center text-sm">
                       <svg className="w-4 h-4 mr-1 text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <circle cx="12" cy="12" r="10" />
@@ -1321,9 +1321,9 @@ export default function DemoPage() {
                 START
               </div>
 
-              {/* Regular sized stones by row */}
+              {/* Regular sized stones by row - Mobile Responsive */}
               {[1, 2, 3, 4].map(row => (
-                <div key={`row-${row}`} className="flex justify-between mb-4">
+                <div key={`row-${row}`} className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-3 sm:mb-4">
                   {stones
                     .filter(stone => stone.row === row)
                     .map((stone) => (
@@ -1343,9 +1343,9 @@ export default function DemoPage() {
                 </div>
               ))}
               
-              {/* Small stones for bottom rows */}
+              {/* Small stones for bottom rows - Mobile Responsive */}
               {[5, 6].map(row => (
-                <div key={`row-${row}`} className="flex justify-between mb-4">
+                <div key={`row-${row}`} className="flex flex-wrap justify-center gap-1 mb-3 sm:mb-4">
                   {smallStones
                     .filter(stone => stone.row === row)
                     .map((stone) => (

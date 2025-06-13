@@ -26,6 +26,7 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [rollingStoneNumber, setRollingStoneNumber] = useState<number | null>(null);
   const [isGameResultOpen, setIsGameResultOpen] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
@@ -41,16 +42,31 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
   const fetchGameData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/games/${gameId}`);
+      console.log(`Fetching game data for game ${gameId}`);
+      const timestamp = Date.now();
+      const response = await fetch(`/api/games/${gameId}?_t=${timestamp}`, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       
       if (!response.ok) {
         throw new Error('Game not found');
       }
       
       const data = await response.json();
-      setGame(data.game);
-      setPlayers(data.players);
-      setMessages(data.messages);
+      console.log(`Game ${gameId} data received:`, data.game);
+      console.log(`Players in game ${gameId}:`, data.players.map(p => p.user?.username || 'Unknown'));
+      
+      // Force state update with new data and timestamp
+      const currentTime = Date.now();
+      setLastUpdateTime(currentTime);
+      setGame({ ...data.game });
+      setPlayers([...data.players]);
+      setMessages([...data.messages]);
       
       if (data.game.status === 'in_progress') {
         const currentPlayer = data.players.find((p: GamePlayer) => !p.hasRolled);
@@ -529,6 +545,12 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
     });
   }, [gameId, currentTurnPlayerId, userId, game, players, isCurrentPlayerTurn, isBotGame]);
 
+  // Manual refresh function
+  const forceRefresh = useCallback(async () => {
+    console.log('Force refreshing game data...');
+    await fetchGameData();
+  }, [fetchGameData]);
+
   return {
     game,
     players,
@@ -544,6 +566,8 @@ export function useGameState({ gameId, userId }: UseGameStateProps) {
     leaveGame,
     setIsGameResultOpen,
     createNewGame,
+    forceRefresh,
+    lastUpdateTime,
     socket: isConnected ? 
       // Create a proxy object that implements just enough of the WebSocket interface
       // to satisfy TypeScript but delegates the actual functionality to our custom handler

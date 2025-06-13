@@ -54,23 +54,39 @@ export class GameManager {
    */
   private async createBotPlayer(gameId: number): Promise<void> {
     console.log(`Creating bot player for game ${gameId}`);
-    // Create a bot user if it doesn't exist
-    let botUser = await this.storage.getUser(this.BOT_USER_ID);
+    // Get existing bot user first
+    let botUser = await this.storage.getUserByUsername("Computer");
     
     if (!botUser) {
-      // Create the bot user
-      botUser = await this.storage.createUser({
-        username: "Computer",
-        email: "bot@bigboysgame.com",
-        password: "not-a-real-password",
-        avatarInitials: "CP"
-      });
-      
-      // Give the bot unlimited funds
-      await this.storage.updateUserBalance(
-        botUser.id,
-        1000000
-      );
+      console.log("Computer user not found, creating new one...");
+      try {
+        // Create the bot user
+        botUser = await this.storage.createUser({
+          username: "Computer",
+          email: "bot@bigboysgame.com",
+          password: "not-a-real-password",
+          avatarInitials: "CP"
+        });
+        
+        // Give the bot unlimited funds
+        await this.storage.updateUserBalance(
+          botUser.id,
+          1000000
+        );
+      } catch (error: any) {
+        // If creation fails due to duplicate username, try to get the existing user
+        if (error.code === '23505' && error.constraint === 'users_username_unique') {
+          console.log("Computer user already exists, fetching existing user...");
+          botUser = await this.storage.getUserByUsername("Computer");
+          if (!botUser) {
+            throw new Error("Failed to get or create Computer user");
+          }
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      console.log("Using existing Computer user:", botUser.id);
     }
     
     // Get game to check stake
@@ -114,10 +130,10 @@ export class GameManager {
         throw new Error("User not found");
       }
       
-      await this.storage.updateUserBalance(
-        creatorUserId,
-        user.walletBalance - gameData.stake
-      );
+      const oldBalance = user.walletBalance;
+      const newBalance = oldBalance - gameData.stake;
+      await this.storage.updateUserBalance(creatorUserId, newBalance);
+      console.log(`💸 Creator ${creatorUserId} stake deducted: ₦${oldBalance} → ₦${newBalance} (-₦${gameData.stake})`);
       
       // Create a stake transaction
       await this.storage.createTransaction({
@@ -125,8 +141,11 @@ export class GameManager {
         amount: gameData.stake,
         type: "stake",
         status: "completed",
-        reference: `game-${game.id}-stake`,
+        reference: `game-${game.id}-stake-creator`,
+        description: `Stake for creating Game #${game.id}`,
+        currency: gameData.currency || 'NGN'
       });
+      console.log(`📝 Stake transaction created for creator ${creatorUserId}: ₦${gameData.stake}`);
       
       // Check if this is a single player game with a bot (using playWithBot flag)
       if (gameData.playWithBot === true) {
@@ -138,15 +157,8 @@ export class GameManager {
         // Start the game immediately
         await this.startGame(game.id);
         
-        // We need to add a small delay to allow the game to initialize before we auto-roll for the human player
-        setTimeout(async () => {
-          try {
-            console.log('Auto rolling for the human player in bot game...');
-            await this.rollStone(game.id, creatorUserId);
-          } catch (error) {
-            console.error('Error auto-rolling for human player:', error);
-          }
-        }, 1500);
+        // Let the player manually roll - no auto-rolling for bot games
+        console.log('Bot game created - waiting for player to manually roll');
       }
       
       return game;
@@ -202,10 +214,10 @@ export class GameManager {
         throw new Error("User not found");
       }
       
-      await this.storage.updateUserBalance(
-        userId,
-        user.walletBalance - game.stake
-      );
+      const oldBalance = user.walletBalance;
+      const newBalance = oldBalance - game.stake;
+      await this.storage.updateUserBalance(userId, newBalance);
+      console.log(`💸 Player ${userId} stake deducted: ₦${oldBalance} → ₦${newBalance} (-₦${game.stake})`);
       
       // Create a stake transaction
       await this.storage.createTransaction({
@@ -213,8 +225,11 @@ export class GameManager {
         amount: game.stake,
         type: "stake",
         status: "completed",
-        reference: `game-${gameId}-stake`,
+        reference: `game-${gameId}-stake-${userId}`,
+        description: `Stake for joining Game #${gameId}`,
+        currency: game.currency || 'NGN'
       });
+      console.log(`📝 Stake transaction created for player ${userId}: ₦${game.stake}`);
       
       // Create system message
       await this.storage.createMessage({
@@ -226,7 +241,9 @@ export class GameManager {
       
       // If game is now full, start the game
       const updatedPlayers = await this.storage.getGamePlayers(gameId);
+      console.log(`Game ${gameId}: ${updatedPlayers.length}/${game.maxPlayers} players`);
       if (updatedPlayers.length === game.maxPlayers) {
+        console.log(`Starting game ${gameId} - full capacity reached`);
         await this.startGame(gameId);
       }
       
@@ -245,6 +262,7 @@ export class GameManager {
    */
   private async startGame(gameId: number): Promise<void> {
     try {
+      console.log(`Starting game ${gameId} - updating status to in_progress`);
       // Update game status
       await this.storage.updateGameStatus(gameId, "in_progress");
       
@@ -256,8 +274,15 @@ export class GameManager {
         throw new Error("Game not found");
       }
       
-      // Start turn timer for first player
-      this.startTurnTimer(gameId, players[0].userId);
+      // Check if this is a bot game (has a player named "Computer")
+      const isBotGame = players.some(p => p.user.username === "Computer");
+      
+      // Only start turn timer for multiplayer games, not bot games
+      if (!isBotGame) {
+        this.startTurnTimer(gameId, players[0].userId);
+      } else {
+        console.log('Bot game detected - no turn timer started');
+      }
       
       // Create system message
       await this.storage.createMessage({
@@ -427,8 +452,13 @@ export class GameManager {
         const nextPlayer = updatedPlayers.find(p => !p.hasRolled);
         
         if (nextPlayer) {
-          // Start turn timer for next player
-          this.startTurnTimer(gameId, nextPlayer.userId);
+          // Check if this is a bot game before starting turn timer
+          const isBotGame = updatedPlayers.some(p => p.user.username === "Computer");
+          
+          // Only start turn timer for multiplayer games, not bot games
+          if (!isBotGame) {
+            this.startTurnTimer(gameId, nextPlayer.userId);
+          }
           
           // Create system message
           await this.storage.createMessage({

@@ -22,6 +22,10 @@ export default function AdminSettings() {
     "We're currently performing scheduled maintenance. Please check back soon."
   );
   
+  // Game Settings State
+  const [allowNewGames, setAllowNewGames] = useState(true);
+  const [voiceChatEnabled, setVoiceChatEnabled] = useState(true);
+  
   // Monthly Lottery State
   const [lotteryEnabled, setLotteryEnabled] = useState(false);
   const [lotteryMultiplier, setLotteryMultiplier] = useState("2x");
@@ -45,6 +49,18 @@ export default function AdminSettings() {
       }
     } catch (error) {
       console.error("Failed to fetch maintenance status", error);
+    }
+  };
+
+  // Fetch game settings
+  const fetchGameSettings = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/admin/game-settings");
+      const data = await response.json();
+      setAllowNewGames(data.allowNewGames ?? true);
+      setVoiceChatEnabled(data.voiceChatEnabled ?? true);
+    } catch (error) {
+      console.error("Failed to fetch game settings", error);
     }
   };
   
@@ -125,7 +141,7 @@ export default function AdminSettings() {
       setCanActivateLottery(false);
       toast({
         title: "Monthly Lottery Activated!",
-        description: `${lotteryMultiplier} multiplier is now active for all multiplayer games this month.`,
+        description: `${lotteryMultiplier} multiplier is now active for all single player games this month.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/lottery"] });
     },
@@ -154,6 +170,30 @@ export default function AdminSettings() {
     onError: (error: any) => {
       toast({
         title: "Failed to deactivate lottery",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Game Settings Mutation
+  const saveGameSettingsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/game-settings", {
+        allowNewGames,
+        voiceChatEnabled
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Settings Saved",
+        description: "Game settings have been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to save settings",
         description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
@@ -205,7 +245,11 @@ export default function AdminSettings() {
                         Users can create new games when enabled
                       </p>
                     </div>
-                    <Switch id="allow-new-games" defaultChecked />
+                    <Switch 
+                      id="allow-new-games" 
+                      checked={allowNewGames}
+                      onCheckedChange={setAllowNewGames}
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -214,17 +258,27 @@ export default function AdminSettings() {
                         Allow voice chat in premium games
                       </p>
                     </div>
-                    <Switch id="voice-chat" defaultChecked />
+                    <Switch 
+                      id="voice-chat" 
+                      checked={voiceChatEnabled}
+                      onCheckedChange={setVoiceChatEnabled}
+                    />
                   </div>
                 </div>
                 <div className="flex justify-end space-x-2 pt-4">
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={() => {
+                    setAllowNewGames(true);
+                    setVoiceChatEnabled(true);
+                  }}>
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Reset
                   </Button>
-                  <Button>
+                  <Button 
+                    onClick={() => saveGameSettingsMutation.mutate()}
+                    disabled={saveGameSettingsMutation.isPending}
+                  >
                     <Save className="mr-2 h-4 w-4" />
-                    Save Changes
+                    {saveGameSettingsMutation.isPending ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </div>
@@ -240,7 +294,7 @@ export default function AdminSettings() {
                 Monthly Lottery Management
               </CardTitle>
               <CardDescription>
-                Control special multipliers for multiplayer games (once per month)
+                Control special multipliers for single player games (once per month)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -303,7 +357,7 @@ export default function AdminSettings() {
                       </select>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">
-                      Choose the multiplier that will apply to all multiplayer games
+                      Choose the multiplier that will apply to all single player games
                     </p>
                   </div>
                 </div>
@@ -356,8 +410,8 @@ export default function AdminSettings() {
                   <h4 className="font-semibold text-blue-800 mb-2">How Monthly Lottery Works:</h4>
                   <ul className="text-sm text-blue-700 space-y-1">
                     <li>• Can only be activated once per calendar month</li>
-                    <li>• Applies {lotteryMultiplier} multiplier to ALL multiplayer games</li>
-                    <li>• Does not affect bot games (they have separate multipliers)</li>
+                    <li>• Applies {lotteryMultiplier} multiplier to ALL single player games</li>
+                    <li>• Does not affect multiplayer games (only for individual players)</li>
                     <li>• Players will see lottery notifications during active period</li>
                     <li>• Automatically resets permission at start of new month</li>
                   </ul>

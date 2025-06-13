@@ -1,8 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
-import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { storage } from "./storage-simple";
+import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import { runMigration } from "./utils/migrate-email-fields";
 import { initializeEmailTransport } from "./utils/email";
@@ -16,7 +15,7 @@ async function createDemoUser() {
     console.log("Checking if demo user exists...");
     const existingUser = await storage.getUserByUsername("demo");
     if (existingUser) {
-      console.log("Demo user already exists with ID:", existingUser.id);
+      console.log("Demo user already exists");
       return;
     }
     
@@ -26,17 +25,12 @@ async function createDemoUser() {
     
     console.log("Creating demo user...");
     
-    // Create user based on the schema with only required fields
+    // Create user based on the schema
     const user = await storage.createUser({
       username: "demo",
       email: "demo@bigboysgame.com",
       password: hashedPassword,
       avatarInitials: "DM",
-      countryCode: "NG",
-      preferredCurrency: "NGN",
-      language: "en",
-      timeZone: "Africa/Lagos",
-      emailVerified: true, // Auto-verify demo user
     });
     
     console.log("Demo user created with ID:", user.id);
@@ -45,51 +39,13 @@ async function createDemoUser() {
     console.log("Adding initial funds to demo user...");
     await storage.updateUserBalance(user.id, 200000); // ₦200,000
     
-    console.log("Demo user setup completed successfully with ID:", user.id);
+    console.log("Demo user created successfully with ID:", user.id);
   } catch (error) {
     console.error("Failed to create demo user:", error);
-    console.error("Error details:", error.message);
   }
 }
 
 const app = express();
-
-// Add cookie parser middleware
-app.use(cookieParser());
-
-// Configure CORS to allow cookies with Replit domain support
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  
-  // Allow all origins in development, especially Replit domains
-  if (process.env.NODE_ENV === 'development') {
-    res.header('Access-Control-Allow-Origin', origin || '*');
-  } else {
-    // Production whitelist including Replit domains
-    const allowedOrigins = [
-      'http://localhost:5000',
-      'http://127.0.0.1:5000',
-      'http://localhost:3000',
-      'http://127.0.0.1:3000'
-    ];
-    
-    // Allow Replit domains in production
-    if (!origin || allowedOrigins.includes(origin) || (origin && origin.includes('.replit.dev'))) {
-      res.header('Access-Control-Allow-Origin', origin || '*');
-    }
-  }
-  
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
-  res.header('Access-Control-Expose-Headers', 'Set-Cookie');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-    return;
-  }
-  next();
-});
 
 // Serve static files FIRST (including music files)
 app.use(express.static('public', {

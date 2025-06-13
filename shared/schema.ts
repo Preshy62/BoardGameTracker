@@ -217,6 +217,12 @@ export type WebSocketMessageType =
   | 'player_left'
   | 'turn_changed'
   | 'error'
+  // Authentication messages
+  | 'authenticate'
+  | 'auth_success'
+  | 'auth_failed'
+  | 'auth_error'
+  | 'connection_established'
   // Voice chat signaling messages
   | 'voice_offer'
   | 'voice_answer'
@@ -253,15 +259,15 @@ export const botGameStatistics = pgTable("bot_game_statistics", {
   pendingPayouts: doublePrecision("pending_payouts").notNull().default(0),
 });
 
-// Monthly lottery system for multiplayer games
+// Monthly lottery system for single player games
 export const monthlyLottery = pgTable("monthly_lottery", {
   id: serial("id").primaryKey(),
   month: integer("month").notNull(), // 1-12
   year: integer("year").notNull(),
   lotteryDate: integer("lottery_date").notNull(), // Day of month (1-31)
   isActive: boolean("is_active").default(false),
-  multiplier500: doublePrecision("multiplier_500").default(2.0), // 2x for 500
-  multiplier1000: doublePrecision("multiplier_1000").default(3.0), // 3x for 1000
+  multiplier500: doublePrecision("multiplier_500").default(2.0), // 2x for 500 stone games
+  multiplier1000: doublePrecision("multiplier_1000").default(3.0), // 3x for 1000 stone games
   announcementSent: boolean("announcement_sent").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

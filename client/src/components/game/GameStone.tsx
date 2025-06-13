@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { playSound } from '@/lib/sounds';
+import { playSound } from '@/lib/audio';
 import { Badge } from "@/components/ui/badge";
 import { cn } from '@/lib/utils';
 import { LucideLoader2 } from 'lucide-react';
@@ -10,10 +10,17 @@ interface GameStoneProps {
   isWinner?: boolean;
   isRolling?: boolean;
   isUserTurn?: boolean;
+  isSelected?: boolean;
+  isSpecial?: boolean;
+  isSuper?: boolean;
+  isSmall?: boolean;
+  onClick?: () => void;
   onRollComplete?: (number: number) => void;
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
   className?: string;
+  id?: string;
+  index?: number;
 }
 
 export default function GameStone({
@@ -21,10 +28,17 @@ export default function GameStone({
   isWinner = false,
   isRolling = false,
   isUserTurn = false,
+  isSelected = false,
+  isSpecial = false,
+  isSuper = false,
+  isSmall = false,
+  onClick,
   onRollComplete,
   size = 'md',
   showLabel = false,
-  className = ''
+  className = '',
+  id,
+  index
 }: GameStoneProps) {
   const [rollAnimation, setRollAnimation] = useState(false);
   const [displayNumber, setDisplayNumber] = useState(number);
@@ -32,19 +46,27 @@ export default function GameStone({
   const rollCountRef = useRef(0);
   const maxRolls = 15; // Number of random numbers to show during animation
   
-  // Determine stone background style based on number value
+  // Determine stone background style based on number value and props
   const getStoneStyle = (num: number) => {
-    // Special stone styling (1000, 500)
-    if (num === 1000 || num === 500) {
-      return 'bg-amber-100 text-amber-900 border-amber-300';
+    // Super stone styling (1000)
+    if (isSuper || num === 1000) {
+      return 'bg-purple-100 text-purple-900 border-purple-300';
     }
-    // Super stone styling (3355, 6624)
-    else if (num === 3355 || num === 6624) {
-      return 'bg-red-100 text-red-900 border-red-300';
+    // Special stone styling (500)
+    else if (isSpecial || num === 500) {
+      return 'bg-yellow-100 text-yellow-900 border-yellow-300';
+    }
+    // Individual stones (33, 55, 66, 24)
+    else if (isSmall || [33, 55, 66, 24].includes(num)) {
+      return 'bg-blue-100 text-blue-900 border-blue-300';
+    }
+    // Selected state
+    else if (isSelected) {
+      return 'bg-green-100 text-green-900 border-green-400 ring-2 ring-green-300';
     }
     
     // Default stone styling
-    return 'bg-white text-slate-800 border-slate-300';
+    return 'bg-white text-slate-800 border-slate-300 hover:bg-gray-50';
   };
   
   // Get size classes for the stone
@@ -75,7 +97,7 @@ export default function GameStone({
     
     // Start roll animation and play sound
     setRollAnimation(true);
-    playSound('STONE_ROLL', 0.5);
+    playSound('roll');
     
     // Potential roll values (can be adjusted based on game rules)
     const potentialRolls = [
@@ -96,7 +118,7 @@ export default function GameStone({
         setRollAnimation(false);
         
         // Play landing sound
-        playSound('STONE_LAND', 0.6);
+        playSound('win');
         
         // Notify parent component that roll is complete
         if (onRollComplete) {
@@ -158,8 +180,14 @@ export default function GameStone({
           getWinnerClasses(),
           { 'cursor-pointer hover:border-primary': isUserTurn && !rollAnimation }
         )}
-        onClick={() => isUserTurn && !rollAnimation && rollStone()}
-        whileHover={isUserTurn && !rollAnimation ? { scale: 1.05 } : {}}
+        onClick={() => {
+          if (onClick) {
+            onClick();
+          } else if (isUserTurn && !rollAnimation) {
+            rollStone();
+          }
+        }}
+        whileHover={(onClick || (isUserTurn && !rollAnimation)) ? { scale: 1.05 } : {}}
         animate={{
           rotate: rollAnimation ? [0, -10, 10, -10, 0] : 0,
           scale: rollAnimation ? [1, 1.1, 0.95, 1.05, 1] : 1

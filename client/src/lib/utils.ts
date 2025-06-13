@@ -5,8 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency: string = '₦'): string {
-  return `${currency}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export function formatCurrency(amount: number, currency: string = 'NGN'): string {
+  const currencySymbols: Record<string, string> = {
+    'NGN': '₦',
+    'KES': 'KSh',
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£',
+    'JPY': '¥',
+    'AUD': 'A$',
+    'CAD': 'C$',
+    'INR': '₹',
+    'ZAR': 'R',
+    'GHS': '₵'
+  };
+  
+  const symbol = currencySymbols[currency] || currency;
+  return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function formatDate(date: string | number | Date): string {
@@ -82,7 +97,7 @@ export function getRandomStoneNumber(): number {
 
 export function getWebSocketUrl(): string {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/api/ws`;
+  return `${protocol}//${window.location.host}/ws`;
 }
 
 export function generateAvatar(initials: string, color: string): string {
