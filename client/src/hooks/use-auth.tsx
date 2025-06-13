@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { User as SelectUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+
 import { useLocation } from "wouter";
 
 type AuthContextType = {
@@ -41,7 +41,6 @@ type RegisterData = Pick<
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
-  const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   const {
@@ -65,11 +64,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setLocation("/home");
     },
     onError: (error: Error) => {
-      toast({
-        title: "Login failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error("Login failed:", error.message);
     },
   });
 
@@ -87,21 +82,13 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (response: any) => {
       // Don't set the user data in query client since they're not logged in yet
       // Don't redirect to home
-      toast({
-        title: "Registration successful",
-        description: "Please check your email to verify your account.",
-      });
+      console.log("Registration successful - please check your email to verify your account");
       // In development, auto-login was handled server-side
       // Refresh user data
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
     onError: (error: Error) => {
       console.error("Registration error:", error);
-      toast({
-        title: "Registration failed",
-        description: error.message || "Please try again with different credentials",
-        variant: "destructive",
-      });
     },
   });
 
@@ -112,17 +99,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
       setLocation("/auth");
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
+      console.log("Successfully logged out");
     },
     onError: (error: Error) => {
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error("Logout failed:", error.message);
     },
   });
 
