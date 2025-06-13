@@ -22,18 +22,21 @@ export function useWebSocket() {
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
+      console.log('WebSocket connected successfully to:', wsUrl);
       setIsConnected(true);
       setIsConnecting(false);
       setError(null);
     };
 
-    socket.onclose = () => {
+    socket.onclose = (event) => {
+      console.log('WebSocket closed:', event.code, event.reason);
       setIsConnected(false);
       setIsConnecting(false);
     };
 
     socket.onerror = (event) => {
-      setError(new Error('WebSocket error'));
+      console.error('WebSocket error:', event);
+      setError(new Error(`WebSocket connection failed to ${wsUrl}`));
       setIsConnecting(false);
     };
 

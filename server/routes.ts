@@ -51,12 +51,14 @@ const sessionMiddleware = session({
   resave: false,
   saveUninitialized: false,
   store: storage.sessionStore,
+  name: 'connect.sid',
   cookie: {
     httpOnly: true,
     secure: false, // Set to false for development to work with http
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for longer session persistence
-    path: '/'
+    path: '/',
+    domain: undefined // Allow for localhost
   }
 });
 
@@ -84,8 +86,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Map to store voice chat rooms (roomId -> Map of peerId -> WebSocket)
   const voiceRooms = new Map<string, Map<string, WebSocket>>();
   
-  // Initialize WebSocket server
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  // Initialize WebSocket server with proper configuration
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/api/ws',
+    verifyClient: (info) => {
+      // Allow all connections for now
+      return true;
+    }
+  });
   
   // Session middleware
   app.use(sessionMiddleware);

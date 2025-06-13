@@ -82,7 +82,7 @@ export function getRandomStoneNumber(): number {
 
 export function getWebSocketUrl(): string {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/ws`;
+  return `${protocol}//${window.location.host}/api/ws`;
 }
 
 export function generateAvatar(initials: string, color: string): string {
