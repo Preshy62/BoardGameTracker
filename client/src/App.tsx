@@ -43,9 +43,29 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import AuthProvider, { useAuth } from "./hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function HomeOrLanding() {
-  const { user } = useAuth();
+  const { user, isLoading, error } = useAuth();
+  
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Big Boys Game</h1>
+          <div className="animate-pulse text-gray-300">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+  
+  // If there's an auth error, show landing page
+  if (error) {
+    console.warn('Auth error (showing landing page):', error);
+    return <LandingPage />;
+  }
+  
   return user ? <Home /> : <LandingPage />;
 }
 
@@ -145,9 +165,9 @@ function App() {
   // Add error logging to help debug session issues
   console.log('App rendering, checking if cookies are enabled:', navigator.cookieEnabled);
   
-  // Initialize audio context early to ensure sound effects work
+  // Initialize audio context early but don't block rendering
   useEffect(() => {
-    // Initialize audio context as early as possible for better compatibility
+    // Non-blocking audio initialization
     const initAudio = async () => {
       try {
         // Dynamically import to avoid circular dependencies
@@ -155,16 +175,24 @@ function App() {
         const initialized = initAudioContext();
         console.log('Audio context initialized early in App:', initialized);
       } catch (error) {
-        console.error('Failed to initialize audio context:', error);
+        // Don't let audio errors break the app
+        console.warn('Audio initialization failed (non-critical):', error);
       }
     };
     
-    initAudio();
+    // Use setTimeout to ensure this doesn't block initial render
+    setTimeout(() => {
+      initAudio();
+    }, 100);
     
     // Set up user interaction listeners to initialize audio if needed
     const handleUserInteraction = async () => {
-      // Re-initialize on user interaction (important for iOS/Safari)
-      initAudio();
+      try {
+        // Re-initialize on user interaction (important for iOS/Safari)
+        initAudio();
+      } catch (error) {
+        console.warn('Audio re-initialization failed:', error);
+      }
       // Remove listeners after first interaction
       document.removeEventListener('click', handleUserInteraction);
       document.removeEventListener('touchstart', handleUserInteraction);
@@ -180,14 +208,16 @@ function App() {
   }, []);
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
