@@ -49,14 +49,14 @@ import { storage } from "./storage-simple";
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "bbg-game-secret",
   resave: false,
-  saveUninitialized: true, // Changed to true for development
+  saveUninitialized: true,
   store: storage.sessionStore,
   name: 'connect.sid',
   cookie: {
-    httpOnly: false, // Set to false for development to allow frontend access
-    secure: false, // Set to false for development to work with http
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for longer session persistence
+    httpOnly: false, // Allow frontend access for development
+    secure: false, // HTTP compatibility
+    sameSite: 'none', // Allow cross-origin requests for Replit environment
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/'
   }
 });
@@ -88,18 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize WebSocket server with proper configuration
   const wss = new WebSocketServer({ 
     server: httpServer, 
-    path: '/api/ws',
-    verifyClient: (info, callback) => {
-      // Parse session from the upgrade request
-      sessionMiddleware(info.req as any, {} as any, () => {
-        const session = (info.req as any).session;
-        console.log('WebSocket verifyClient - Session ID:', session?.id, 'User ID:', session?.userId);
-        
-        // Allow connection regardless of authentication status
-        // We'll handle authentication after connection is established
-        callback(true);
-      });
-    }
+    path: '/api/ws'
   });
   
   // Session middleware
@@ -108,8 +97,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug session middleware to track session initialization
   app.use((req, res, next) => {
     // Skip logging for static assets and HMR requests to reduce noise
-    if (!req.path.includes('.') && !req.path.includes('__vite')) {
+    if (!req.path.includes('.') && !req.path.includes('__vite') && !req.path.includes('@')) {
       console.log(`Debug - Session check - Path: ${req.method} ${req.path} | Session ID: ${req.session.id}, User ID: ${req.session.userId || 'not logged in'}`);
+      
+      // Log headers for authentication debugging
+      if (req.path.includes('/api/')) {
+        console.log('Request headers:', {
+          cookie: req.headers.cookie,
+          origin: req.headers.origin,
+          referer: req.headers.referer
+        });
+      }
     }
     next();
   });
@@ -1411,46 +1409,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('WebSocket connection attempt from:', req.url);
     console.log('WebSocket headers:', req.headers.cookie);
     
-    // Extract session data from upgrade request
+    // Simplified session extraction using cookie parsing
     const getSessionData = () => {
       return new Promise<number | null>((resolve) => {
-        // Parse the cookie header manually if needed
-        const cookieHeader = req.headers.cookie;
-        console.log('WebSocket raw cookie header:', cookieHeader);
+        console.log('WebSocket connection headers:', req.headers.cookie);
         
-        // Create a mock response object for session middleware
-        const mockRes = {
-          setHeader: () => {},
-          getHeader: () => {},
-          end: () => {},
-          statusCode: 200
-        };
-        
-        // Ensure cookies are properly parsed
-        if (cookieHeader && !(req as any).cookies) {
-          const cookies: { [key: string]: string } = {};
-          cookieHeader.split(';').forEach(cookie => {
-            const [name, value] = cookie.trim().split('=');
-            if (name && value) {
-              cookies[name] = decodeURIComponent(value);
-            }
-          });
-          (req as any).cookies = cookies;
-        }
-        
-        sessionMiddleware(req as any, mockRes as any, () => {
+        // Apply session middleware to parse the session
+        sessionMiddleware(req as any, {} as any, () => {
           const session = (req as any).session;
-          console.log('WebSocket parsed session:', {
+          console.log('WebSocket session parsed:', {
             sessionId: session?.id,
-            userId: session?.userId,
-            sessionKeys: session ? Object.keys(session) : []
+            userId: session?.userId
           });
           
-          if (session && session.userId) {
-            resolve(session.userId);
-          } else {
-            resolve(null);
-          }
+          resolve(session?.userId || null);
         });
       });
     };

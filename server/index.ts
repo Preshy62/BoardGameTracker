@@ -53,19 +53,25 @@ async function createDemoUser() {
 
 const app = express();
 
-// Configure CORS to allow cookies with specific origin handling
+// Configure CORS to allow cookies with Replit domain support
 app.use((req, res, next) => {
-  const allowedOrigins = [
-    'http://localhost:5000',
-    'http://127.0.0.1:5000',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-  ];
-  
   const origin = req.headers.origin;
   
-  if (!origin || allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin || 'http://localhost:5000');
+  // Allow all origins in development, especially Replit domains
+  if (process.env.NODE_ENV === 'development') {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+  } else {
+    // Production whitelist
+    const allowedOrigins = [
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000'
+    ];
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin || 'http://localhost:5000');
+    }
   }
   
   res.header('Access-Control-Allow-Credentials', 'true');
