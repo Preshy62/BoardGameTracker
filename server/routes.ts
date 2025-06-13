@@ -123,6 +123,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
   
+  // Health check endpoint for Railway monitoring
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({ 
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+
   // Register admin routes after session middleware
   app.use('/api/admin', adminRoutes);
   
