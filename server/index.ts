@@ -169,11 +169,8 @@ app.use((req, res, next) => {
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route
     // doesn't interfere with the other routes
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
+    // Temporarily force static serving to fix frontend display
+    serveStatic(app);
   } catch (error) {
     log(`Failed to start the server: ${error}`, "startup");
     console.error("Server startup error:", error);
