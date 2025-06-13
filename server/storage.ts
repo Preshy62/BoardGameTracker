@@ -6,9 +6,7 @@ import {
   transactions, Transaction, InsertTransaction,
   GameStatus
 } from "@shared/schema";
-// Simple conditional import approach
-import { eq, desc, gte, and, inArray, sql } from "drizzle-orm";
-import { db } from "./db";
+// Import database conditionally to prevent crashes when DATABASE_URL is missing
 
 // Interface for all storage operations
 export interface IStorage {
@@ -605,9 +603,12 @@ export class MemStorage implements IStorage {
 }
 
 // DatabaseStorage implementation
+import { eq, desc, gte, and, inArray, sql } from "drizzle-orm";
+import { db } from "./db";
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
+    if (!db) throw new Error("Database not available");
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }

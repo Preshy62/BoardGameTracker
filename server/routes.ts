@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
 import WebSocket from "ws";
-import { storage } from "./storage";
+import { storage } from "./storage-simple";
 import { GameManager } from "./game/gameManager";
 import { z } from "zod";
 import * as schema from "@shared/schema";
