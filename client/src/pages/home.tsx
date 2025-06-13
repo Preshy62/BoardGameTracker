@@ -206,15 +206,14 @@ export default function Home() {
 
           <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all">
             <CardContent className="p-6 text-center">
-              <BarChart4 className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">View Stats</h3>
-              <p className="text-gray-400 mb-4">Track your performance and progress</p>
+              <PlusCircle className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Create Game</h3>
+              <p className="text-gray-400 mb-4">Start a new custom game session</p>
               <Button 
-                onClick={handleViewDashboard}
-                variant="outline"
-                className="w-full border-slate-600 text-white hover:bg-slate-700"
+                onClick={() => setLocation('/create-game')}
+                className="w-full bg-yellow-600 hover:bg-yellow-700"
               >
-                Dashboard
+                Create Game
               </Button>
             </CardContent>
           </Card>
