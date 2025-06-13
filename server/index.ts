@@ -96,6 +96,12 @@ app.use(express.static('public', {
   setHeaders: (res, path) => {
     if (path.endsWith('.mp3')) {
       res.setHeader('Content-Type', 'audio/mpeg');
+    } else if (path.endsWith('.js') || path.endsWith('.mjs')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    } else if (path.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html');
     }
   }
 }));
