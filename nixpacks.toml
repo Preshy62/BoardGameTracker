@@ -1,11 +1,8 @@
 [phases.setup]
-nixPkgs = ['nodejs-18_x', 'npm-9_x']
+nixPkgs = ['nodejs-18', 'npm']
 
 [phases.install]
 cmds = ['npm ci']
 
-[phases.build]
-cmds = ['npm run build', 'node scripts/fix-railway-build.js']
-
 [start]
-cmd = 'node simple-start.js'
+cmd = 'node railway-production.js'
