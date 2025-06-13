@@ -50,40 +50,53 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve static files if available
-const staticPath = path.join(__dirname, 'dist', 'public');
-app.use(express.static(staticPath, { 
-  fallthrough: true,
-  index: false 
-}));
+// Check for built static files and serve them
+const builtPath = path.join(__dirname, 'dist', 'public');
+const clientPath = path.join(__dirname, 'client');
 
-// Fallback to client directory if dist doesn't exist
-app.use(express.static(path.join(__dirname, 'client'), { 
-  fallthrough: true,
-  index: false 
-}));
+// Log which paths exist for debugging
+console.log('Checking for built files at:', builtPath);
+console.log('Checking for client files at:', clientPath);
+
+// Try to determine if we have built files
+const fs = await import('fs');
+let hasBuiltFiles = false;
+try {
+  await fs.promises.access(builtPath);
+  hasBuiltFiles = true;
+  console.log('Found built files, serving from dist/public');
+} catch {
+  console.log('No built files found, serving from client directory');
+}
+
+// Serve static files based on what's available
+if (hasBuiltFiles) {
+  app.use(express.static(builtPath));
+} else {
+  app.use(express.static(clientPath));
+}
 
 // Catch-all route for SPA
-app.get('*', (req, res) => {
-  // Try to serve index.html from dist first, then client
-  const indexPaths = [
-    path.join(__dirname, 'dist', 'public', 'index.html'),
-    path.join(__dirname, 'client', 'index.html')
-  ];
+app.get('*', async (req, res) => {
+  const indexPath = hasBuiltFiles 
+    ? path.join(builtPath, 'index.html')
+    : path.join(clientPath, 'index.html');
   
-  let served = false;
-  for (const indexPath of indexPaths) {
-    try {
-      res.sendFile(indexPath);
-      served = true;
-      break;
-    } catch (err) {
-      continue;
-    }
-  }
-  
-  if (!served) {
-    res.status(404).send('Application not found');
+  try {
+    res.sendFile(indexPath);
+  } catch (err) {
+    console.error('Error serving index.html:', err);
+    res.status(404).send(`
+      <html>
+        <head><title>Application Error</title></head>
+        <body>
+          <h1>Application Error</h1>
+          <p>Could not load the application. This might be a build issue.</p>
+          <p>Built files available: ${hasBuiltFiles}</p>
+          <p>Attempted path: ${indexPath}</p>
+        </body>
+      </html>
+    `);
   }
 });
 
