@@ -85,32 +85,32 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Hero Section - Left on mobile, Right on desktop */}
-      <div className="w-full md:w-1/2 bg-primary p-6 flex flex-col justify-center items-center text-center md:text-left">
+      <div className="w-full md:w-1/2 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6 flex flex-col justify-center items-center text-center md:text-left">
         <div className="max-w-md mx-auto md:mx-0 md:ml-auto">
           <h1 className="text-4xl font-bold text-white mb-6">
-            Welcome to <span className="text-secondary">BIG BOYS GAME</span>
+            Welcome to <span className="text-blue-400">Big Boys Game</span>
           </h1>
           <p className="text-white/90 text-lg mb-8">
-            The ultimate multiplayer betting experience. Create your account to start playing, win big, and withdraw your earnings seamlessly.
+            The sophisticated multiplayer gaming platform with enhanced bot game mechanics and real-time interactive gameplay.
           </p>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-            <h2 className="text-2xl font-bold text-white mb-4">Global Gaming Experience</h2>
+            <h2 className="text-2xl font-bold text-white mb-4">Gaming Excellence</h2>
             <ul className="text-white/90 space-y-3">
               <li className="flex items-center">
-                <span className="mr-2 text-secondary">✓</span> 
-                Play from anywhere in the world
+                <span className="mr-2 text-blue-400">✓</span> 
+                Enhanced AI bot opponents
               </li>
               <li className="flex items-center">
-                <span className="mr-2 text-secondary">✓</span> 
-                Multi-currency support
+                <span className="mr-2 text-blue-400">✓</span> 
+                Real-time multiplayer gaming
               </li>
               <li className="flex items-center">
-                <span className="mr-2 text-secondary">✓</span> 
-                Secure withdrawals to local bank accounts
+                <span className="mr-2 text-blue-400">✓</span> 
+                Strategic complexity and depth
               </li>
               <li className="flex items-center">
-                <span className="mr-2 text-secondary">✓</span> 
-                Text and voice chat with other players
+                <span className="mr-2 text-blue-400">✓</span> 
+                WebSocket-based communication
               </li>
             </ul>
           </div>

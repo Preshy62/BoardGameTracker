@@ -1,397 +1,345 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { 
   PlusCircle, 
   Users, 
-  DollarSign, 
-  CreditCard, 
+  Bot, 
   Gamepad2,
-  BarChart4,
-  Home as HomeIcon,
-  Globe2,
   Trophy,
-  Wallet
+  Clock,
+  Star,
+  PlayCircle,
+  Zap,
+  Target,
+  Brain,
+  BarChart4
 } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
+
+// Game types for the sophisticated gaming platform
+const GAME_TYPES = [
+  {
+    id: 'strategy-arena',
+    name: 'Strategy Arena',
+    description: 'Advanced tactical gameplay with AI opponents',
+    icon: Brain,
+    difficulty: 'Advanced',
+    players: '2-4 Players',
+    duration: '15-30 min',
+    features: ['Enhanced Bot AI', 'Real-time Strategy', 'Voice Chat']
+  },
+  {
+    id: 'quick-match',
+    name: 'Quick Match',
+    description: 'Fast-paced multiplayer battles',
+    icon: Zap,
+    difficulty: 'Intermediate',
+    players: '2-6 Players', 
+    duration: '5-10 min',
+    features: ['Instant Matchmaking', 'Dynamic Gameplay', 'Skill-based Matching']
+  },
+  {
+    id: 'bot-challenge',
+    name: 'Bot Challenge',
+    description: 'Test your skills against sophisticated AI',
+    icon: Bot,
+    difficulty: 'Adaptive',
+    players: '1 Player + AI',
+    duration: '10-20 min',
+    features: ['Adaptive AI Difficulty', 'Skill Training', 'Performance Analytics']
+  },
+  {
+    id: 'tournament',
+    name: 'Tournament Mode',
+    description: 'Competitive brackets with multiple rounds',
+    icon: Trophy,
+    difficulty: 'Expert',
+    players: '8-16 Players',
+    duration: '45-90 min',
+    features: ['Elimination Brackets', 'Live Spectating', 'Prize Tracking']
+  }
+];
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  
-  // Function to go to landing page
-  const goToHome = () => {
-    setLocation('/landing');
-  };
-  
-  // Demo deposit mutation (for testing)
-  const demoDepositMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/transactions/demo-deposit', {});
+  const [selectedGameType, setSelectedGameType] = useState<string | null>(null);
+
+  // Fetch available games
+  const { data: gamesData, isLoading } = useQuery({
+    queryKey: ['/api/games', 'available'],
+    enabled: !!user
+  });
+
+  // Create game mutation
+  const createGameMutation = useMutation({
+    mutationFn: async (gameConfig: any) => {
+      const response = await apiRequest('POST', '/api/games', gameConfig);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+    onSuccess: (game) => {
       toast({
-        title: "Demo Funds Added",
-        description: `₦10,000 has been added to your wallet for testing.`,
+        title: "Game Created",
+        description: `Your ${selectedGameType} game is ready!`,
       });
+      setLocation(`/game/${game.id}`);
     },
     onError: (error) => {
       toast({
-        title: "Demo Deposit Failed",
+        title: "Failed to Create Game",
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     }
   });
 
-  // Redirect to game creation
-  const handleCreateGame = () => {
-    setLocation('/create-game');
+  // Quick join mutation
+  const quickJoinMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/games/quick-join', {});
+      return response.json();
+    },
+    onSuccess: (game) => {
+      toast({
+        title: "Joined Game",
+        description: "Welcome to the match!",
+      });
+      setLocation(`/game/${game.id}`);
+    },
+    onError: (error) => {
+      toast({
+        title: "Quick Join Failed",
+        description: error instanceof Error ? error.message : "No available games found",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleCreateGame = (gameType: string) => {
+    setSelectedGameType(gameType);
+    const gameConfig = {
+      gameType,
+      maxPlayers: gameType === 'tournament' ? 16 : gameType === 'bot-challenge' ? 1 : 4,
+      difficulty: 'adaptive',
+      enableBotOpponents: gameType === 'bot-challenge',
+      enableVoiceChat: true,
+      enableSpectating: gameType === 'tournament'
+    };
+    createGameMutation.mutate(gameConfig);
   };
 
-  // Redirect to quick demo game
-  const handleQuickDemo = () => {
-    setLocation('/demo-new');
+  const handleQuickJoin = () => {
+    quickJoinMutation.mutate();
   };
 
-  // Redirect to dashboard
   const handleViewDashboard = () => {
     setLocation('/dashboard');
-  };
-
-  // Redirect to wallet page
-  const handleViewWallet = () => {
-    setLocation('/wallet');
   };
 
   if (!user) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       <Header user={user} />
       
-      <main className="flex-grow container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        {/* Welcome Header with User Info */}
-        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6 sm:mb-8">
-          <div className="flex flex-col lg:flex-row justify-between items-start">
-            <div className="w-full lg:w-auto">
-              <h1 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-2">Welcome, {user.username}</h1>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                <div className="flex items-center">
-                  <Wallet className="h-4 w-4 sm:h-5 sm:w-5 mr-1 text-green-500" />
-                  <span className="text-sm sm:text-base text-gray-600">Balance: <span className="font-semibold text-green-600">{formatCurrency(user.walletBalance)}</span></span>
-                </div>
-                <div className="flex items-center">
-                  <Globe2 className="h-4 w-4 sm:h-5 sm:w-5 mr-1 text-blue-500" />
-                  <span className="text-sm sm:text-base text-gray-600">Location: <span className="font-semibold">{user.countryCode || 'Global'}</span></span>
-                </div>
-              </div>
+      <main className="flex-grow container mx-auto px-4 py-8">
+        {/* Welcome Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
+            Big Boys <span className="text-blue-400">Game</span>
+          </h1>
+          <p className="text-xl text-gray-300 mb-6">
+            Sophisticated Multiplayer Gaming Platform
+          </p>
+          <div className="flex items-center justify-center gap-6 text-gray-400">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              <span>Welcome, {user.username}</span>
             </div>
-            
-            <div className="mt-4 lg:mt-0 flex flex-col sm:flex-row w-full lg:w-auto gap-2">
-              <Button 
-                onClick={handleQuickDemo}
-                variant="outline"
-                className="border-purple-500 text-purple-600"
-              >
-                <Gamepad2 className="h-4 w-4 mr-2" />
-                Quick Demo
-              </Button>
-              
-              <Button 
-                onClick={goToHome}
-                variant="outline"
-                className="border-blue-500 text-blue-600"
-              >
-                <HomeIcon className="h-4 w-4 mr-2" />
-                Home
-              </Button>
-              
-              <Button 
-                onClick={handleCreateGame}
-                className="bg-secondary hover:bg-secondary-dark text-primary font-bold"
-              >
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Create Game
-              </Button>
+            <div className="flex items-center gap-2">
+              <Trophy className="h-5 w-5" />
+              <span>Skill Level: Adaptive</span>
             </div>
           </div>
         </div>
-        
-        {/* Quick Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <Card className="bg-blue-500 text-white">
-            <CardContent className="p-3 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center">
-                <div className="mb-2 sm:mb-0 sm:mr-4 p-2 sm:p-3 bg-white bg-opacity-20 rounded-full w-fit">
-                  <Trophy className="h-4 w-4 sm:h-6 sm:w-6"/>
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-blue-100">Games Won</p>
-                  <h3 className="text-lg sm:text-2xl font-bold">0</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-purple-500 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="mr-4 p-3 bg-white bg-opacity-20 rounded-full">
-                  <Gamepad2 className="h-6 w-6"/>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-purple-100">Games Played</p>
-                  <h3 className="text-2xl font-bold">0</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-emerald-500 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="mr-4 p-3 bg-white bg-opacity-20 rounded-full">
-                  <Wallet className="h-6 w-6"/>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-emerald-100">Total Winnings</p>
-                  <h3 className="text-2xl font-bold">{formatCurrency(0)}</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-amber-500 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="mr-4 p-3 bg-white bg-opacity-20 rounded-full">
-                  <Globe2 className="h-6 w-6"/>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-amber-100">Currency</p>
-                  <h3 className="text-2xl font-bold">{user.preferredCurrency || 'NGN'}</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
+
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="bg-blue-100 text-blue-700 rounded-full p-3 sm:p-4 mx-auto mb-3 sm:mb-4 w-12 sm:w-16">
-                <BarChart4 className="h-6 w-6 sm:h-8 sm:w-8" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-bold mb-2">View Statistics</h3>
-              <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">
-                Check your game history and performance statistics
-              </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all">
+            <CardContent className="p-6 text-center">
+              <PlayCircle className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Quick Match</h3>
+              <p className="text-gray-400 mb-4">Join the next available game instantly</p>
+              <Button 
+                onClick={handleQuickJoin}
+                disabled={quickJoinMutation.isPending}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {quickJoinMutation.isPending ? 'Finding Game...' : 'Quick Join'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all">
+            <CardContent className="p-6 text-center">
+              <Bot className="h-12 w-12 text-green-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Practice with AI</h3>
+              <p className="text-gray-400 mb-4">Train against sophisticated bot opponents</p>
+              <Button 
+                onClick={() => handleCreateGame('bot-challenge')}
+                disabled={createGameMutation.isPending}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                {createGameMutation.isPending ? 'Creating...' : 'Challenge Bot'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all">
+            <CardContent className="p-6 text-center">
+              <BarChart4 className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">View Stats</h3>
+              <p className="text-gray-400 mb-4">Track your performance and progress</p>
               <Button 
                 onClick={handleViewDashboard}
-                className="w-full"
                 variant="outline"
-                size="sm"
+                className="w-full border-slate-600 text-white hover:bg-slate-700"
               >
-                View Dashboard
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="bg-secondary/20 text-secondary rounded-full p-3 sm:p-4 mx-auto mb-3 sm:mb-4 w-12 sm:w-16">
-                <Gamepad2 className="h-6 w-6 sm:h-8 sm:w-8" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-bold mb-2">Play Now</h3>
-              <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">
-                Create a new game and invite players to join
-              </p>
-              <Button 
-                onClick={handleCreateGame}
-                className="w-full bg-secondary text-primary font-bold"
-                size="sm"
-              >
-                Create Game
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-lg transition-shadow sm:col-span-2 lg:col-span-1">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="bg-green-100 text-green-700 rounded-full p-3 sm:p-4 mx-auto mb-3 sm:mb-4 w-12 sm:w-16">
-                <Wallet className="h-6 w-6 sm:h-8 sm:w-8" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-bold mb-2">Manage Wallet</h3>
-              <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">
-                Deposit funds or withdraw your winnings
-              </p>
-              <Button 
-                onClick={handleViewWallet}
-                className="w-full"
-                variant="outline"
-                size="sm"
-              >
-                Open Wallet
+                Dashboard
               </Button>
             </CardContent>
           </Card>
         </div>
-        
-        <Separator className="my-8" />
-        
-        {/* How to Play */}
-        <div className="bg-white rounded-lg shadow p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6 text-center">How to Play Big Boys Game</h2>
-          
+
+        {/* Game Modes */}
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold text-white mb-8 text-center">Choose Your Game Mode</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center border border-blue-100 rounded-lg p-4">
-              <div className="bg-blue-100 text-blue-700 rounded-full p-4 mx-auto mb-4 w-16">
-                <DollarSign className="h-8 w-8" />
-              </div>
-              <h3 className="font-bold mb-2">1. Place Your Stake</h3>
-              <p className="text-gray-600">
-                Create a game with your desired stake amount or join an existing game
-              </p>
-            </div>
-            
-            <div className="text-center border border-purple-100 rounded-lg p-4">
-              <div className="bg-purple-100 text-purple-700 rounded-full p-4 mx-auto mb-4 w-16">
-                <Users className="h-8 w-8" />
-              </div>
-              <h3 className="font-bold mb-2">2. Wait for Players</h3>
-              <p className="text-gray-600">
-                Games can host 2-10 players. Game starts when all players are ready
-              </p>
-            </div>
-            
-            <div className="text-center border border-amber-100 rounded-lg p-4">
-              <div className="bg-amber-100 text-amber-700 rounded-full p-4 mx-auto mb-4 w-16">
-                <Gamepad2 className="h-8 w-8" />
-              </div>
-              <h3 className="font-bold mb-2">3. Roll Your Stone</h3>
-              <p className="text-gray-600">
-                Take turns rolling your stone. The player with the highest number wins!
-              </p>
-            </div>
-            
-            <div className="text-center border border-green-100 rounded-lg p-4">
-              <div className="bg-green-100 text-green-700 rounded-full p-4 mx-auto mb-4 w-16">
-                <CreditCard className="h-8 w-8" />
-              </div>
-              <h3 className="font-bold mb-2">4. Collect Winnings</h3>
-              <p className="text-gray-600">
-                Winners automatically receive their share of the pot in their wallet
-              </p>
-            </div>
-          </div>
-          
-          <div className="mt-8 text-center">
-            <Button 
-              onClick={handleCreateGame}
-              className="bg-secondary text-primary font-bold px-8"
-            >
-              Start Playing Now
-            </Button>
+            {GAME_TYPES.map((gameType) => (
+              <Card key={gameType.id} className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all group">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <gameType.icon className="h-8 w-8 text-blue-400" />
+                    <Badge variant="outline" className="border-slate-600 text-gray-300">
+                      {gameType.difficulty}
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-white text-lg">{gameType.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-gray-400 text-sm mb-4">{gameType.description}</p>
+                  <div className="space-y-2 mb-6">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Users className="h-4 w-4" />
+                      <span>{gameType.players}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Clock className="h-4 w-4" />
+                      <span>{gameType.duration}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2 mb-6">
+                    {gameType.features.map((feature, index) => (
+                      <div key={index} className="flex items-center gap-2 text-xs text-gray-500">
+                        <Star className="h-3 w-3" />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <Button 
+                    onClick={() => handleCreateGame(gameType.id)}
+                    disabled={createGameMutation.isPending}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    {createGameMutation.isPending ? 'Creating...' : 'Start Game'}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
-        
-        {/* International Features */}
-        <Card className="mb-8 overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2">
-            <div className="p-8">
-              <h2 className="text-2xl font-bold mb-4">Play From Anywhere</h2>
-              <p className="text-gray-600 mb-6">
-                Big Boys Game supports players from around the world with multiple currency options and local bank withdrawals.
-              </p>
-              
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-4">
-                    <span className="text-blue-600 font-bold">₦</span>
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Multi-Currency Support</h3>
-                    <p className="text-sm text-gray-500">Play with NGN, USD, EUR, GBP and more</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
-                    <span className="text-green-600 font-bold">$</span>
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Local Bank Withdrawals</h3>
-                    <p className="text-sm text-gray-500">Withdraw your winnings to your local bank</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mr-4">
-                    <span className="text-amber-600 font-bold">€</span>
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Automatic Conversion</h3>
-                    <p className="text-sm text-gray-500">Real-time currency conversion for all transactions</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-blue-600 text-white p-8 flex flex-col justify-center">
-              <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
-              <div className="bg-white/10 rounded-lg p-6">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 rounded-full bg-white text-blue-600 flex items-center justify-center text-xl font-bold mr-4">
-                    {user.avatarInitials}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl">{user.username}</h3>
-                    <p className="text-white text-opacity-80">{user.email}</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-white text-opacity-80">Country:</span>
-                    <span className="font-medium">{user.countryCode || 'Not set'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white text-opacity-80">Currency:</span>
-                    <span className="font-medium">{user.preferredCurrency || 'NGN'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white text-opacity-80">Language:</span>
-                    <span className="font-medium">{user.language || 'English'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white text-opacity-80">Wallet Balance:</span>
-                    <span className="font-medium">{formatCurrency(user.walletBalance)}</span>
-                  </div>
-                </div>
-                
-                <Button
-                  onClick={() => setLocation('/dashboard')}
-                  className="w-full mt-6 bg-white text-blue-600"
-                >
-                  Update Profile
-                </Button>
-              </div>
+
+        {/* Active Games */}
+        {gamesData && gamesData.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-white mb-8 text-center">Active Games</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {gamesData.slice(0, 6).map((game: any) => (
+                <Card key={game.id} className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-white">Game #{game.id}</CardTitle>
+                      <Badge className={`${
+                        game.status === 'waiting' ? 'bg-blue-600' : 
+                        game.status === 'in_progress' ? 'bg-green-600' : 
+                        'bg-gray-600'
+                      }`}>
+                        {game.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-gray-400 mb-4">
+                      <div className="flex items-center justify-between">
+                        <span>Players:</span>
+                        <span>{game.currentPlayers || 0}/{game.maxPlayers}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Type:</span>
+                        <span>{game.gameType || 'Standard'}</span>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => setLocation(`/game/${game.id}`)}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      disabled={game.status === 'completed'}
+                    >
+                      {game.status === 'waiting' ? 'Join Game' : 
+                       game.status === 'in_progress' ? 'Watch Game' : 
+                       'View Results'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
-        </Card>
+        )}
+
+        {/* Platform Features */}
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-white mb-8">Platform Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="text-center">
+              <Brain className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Enhanced Bot AI</h3>
+              <p className="text-gray-400">Advanced artificial intelligence adapts to your skill level</p>
+            </div>
+            <div className="text-center">
+              <Users className="h-12 w-12 text-green-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Real-time Multiplayer</h3>
+              <p className="text-gray-400">Seamless WebSocket-based multiplayer experiences</p>
+            </div>
+            <div className="text-center">
+              <Target className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Strategic Complexity</h3>
+              <p className="text-gray-400">Deep gameplay mechanics for engaging experiences</p>
+            </div>
+            <div className="text-center">
+              <Trophy className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Competitive Play</h3>
+              <p className="text-gray-400">Tournament modes and skill-based matchmaking</p>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );
