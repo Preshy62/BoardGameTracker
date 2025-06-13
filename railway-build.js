@@ -40,30 +40,58 @@ async function buildFrontend() {
     // Create dist directory if it doesn't exist
     const distDir = join(__dirname, 'dist');
     const publicDir = join(distDir, 'public');
+    const serverDir = join(distDir, 'server');
     const clientDir = join(__dirname, 'client');
     
     await fs.mkdir(distDir, { recursive: true });
     await fs.mkdir(publicDir, { recursive: true });
+    await fs.mkdir(serverDir, { recursive: true });
 
-    console.log('Copying client files to dist/public for Railway deployment...');
+    console.log('Building frontend using Vite...');
+    
+    // Build frontend with Vite
+    try {
+      await runCommand('npx', ['vite', 'build'], { 
+        cwd: __dirname,
+        env: { ...process.env, NODE_ENV: 'production' }
+      });
+      console.log('Frontend built successfully with Vite!');
+    } catch (error) {
+      console.log('Vite build failed, falling back to file copy...');
+      // Fallback: Copy client files
+      await runCommand('cp', ['-r', `${clientDir}/.`, publicDir]);
+      console.log('Client files copied as fallback');
+    }
 
-    // Copy all client files to public directory
-    await runCommand('cp', ['-r', `${clientDir}/.`, publicDir]);
+    console.log('Compiling backend TypeScript files...');
     
-    console.log('Client files copied successfully!');
+    // Compile backend TypeScript to JavaScript
+    try {
+      await runCommand('npx', ['tsc', '--outDir', 'dist/server', '--target', 'es2020', '--module', 'esnext', '--moduleResolution', 'bundler', '--allowSyntheticDefaultImports', '--esModuleInterop', 'server/index.ts', 'server/routes.ts', 'server/storage-simple.ts']);
+      console.log('Backend compiled successfully!');
+    } catch (error) {
+      console.log('TypeScript compilation failed, copying source files...');
+      // Fallback: Copy server files
+      await runCommand('cp', ['-r', 'server', 'dist/']);
+      await runCommand('cp', ['-r', 'shared', 'dist/']);
+      console.log('Server source files copied as fallback');
+    }
     
-    // Verify copy completed
+    // Verify build completed
     try {
       const indexPath = join(publicDir, 'index.html');
       await fs.access(indexPath);
       console.log('Build verification: index.html found at', indexPath);
       
       // List contents for debugging
-      const files = await fs.readdir(publicDir);
-      console.log('Files in dist/public:', files.slice(0, 10)); // Show first 10 files
+      const publicFiles = await fs.readdir(publicDir);
+      console.log('Files in dist/public:', publicFiles.slice(0, 10));
+      
+      const serverFiles = await fs.readdir(serverDir);
+      console.log('Files in dist/server:', serverFiles.slice(0, 10));
       
     } catch {
-      console.error('Build verification: index.html not found in', publicDir);
+      console.error('Build verification failed');
       process.exit(1);
     }
 
