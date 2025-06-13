@@ -726,6 +726,28 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(games).where(eq(games.status, 'waiting'));
   }
 
+  async refundStake(userId: number, amount: number, description: string): Promise<void> {
+    // Update user's wallet balance
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User ${userId} not found`);
+    }
+    
+    const newBalance = user.walletBalance + amount;
+    await this.updateUserBalance(userId, newBalance);
+    
+    // Create refund transaction record
+    await this.createTransaction({
+      userId,
+      amount,
+      type: 'refund',
+      status: 'completed',
+      reference: `refund_${Date.now()}`,
+      currency: 'NGN',
+      description
+    });
+  }
+
   async getAvailableGames(currency?: string, minStake?: number, maxStake?: number): Promise<Game[]> {
     let query = db.select().from(games).where(eq(games.status, 'waiting'));
     

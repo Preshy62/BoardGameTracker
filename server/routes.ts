@@ -20,6 +20,7 @@ import botGamesRoutes from "./routes/bot-games";
 import { TransactionManager } from "./services/transactionManager";
 import { AVAILABLE_CURRENCIES } from "./routes/currency";
 import { addMinutes, addHours, addDays } from "date-fns";
+import { gameCleanupService } from "./services/gameCleanupService";
 import { 
   generateVerificationToken, 
   generatePasswordResetToken, 
@@ -3072,6 +3073,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Start the game cleanup service
+  gameCleanupService.start();
+  console.log("Game cleanup service started - expired waiting games will be automatically removed after 1 hour");
   
   return httpServer;
 }

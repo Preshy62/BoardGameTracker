@@ -46,6 +46,8 @@ export class GameCleanupService {
       
       for (const game of waitingGames) {
         // Check if game has expired (1 hour after creation)
+        if (!game.createdAt) continue;
+        
         const gameCreated = new Date(game.createdAt);
         const expirationTime = addHours(gameCreated, 1);
         
