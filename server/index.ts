@@ -61,7 +61,7 @@ app.use((req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     res.header('Access-Control-Allow-Origin', origin || '*');
   } else {
-    // Production whitelist
+    // Production whitelist including Replit domains
     const allowedOrigins = [
       'http://localhost:5000',
       'http://127.0.0.1:5000',
@@ -69,8 +69,9 @@ app.use((req, res, next) => {
       'http://127.0.0.1:3000'
     ];
     
-    if (!origin || allowedOrigins.includes(origin)) {
-      res.header('Access-Control-Allow-Origin', origin || 'http://localhost:5000');
+    // Allow Replit domains in production
+    if (!origin || allowedOrigins.includes(origin) || (origin && origin.includes('.replit.dev'))) {
+      res.header('Access-Control-Allow-Origin', origin || '*');
     }
   }
   

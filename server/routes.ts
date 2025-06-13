@@ -45,19 +45,20 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 // Use memory session store for development (instead of PostgreSQL)
 import { storage } from "./storage-simple";
 
-// Configure the session middleware with memory store
+// Configure the session middleware with memory store - optimized for Replit
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "bbg-game-secret",
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   store: storage.sessionStore,
   name: 'connect.sid',
   cookie: {
-    httpOnly: false, // Allow frontend access for development
-    secure: false, // HTTP compatibility
-    sameSite: 'none', // Allow cross-origin requests for Replit environment
+    httpOnly: false, // Allow frontend access in Replit environment
+    secure: false,
+    sameSite: 'none', // Required for cross-origin in Replit
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/'
+    path: '/',
+    domain: undefined // Let browser set automatically
   }
 });
 
