@@ -320,6 +320,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // Debug endpoint to check users (temporary)
+  app.get("/api/debug/users", async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const safeUsers = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        isActive: user.isActive,
+        walletBalance: user.walletBalance
+      }));
+      res.json({ users: safeUsers, count: users.length });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/user", authenticate, async (req, res) => {
     try {
       // Since authenticate middleware ensures userId exists, we can safely use the type guard

@@ -15,7 +15,7 @@ async function createDemoUser() {
     console.log("Checking if demo user exists...");
     const existingUser = await storage.getUserByUsername("demo");
     if (existingUser) {
-      console.log("Demo user already exists");
+      console.log("Demo user already exists with ID:", existingUser.id);
       return;
     }
     
@@ -25,7 +25,7 @@ async function createDemoUser() {
     
     console.log("Creating demo user...");
     
-    // Create user based on the schema
+    // Create user based on the schema with only required fields
     const user = await storage.createUser({
       username: "demo",
       email: "demo@bigboysgame.com",
@@ -36,10 +36,6 @@ async function createDemoUser() {
       language: "en",
       timeZone: "Africa/Lagos",
       emailVerified: true, // Auto-verify demo user
-      isActive: true,
-      isAdmin: false,
-      isVerified: false,
-      verificationLevel: 0
     });
     
     console.log("Demo user created with ID:", user.id);
@@ -48,9 +44,10 @@ async function createDemoUser() {
     console.log("Adding initial funds to demo user...");
     await storage.updateUserBalance(user.id, 200000); // ₦200,000
     
-    console.log("Demo user created successfully with ID:", user.id);
+    console.log("Demo user setup completed successfully with ID:", user.id);
   } catch (error) {
     console.error("Failed to create demo user:", error);
+    console.error("Error details:", error.message);
   }
 }
 
