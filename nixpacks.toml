@@ -1,8 +1,0 @@
-[phases.setup]
-nixPkgs = ['nodejs-18', 'npm']
-
-[phases.install]
-cmds = ['npm ci']
-
-[start]
-cmd = 'node railway-production.js'
