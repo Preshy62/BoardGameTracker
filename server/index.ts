@@ -91,8 +91,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files FIRST from server/public (including music files)
-app.use(express.static('server/public', {
+// Serve static files FIRST (including music files)
+app.use(express.static('public', {
   setHeaders: (res, path) => {
     if (path.endsWith('.mp3')) {
       res.setHeader('Content-Type', 'audio/mpeg');
