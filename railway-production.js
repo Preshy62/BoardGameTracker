@@ -21,7 +21,10 @@ const serverEnv = {
   PORT: PORT,
   // Prevent vite from being loaded
   VITE_CONFIG_PATH: '',
-  NO_VITE: 'true'
+  NO_VITE: 'true',
+  // Fix npm warning about production flag
+  npm_config_omit: 'dev',
+  npm_config_production: undefined
 };
 
 console.log(`Starting backend server on port ${PORT}...`);
