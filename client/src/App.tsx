@@ -44,29 +44,34 @@ import { queryClient } from "@/lib/queryClient";
 import AuthProvider, { useAuth } from "./hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import DirectLanding from "@/components/DirectLanding";
 
 function HomeOrLanding() {
-  const { user, isLoading, error } = useAuth();
-  
-  // Show loading state while checking authentication
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Big Boys Game</h1>
-          <div className="animate-pulse text-gray-300">Loading...</div>
+  try {
+    const { user, isLoading, error } = useAuth();
+    
+    // Fast path: if auth has error or no user, show landing immediately
+    if (error || (!isLoading && !user)) {
+      return <DirectLanding />;
+    }
+    
+    // Show loading only briefly
+    if (isLoading) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-white mb-4">Big Boys Game</h1>
+            <div className="animate-pulse text-gray-300">Loading...</div>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+    
+    return user ? <Home /> : <DirectLanding />;
+  } catch (authError) {
+    console.warn('Auth hook error, showing landing page:', authError);
+    return <DirectLanding />;
   }
-  
-  // If there's an auth error, show landing page
-  if (error) {
-    console.warn('Auth error (showing landing page):', error);
-    return <LandingPage />;
-  }
-  
-  return user ? <Home /> : <LandingPage />;
 }
 
 function Router() {
