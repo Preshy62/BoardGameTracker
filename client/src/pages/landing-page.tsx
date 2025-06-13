@@ -2,466 +2,329 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Footer } from "@/components/Footer";
+import { Badge } from "@/components/ui/badge";
 import { 
   PlusCircle, 
   Users, 
-  DollarSign, 
-  Trophy,
-  Clock, 
-  CreditCard,
+  Bot, 
   Gamepad2,
-  Globe2,
+  Trophy,
+  Clock,
+  Star,
+  PlayCircle,
+  Zap,
+  Target,
+  Brain,
+  BarChart4,
   ChevronRight,
   Shield,
-  Zap
+  Globe2
 } from "lucide-react";
 
 export default function LandingPage() {
   const [, setLocation] = useLocation();
   
-  // Redirect to auth page
   const handleSignIn = () => {
     setLocation('/auth');
   };
 
-  // Redirect to quick demo game
   const handleQuickDemo = () => {
     setLocation('/demo-new');
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Header with improved styling */}
-      <header className="sticky top-0 z-50 bg-primary text-white py-3 shadow-md">
-        <div className="container mx-auto px-4 flex justify-between items-center">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-sm border-b border-slate-700">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center">
-            <h1 className="text-2xl font-bold tracking-tight">Big Boys Game</h1>
+            <h1 className="text-2xl font-bold text-white">
+              Big Boys <span className="text-blue-400">Game</span>
+            </h1>
           </div>
-          <div className="space-x-2">
+          <div className="space-x-3">
             <Button 
               onClick={handleQuickDemo}
-              variant="secondary"
-              className="bg-secondary hover:bg-secondary-dark text-primary font-bold transition-all"
+              variant="outline"
+              className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
             >
               <Gamepad2 className="h-4 w-4 mr-2" />
               Try Demo
             </Button>
             <Button 
               onClick={handleSignIn}
-              variant="outline" 
-              className="text-white border-white hover:bg-white/20 transition-all"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              Sign In
+              Get Started
             </Button>
           </div>
         </div>
       </header>
       
-      {/* Hero Section with enhanced animations and visual effects */}
-      <section className="py-20 bg-gradient-to-br from-primary via-primary-dark to-blue-900 text-white relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10 bg-grid-white pointer-events-none"></div>
-        
-        {/* Decorative elements */}
-        <div className="absolute top-20 right-10 w-64 h-64 bg-secondary opacity-10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-10 left-10 w-48 h-48 bg-blue-500 opacity-10 rounded-full blur-3xl"></div>
+      {/* Hero Section */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-white/5 pointer-events-none"></div>
+        <div className="absolute top-20 right-10 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 left-10 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl"></div>
         
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-              <div className="inline-block mb-6 bg-white/10 rounded-full px-4 py-1 backdrop-blur-sm border border-white/20">
-                <p className="text-sm font-medium text-blue-100 flex items-center">
+              <div className="inline-block mb-6 bg-white/10 rounded-full px-4 py-2 backdrop-blur-sm border border-white/20">
+                <p className="text-sm font-medium text-blue-200 flex items-center">
                   <span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-2 animate-pulse"></span>
-                  <span>10,000+ Live Players Online</span>
+                  Enhanced AI Gaming Platform
                 </p>
               </div>
               
-              <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                The Ultimate <span className="text-yellow-400">Nigerian</span> Gambling Experience (Redesigned)
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
+                Sophisticated <span className="text-blue-400">Multiplayer</span> Gaming
               </h1>
               
-              <p className="text-xl mb-8 text-blue-100 max-w-lg">
-                Play the classic stone game online with real stakes and instant payouts to your local bank account. Join thousands of players today!
+              <p className="text-xl mb-8 text-gray-300 max-w-lg">
+                Experience next-generation gaming with enhanced bot AI, real-time multiplayer battles, and strategic complexity that adapts to your skill level.
               </p>
               
               <div className="flex flex-wrap gap-4">
                 <Button 
                   onClick={handleSignIn}
                   size="lg"
-                  className="bg-secondary hover:bg-yellow-500 text-primary font-bold shadow-lg transform transition-all hover:translate-y-[-2px] shimmer"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold shadow-lg transform transition-all hover:translate-y-[-2px]"
                 >
                   <div className="flex items-center">
-                    Sign In / Register 
+                    Start Gaming
                     <ChevronRight className="ml-1 h-5 w-5" />
                   </div>
                 </Button>
                 
                 <Button 
                   onClick={handleQuickDemo}
-                  size="lg" 
                   variant="outline"
-                  className="border-white text-white hover:bg-white/20 transition-all"
+                  size="lg"
+                  className="border-slate-600 text-white hover:bg-slate-700"
                 >
-                  <Gamepad2 className="mr-2 h-5 w-5" /> Try Demo
+                  <PlayCircle className="h-5 w-5 mr-2" />
+                  Watch Demo
                 </Button>
-              </div>
-              
-              <div className="mt-8 flex items-center space-x-6">
-                <div className="flex items-center">
-                  <Shield className="text-green-400 mr-2 h-5 w-5" />
-                  <span className="text-sm text-blue-100">Secure Transactions</span>
-                </div>
-                <div className="flex items-center">
-                  <CreditCard className="text-green-400 mr-2 h-5 w-5" />
-                  <span className="text-sm text-blue-100">Instant Payouts</span>
-                </div>
               </div>
             </div>
             
-            <div className="flex justify-center">
-              <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20 shadow-2xl floating">
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Game stones examples with enhanced visual effects and animations */}
-                  {[29, 75, 42, 1000, 3355, 63, 500, 6624, 91].map((number, index) => (
-                    <div 
-                      key={index}
-                      className={`
-                        w-16 h-16 md:w-20 md:h-20 rounded-lg flex items-center justify-center 
-                        font-bold text-lg md:text-xl shadow-lg transform transition-all duration-300
-                        ${index === 4 ? 'z-10 scale-110' : ''}
-                        ${number === 1000 || number === 500 
-                          ? 'bg-yellow-500 text-primary hover:bg-yellow-400 hover:scale-110 hover:rotate-3' 
-                          : number === 3355 || number === 6624 
-                            ? 'bg-red-600 text-white border-2 border-yellow-400 hover:bg-red-500 hover:scale-110 hover:rotate-3' 
-                            : 'bg-gray-800 text-white hover:bg-gray-700 hover:scale-105 hover:rotate-2'
-                        }
-                      `}
-                      style={{
-                        animationDelay: `${index * 0.1}s`,
-                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                      }}
-                    >
-                      {number}
-                      {/* Highlight effect for special numbers */}
-                      {(number === 3355 || number === 6624) && (
-                        <div className="absolute inset-0 rounded-lg bg-white opacity-0 hover:opacity-20 transition-opacity duration-300"></div>
-                      )}
+            {/* Gaming Visual */}
+            <div className="hidden md:block">
+              <div className="relative">
+                <div className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700">
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-blue-500/20 rounded-lg p-4 text-center">
+                      <Brain className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-300">Enhanced AI</p>
                     </div>
-                  ))}
-                </div>
-                
-                {/* Winning indicator */}
-                <div className="mt-4 flex items-center justify-center bg-green-900/30 rounded-lg p-2 border border-green-500/30">
-                  <Trophy className="text-yellow-400 mr-2 h-5 w-5" />
-                  <span className="text-sm text-green-300">6624 Wins ₦240,000!</span>
+                    <div className="bg-green-500/20 rounded-lg p-4 text-center">
+                      <Users className="h-8 w-8 text-green-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-300">Multiplayer</p>
+                    </div>
+                    <div className="bg-purple-500/20 rounded-lg p-4 text-center">
+                      <Target className="h-8 w-8 text-purple-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-300">Strategy</p>
+                    </div>
+                    <div className="bg-yellow-500/20 rounded-lg p-4 text-center">
+                      <Trophy className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-300">Compete</p>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <Badge className="bg-blue-600/20 text-blue-300 border-blue-500/30">
+                      Real-time Gaming Engine
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </section>
-      
-      {/* Features Section with improved design */}
-      <section className="py-24 relative">
-        {/* Subtle background pattern */}
-        <div className="absolute inset-0 bg-gray-100 opacity-50 pointer-events-none"></div>
-        
-        <div className="container mx-auto px-4 relative z-10">
+
+      {/* Features Section */}
+      <section className="py-20 bg-slate-800/30">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold inline-block relative">
-              Game Features
-              <span className="absolute bottom-0 left-0 w-full h-1 bg-secondary transform -translate-y-2"></span>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Why Choose Our Platform?
             </h2>
-            <p className="text-gray-600 mt-4 max-w-2xl mx-auto">Experience the authentic Big Boys Game with our digital platform's premium features</p>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              Advanced gaming technology meets sophisticated multiplayer experiences
+            </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="border-t-4 border-blue-500 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <CardContent className="p-8 flex flex-col items-center text-center">
-                <div className="p-4 bg-blue-100 text-blue-700 rounded-full mb-6 shadow-inner">
-                  <Users className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-bold mb-3">Multiplayer Gameplay</h3>
-                <p className="text-gray-600">
-                  Play with 2-10 players in exciting game rooms with real-time interaction. Voice chat available for premium games.
+            <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all">
+              <CardContent className="p-8 text-center">
+                <Brain className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-3">Enhanced Bot AI</h3>
+                <p className="text-gray-400">
+                  Sophisticated artificial intelligence that adapts to your skill level and provides challenging gameplay experiences.
                 </p>
               </CardContent>
             </Card>
-            
-            <Card className="border-t-4 border-yellow-500 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <CardContent className="p-8 flex flex-col items-center text-center">
-                <div className="p-4 bg-yellow-100 text-yellow-700 rounded-full mb-6 shadow-inner">
-                  <Gamepad2 className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-bold mb-3">Special Stones</h3>
-                <p className="text-gray-600">
-                  Land on special stones like 500, 1000, 3355, or 6624 for bonus multipliers! Experience the thrill of big wins.
+
+            <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all">
+              <CardContent className="p-8 text-center">
+                <Users className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-3">Real-time Multiplayer</h3>
+                <p className="text-gray-400">
+                  WebSocket-based real-time communication enables seamless multiplayer gaming with friends worldwide.
                 </p>
               </CardContent>
             </Card>
-            
-            <Card className="border-t-4 border-green-500 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <CardContent className="p-8 flex flex-col items-center text-center">
-                <div className="p-4 bg-green-100 text-green-700 rounded-full mb-6 shadow-inner">
-                  <Globe2 className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-bold mb-3">International Play</h3>
-                <p className="text-gray-600">
-                  Play from anywhere with multi-currency support and local bank withdrawals. Connect with players around the world.
+
+            <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all">
+              <CardContent className="p-8 text-center">
+                <Target className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-3">Strategic Depth</h3>
+                <p className="text-gray-400">
+                  Complex game mechanics and strategic gameplay that rewards tactical thinking and skill development.
                 </p>
               </CardContent>
             </Card>
-          </div>
-          
-          <div className="mt-16 text-center">
-            <Button 
-              onClick={handleQuickDemo}
-              className="bg-primary hover:bg-primary-dark text-white font-bold px-8 py-6 rounded-lg shadow-lg"
-            >
-              <Zap className="h-5 w-5 mr-2" />
-              Experience It Now
-            </Button>
           </div>
         </div>
       </section>
-      
-      {/* How to Play - modern design with numbered cards */}
-      <section className="py-20 bg-gray-50">
+
+      {/* Game Modes Preview */}
+      <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">How to Play Big Boys Game</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">Follow these simple steps to start playing and winning</p>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Multiple Game Modes
+            </h2>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              Choose from various gaming experiences designed for different skill levels and preferences
+            </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {/* Step 1 */}
-            <div className="group bg-white rounded-xl shadow-lg p-6 relative transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-              <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-bold border-4 border-white shadow-lg">1</div>
-              <div className="pt-4">
-                <div className="bg-blue-100 text-blue-700 rounded-full p-4 mb-5 mx-auto w-16 h-16 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                  <DollarSign className="h-8 w-8" />
-                </div>
-                <h3 className="font-bold text-lg mb-3 text-center">Place Your Stake</h3>
-                <p className="text-gray-600 text-center">
-                  Create a game with your desired stake amount or join an existing game with other players
-                </p>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-slate-800/30 rounded-lg p-6 text-center border border-slate-700">
+              <Zap className="h-10 w-10 text-blue-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Quick Match</h3>
+              <p className="text-gray-400 text-sm">Fast-paced battles</p>
             </div>
             
-            {/* Step 2 */}
-            <div className="group bg-white rounded-xl shadow-lg p-6 relative transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-              <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-purple-600 text-white flex items-center justify-center text-xl font-bold border-4 border-white shadow-lg">2</div>
-              <div className="pt-4">
-                <div className="bg-purple-100 text-purple-700 rounded-full p-4 mb-5 mx-auto w-16 h-16 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                  <Users className="h-8 w-8" />
-                </div>
-                <h3 className="font-bold text-lg mb-3 text-center">Wait for Players</h3>
-                <p className="text-gray-600 text-center">
-                  Games can host 2-10 players. The game begins automatically when all players are ready to start
-                </p>
-              </div>
+            <div className="bg-slate-800/30 rounded-lg p-6 text-center border border-slate-700">
+              <Bot className="h-10 w-10 text-green-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Bot Challenge</h3>
+              <p className="text-gray-400 text-sm">AI training mode</p>
             </div>
             
-            {/* Step 3 */}
-            <div className="group bg-white rounded-xl shadow-lg p-6 relative transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-              <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-amber-600 text-white flex items-center justify-center text-xl font-bold border-4 border-white shadow-lg">3</div>
-              <div className="pt-4">
-                <div className="bg-amber-100 text-amber-700 rounded-full p-4 mb-5 mx-auto w-16 h-16 flex items-center justify-center group-hover:bg-amber-200 transition-colors">
-                  <Gamepad2 className="h-8 w-8" />
-                </div>
-                <h3 className="font-bold text-lg mb-3 text-center">Roll Your Stone</h3>
-                <p className="text-gray-600 text-center">
-                  Take turns rolling your stone. Watch for special numbers like 1000, 3355, and 6624 for bonus wins!
-                </p>
-              </div>
+            <div className="bg-slate-800/30 rounded-lg p-6 text-center border border-slate-700">
+              <Brain className="h-10 w-10 text-purple-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Strategy Arena</h3>
+              <p className="text-gray-400 text-sm">Advanced tactical gameplay</p>
             </div>
             
-            {/* Step 4 */}
-            <div className="group bg-white rounded-xl shadow-lg p-6 relative transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-              <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-green-600 text-white flex items-center justify-center text-xl font-bold border-4 border-white shadow-lg">4</div>
-              <div className="pt-4">
-                <div className="bg-green-100 text-green-700 rounded-full p-4 mb-5 mx-auto w-16 h-16 flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                  <CreditCard className="h-8 w-8" />
-                </div>
-                <h3 className="font-bold text-lg mb-3 text-center">Collect Winnings</h3>
-                <p className="text-gray-600 text-center">
-                  Winners automatically receive their share of the pot in their wallet with instant payouts
-                </p>
-              </div>
+            <div className="bg-slate-800/30 rounded-lg p-6 text-center border border-slate-700">
+              <Trophy className="h-10 w-10 text-yellow-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Tournament</h3>
+              <p className="text-gray-400 text-sm">Competitive brackets</p>
             </div>
           </div>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button 
-              onClick={handleQuickDemo}
-              className="bg-secondary hover:bg-secondary-dark text-primary font-bold px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all w-full sm:w-auto"
-            >
-              <Gamepad2 className="h-5 w-5 mr-2" />
-              Try Demo Now
-            </Button>
+        </div>
+      </section>
+
+      {/* Platform Stats */}
+      <section className="py-20 bg-slate-800/30">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-3xl font-bold text-blue-400 mb-2">24/7</div>
+              <p className="text-gray-400">Platform Availability</p>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-green-400 mb-2">Real-time</div>
+              <p className="text-gray-400">Multiplayer Gaming</p>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-purple-400 mb-2">Advanced</div>
+              <p className="text-gray-400">AI Opponents</p>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-yellow-400 mb-2">Global</div>
+              <p className="text-gray-400">Player Community</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Call to Action */}
+      <section className="py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to Start Gaming?
+          </h2>
+          <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
+            Join the sophisticated multiplayer gaming platform and experience next-generation interactive gameplay.
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center">
             <Button 
               onClick={handleSignIn}
-              variant="default"
-              className="px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all w-full sm:w-auto"
+              size="lg"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold"
             >
-              Sign In / Register
+              Get Started Now
+            </Button>
+            <Button 
+              onClick={handleQuickDemo}
+              variant="outline"
+              size="lg"
+              className="border-slate-600 text-white hover:bg-slate-700"
+            >
+              Try Demo First
             </Button>
           </div>
         </div>
       </section>
-      
-      {/* Stats & Winners - visually enhanced */}
-      <section className="py-20 bg-white relative">
-        {/* Background gradient effect */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-gray-100 to-transparent pointer-events-none"></div>
-        
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="mb-16 text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Game Statistics</h2>
-            <p className="text-gray-600">Join thousands of players already winning big on our platform</p>
+
+      {/* Footer */}
+      <footer className="bg-slate-900 border-t border-slate-700 py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Big Boys Game</h3>
+              <p className="text-gray-400">
+                Sophisticated multiplayer gaming platform with enhanced bot AI and real-time interactive gameplay.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-white font-medium mb-4">Platform</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>Game Modes</li>
+                <li>AI Technology</li>
+                <li>Multiplayer System</li>
+                <li>Tournaments</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-medium mb-4">Community</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>Player Support</li>
+                <li>Gaming Guides</li>
+                <li>Skill Development</li>
+                <li>Fair Play</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-medium mb-4">Technology</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>WebSocket Gaming</li>
+                <li>Enhanced Bot AI</li>
+                <li>Real-time Engine</li>
+                <li>Cross-platform</li>
+              </ul>
+            </div>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* Game Stats with enhanced design */}
-            <div>
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-                <div className="bg-primary text-white py-4 px-6">
-                  <h3 className="text-xl font-bold">Platform Statistics</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-0">
-                  <div className="p-6 text-center border-r border-b border-gray-100 hover:bg-blue-50 transition-colors">
-                    <div className="text-4xl font-bold text-primary mb-3">₦50M+</div>
-                    <p className="text-gray-600 flex items-center justify-center">
-                      <DollarSign className="h-4 w-4 mr-1 text-green-500" />
-                      Total Payouts
-                    </p>
-                  </div>
-                  <div className="p-6 text-center border-b border-gray-100 hover:bg-blue-50 transition-colors">
-                    <div className="text-4xl font-bold text-primary mb-3">10K+</div>
-                    <p className="text-gray-600 flex items-center justify-center">
-                      <Users className="h-4 w-4 mr-1 text-blue-500" />
-                      Active Players
-                    </p>
-                  </div>
-                  <div className="p-6 text-center border-r border-gray-100 hover:bg-blue-50 transition-colors">
-                    <div className="text-4xl font-bold text-primary mb-3">5K+</div>
-                    <p className="text-gray-600 flex items-center justify-center">
-                      <Gamepad2 className="h-4 w-4 mr-1 text-purple-500" />
-                      Daily Games
-                    </p>
-                  </div>
-                  <div className="p-6 text-center hover:bg-blue-50 transition-colors">
-                    <div className="text-4xl font-bold text-primary mb-3">99%</div>
-                    <p className="text-gray-600 flex items-center justify-center">
-                      <Shield className="h-4 w-4 mr-1 text-green-500" />
-                      Payout Rate
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Top Winners with enhanced visual appeal */}
-            <div>
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-                <div className="bg-secondary text-primary py-4 px-6">
-                  <h3 className="text-xl font-bold">Top Winners</h3>
-                </div>
-                <div className="divide-y divide-gray-100">
-                  <div className="flex items-center justify-between p-5 hover:bg-yellow-50 transition-colors">
-                    <div className="flex items-center">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 text-white flex items-center justify-center mr-4 shadow-md">
-                        <Trophy className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-800">BigWinner123</div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Globe2 className="h-3 w-3 mr-1" /> Lagos, Nigeria
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-lg font-bold text-green-600 bg-green-50 py-1 px-3 rounded-full">₦1,250,000</div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-5 hover:bg-yellow-50 transition-colors">
-                    <div className="flex items-center">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-300 to-gray-500 text-white flex items-center justify-center mr-4 shadow-md">
-                        <Trophy className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-800">LuckyPlayer555</div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Globe2 className="h-3 w-3 mr-1" /> Abuja, Nigeria
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-lg font-bold text-green-600 bg-green-50 py-1 px-3 rounded-full">₦950,000</div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-5 hover:bg-yellow-50 transition-colors">
-                    <div className="flex items-center">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center mr-4 shadow-md">
-                        <Trophy className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-800">GoldMaster</div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Globe2 className="h-3 w-3 mr-1" /> Port Harcourt, Nigeria
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-lg font-bold text-green-600 bg-green-50 py-1 px-3 rounded-full">₦750,000</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="border-t border-slate-700 mt-8 pt-8 text-center text-gray-400">
+            <p>&copy; 2025 Big Boys Game. Sophisticated multiplayer gaming platform.</p>
           </div>
         </div>
-      </section>
-      
-      {/* Call To Action - visually striking */}
-      <section className="py-16 bg-gradient-to-br from-secondary via-yellow-500 to-yellow-400 text-primary relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 bg-pattern-dots opacity-10"></div>
-        
-        {/* Animated shape */}
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 rounded-full bg-yellow-300 opacity-20 blur-3xl"></div>
-        <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-primary opacity-10 blur-3xl"></div>
-        
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Play?</h2>
-            <p className="text-xl mb-10 leading-relaxed">Join thousands of players from around the world and experience the thrill of Big Boys Game! Start winning today!</p>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button 
-                onClick={handleSignIn}
-                size="lg"
-                className="bg-primary hover:bg-primary-dark text-white font-bold px-8 py-6 rounded-xl shadow-xl hover:shadow-2xl transform transition-all hover:-translate-y-1 w-full sm:w-auto"
-              >
-                <div className="flex items-center justify-center">
-                  Sign In / Register
-                  <ChevronRight className="ml-2 h-5 w-5" />
-                </div>
-              </Button>
-              <Button 
-                onClick={handleQuickDemo}
-                size="lg" 
-                variant="outline"
-                className="border-primary bg-white/90 hover:bg-white text-primary font-bold px-8 py-6 rounded-xl shadow-xl hover:shadow-2xl transform transition-all hover:-translate-y-1 w-full sm:w-auto"
-              >
-                <Gamepad2 className="mr-2 h-5 w-5" />
-                Try Demo First
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Professional Footer Component */}
-      <Footer />
+      </footer>
     </div>
   );
 }
