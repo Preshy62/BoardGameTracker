@@ -18,7 +18,7 @@ console.log('Port:', process.env.PORT);
 
 // Start the server using Node.js directly with the TypeScript loader
 const args = [
-  '--loader', 'tsx/esm',
+  '--import', 'tsx/esm',
   '--no-warnings',
   'server/index.ts'
 ];
