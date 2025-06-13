@@ -26,8 +26,8 @@ const serverEnv = {
 
 console.log(`Starting backend server on port ${PORT}...`);
 
-// Start tsx server in a clean environment
-const tsxServer = spawn('npx', ['tsx', 'server/index.ts'], {
+// Start tsx server with production entry point (avoids vite config)
+const tsxServer = spawn('npx', ['tsx', 'server/production.ts'], {
   stdio: 'inherit',
   env: serverEnv,
   cwd: __dirname
