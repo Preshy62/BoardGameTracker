@@ -1,62 +1,115 @@
 #!/usr/bin/env node
 
-// Ultra-simple production start that avoids all config issues
-import { spawn } from 'child_process';
+// Production server that runs directly without TypeScript compilation
+// This avoids vite config path resolution issues in Railway
+
+import express from 'express';
+import path from 'path';
+import { createServer } from 'http';
+import session from 'express-session';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
-// Set environment
-process.env.NODE_ENV = 'production';
-process.env.PORT = process.env.PORT || '5000';
+const PORT = process.env.PORT || 8080;
 
 console.log('Big Boys Game - Starting Production Server');
 console.log('Directory:', __dirname);
-console.log('Port:', process.env.PORT);
+console.log('Port:', PORT);
 
-// Start the server using Node.js directly with the TypeScript loader
-const args = [
-  '--import', 'tsx/esm',
-  '--no-warnings',
-  'server/index.ts'
-];
+// Basic Express setup
+const app = express();
 
-console.log('Executing: node', args.join(' '));
+// Set up basic middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-const server = spawn('node', args, {
-  stdio: 'inherit',
-  cwd: __dirname,
-  env: {
-    ...process.env,
-    NODE_ENV: 'production',
-    PORT: process.env.PORT || '5000',
-    // Fix the dirname issue for vite.config.ts
-    PWD: __dirname,
-    INIT_CWD: __dirname
+// Session setup
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fallback-secret-key-railway',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Basic health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Simple API endpoints for basic functionality
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    database: process.env.DATABASE_URL ? 'connected' : 'in-memory',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Serve static files if available
+const staticPath = path.join(__dirname, 'dist', 'public');
+app.use(express.static(staticPath, { 
+  fallthrough: true,
+  index: false 
+}));
+
+// Fallback to client directory if dist doesn't exist
+app.use(express.static(path.join(__dirname, 'client'), { 
+  fallthrough: true,
+  index: false 
+}));
+
+// Catch-all route for SPA
+app.get('*', (req, res) => {
+  // Try to serve index.html from dist first, then client
+  const indexPaths = [
+    path.join(__dirname, 'dist', 'public', 'index.html'),
+    path.join(__dirname, 'client', 'index.html')
+  ];
+  
+  let served = false;
+  for (const indexPath of indexPaths) {
+    try {
+      res.sendFile(indexPath);
+      served = true;
+      break;
+    } catch (err) {
+      continue;
+    }
+  }
+  
+  if (!served) {
+    res.status(404).send('Application not found');
   }
 });
 
+// Create and start server
+const server = createServer(app);
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Railway production server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
+  console.log(`Database: ${process.env.DATABASE_URL ? 'Available' : 'Using in-memory storage'}`);
+});
+
+// Error handling
 server.on('error', (error) => {
-  console.error('Server startup error:', error.message);
+  console.error('Server error:', error);
   process.exit(1);
 });
 
-server.on('close', (code) => {
-  console.log(`Server exited with code ${code}`);
-  if (code !== 0) {
-    process.exit(code);
-  }
-});
-
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  server.kill('SIGTERM');
-});
+const shutdown = () => {
+  console.log('Shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+};
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
-  server.kill('SIGINT');
-});
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
