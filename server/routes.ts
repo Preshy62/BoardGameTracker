@@ -49,16 +49,15 @@ import { storage } from "./storage-simple";
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "bbg-game-secret",
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true, // Changed to true for development
   store: storage.sessionStore,
   name: 'connect.sid',
   cookie: {
-    httpOnly: true,
+    httpOnly: false, // Set to false for development to allow frontend access
     secure: false, // Set to false for development to work with http
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for longer session persistence
-    path: '/',
-    domain: undefined // Allow for localhost
+    path: '/'
   }
 });
 
@@ -90,9 +89,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const wss = new WebSocketServer({ 
     server: httpServer, 
     path: '/api/ws',
-    verifyClient: (info) => {
-      // Allow all connections for now
-      return true;
+    verifyClient: (info, callback) => {
+      // Parse session from the upgrade request
+      sessionMiddleware(info.req as any, {} as any, () => {
+        const session = (info.req as any).session;
+        console.log('WebSocket verifyClient - Session ID:', session?.id, 'User ID:', session?.userId);
+        
+        // Allow connection regardless of authentication status
+        // We'll handle authentication after connection is established
+        callback(true);
+      });
     }
   });
   
@@ -1408,16 +1414,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Extract session data from upgrade request
     const getSessionData = () => {
       return new Promise<number | null>((resolve) => {
+        // Parse the cookie header manually if needed
+        const cookieHeader = req.headers.cookie;
+        console.log('WebSocket raw cookie header:', cookieHeader);
+        
         // Create a mock response object for session middleware
         const mockRes = {
           setHeader: () => {},
           getHeader: () => {},
-          end: () => {}
+          end: () => {},
+          statusCode: 200
         };
+        
+        // Ensure cookies are properly parsed
+        if (cookieHeader && !(req as any).cookies) {
+          const cookies: { [key: string]: string } = {};
+          cookieHeader.split(';').forEach(cookie => {
+            const [name, value] = cookie.trim().split('=');
+            if (name && value) {
+              cookies[name] = decodeURIComponent(value);
+            }
+          });
+          (req as any).cookies = cookies;
+        }
         
         sessionMiddleware(req as any, mockRes as any, () => {
           const session = (req as any).session;
-          console.log('WebSocket session data:', session?.id, session?.userId);
+          console.log('WebSocket parsed session:', {
+            sessionId: session?.id,
+            userId: session?.userId,
+            sessionKeys: session ? Object.keys(session) : []
+          });
           
           if (session && session.userId) {
             resolve(session.userId);
