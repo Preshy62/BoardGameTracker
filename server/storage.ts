@@ -6,8 +6,9 @@ import {
   transactions, Transaction, InsertTransaction,
   GameStatus
 } from "@shared/schema";
-import { db } from "./db";
+// Simple conditional import approach
 import { eq, desc, gte, and, inArray, sql } from "drizzle-orm";
+import { db } from "./db";
 
 // Interface for all storage operations
 export interface IStorage {
@@ -604,8 +605,6 @@ export class MemStorage implements IStorage {
 }
 
 // DatabaseStorage implementation
-import { eq, and } from "drizzle-orm";
-import { db } from "./db";
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
@@ -1618,4 +1617,5 @@ export const sessionStore = new PostgresSessionStore({
 });
 
 // Use the database implementation
-export const storage = new DatabaseStorage();
+// Use DatabaseStorage if DATABASE_URL is available, otherwise use MemStorage
+export const storage = process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage();
