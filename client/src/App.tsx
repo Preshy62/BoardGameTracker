@@ -40,10 +40,7 @@ import ResponsibleGamingPage from "@/pages/responsible-gaming";
 import { useEffect } from "react";
 
 
-import AuthProvider, { useAuth } from "./hooks/use-auth";
-import { ProtectedRoute } from "@/lib/protected-route";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import TestLanding from "@/components/TestLanding";
+import { SimpleTest } from "@/components/SimpleTest";
 
 function HomeOrLanding() {
   try {
@@ -211,16 +208,7 @@ function App() {
     };
   }, []);
   
-  return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </AuthProvider>
-    </ErrorBoundary>
-  );
+  return <SimpleTest />;
 }
 
 export default App;
