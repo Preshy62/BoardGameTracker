@@ -1,31 +1,12 @@
 #!/usr/bin/env node
 
 // Fix for static file serving - copies Vite build output to expected location
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-async function copyDir(src, dest) {
-  await fs.promises.mkdir(dest, { recursive: true });
-  const entries = await fs.promises.readdir(src, { withFileTypes: true });
-
-  for (let entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-
-    if (entry.isDirectory()) {
-      await copyDir(srcPath, destPath);
-    } else {
-      await fs.promises.copyFile(srcPath, destPath);
-    }
-  }
-}
+const fs = require('fs-extra');
+const path = require('path');
 
 async function fixStaticFiles() {
   try {
-    const sourceDir = path.join(__dirname, 'dist', 'public');
+    const sourceDir = path.join(__dirname, 'dist');
     const targetDir = path.join(__dirname, 'server', 'public');
 
     // Check if source exists
@@ -34,19 +15,16 @@ async function fixStaticFiles() {
       return;
     }
 
-    // Remove existing target if it exists
-    if (fs.existsSync(targetDir)) {
-      await fs.promises.rm(targetDir, { recursive: true, force: true });
-    }
-
-    // Copy files
-    await copyDir(sourceDir, targetDir);
-    console.log('Static files copied successfully');
+    // Copy entire dist directory to server/public
+    await fs.copy(sourceDir, targetDir, { overwrite: true });
+    console.log('Static files copied successfully from dist to server/public');
   } catch (error) {
     console.error('Error fixing static files:', error.message);
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   fixStaticFiles();
 }
+
+module.exports = { fixStaticFiles };
