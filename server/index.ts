@@ -31,6 +31,15 @@ async function createDemoUser() {
       email: "demo@bigboysgame.com",
       password: hashedPassword,
       avatarInitials: "DM",
+      countryCode: "NG",
+      preferredCurrency: "NGN",
+      language: "en",
+      timeZone: "Africa/Lagos",
+      emailVerified: true, // Auto-verify demo user
+      isActive: true,
+      isAdmin: false,
+      isVerified: false,
+      verificationLevel: 0
     });
     
     console.log("Demo user created with ID:", user.id);
