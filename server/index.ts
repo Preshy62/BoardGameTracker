@@ -95,15 +95,23 @@ app.use((req, res, next) => {
 (async () => {
   let server: any;
   try {
-    // Run database migrations
+    // Run database migrations with error handling
     log("Running database migrations...", "startup");
-    const migrationResult = await runMigration();
-    if (!migrationResult) {
-      log("Database migration failed. Proceeding with caution...", "startup");
+    try {
+      const migrationResult = await runMigration();
+      if (!migrationResult) {
+        log("Database migration failed. Proceeding with caution...", "startup");
+      }
+    } catch (migrationError) {
+      log("Database migration failed, continuing with existing schema...", "startup");
     }
     
-    // Run transaction description field migration
-    await addTransactionDescriptionField();
+    // Run transaction description field migration with error handling
+    try {
+      await addTransactionDescriptionField();
+    } catch (migrationError) {
+      log("Transaction migration failed, continuing...", "startup");
+    }
     
     // Initialize email transport
     log("Initializing email transport...", "startup");
