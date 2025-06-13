@@ -86,16 +86,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files FIRST (including music files) with cache busting
+// Serve static files FIRST (including music files)
 app.use(express.static('public', {
   setHeaders: (res, path) => {
     if (path.endsWith('.mp3')) {
       res.setHeader('Content-Type', 'audio/mpeg');
     }
-    // Add cache-busting headers for all static files
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
   }
 }));
 
