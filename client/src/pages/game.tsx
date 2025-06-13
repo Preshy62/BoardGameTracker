@@ -18,6 +18,7 @@ import Header from "@/components/layout/Header";
 import { Game, GamePlayer, Message } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils";
 import VoiceChat from "@/components/game/VoiceChat";
+import GameBoard from "@/components/game/GameBoard";
 
 interface GameResponse {
   game: Game;
@@ -306,8 +307,8 @@ export default function GamePage() {
               </CardHeader>
               
               <CardContent className="p-3 lg:p-6">
-                <div className="bg-gray-100 rounded-xl p-4 lg:p-8 min-h-[250px] lg:min-h-[300px] flex items-center justify-center">
-                  {game.status === 'waiting' ? (
+                {game.status === 'waiting' ? (
+                  <div className="bg-gray-100 rounded-xl p-4 lg:p-8 min-h-[250px] lg:min-h-[300px] flex items-center justify-center">
                     <div className="text-center">
                       <h3 className="text-xl font-medium mb-2">Waiting for Players</h3>
                       <p className="text-gray-600 mb-4">Game will start automatically when enough players join</p>
@@ -319,12 +320,82 @@ export default function GamePage() {
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-gray-600">Game board will be displayed here once the game starts</p>
+                  </div>
+                ) : (
+                  <div className="relative bg-primary-light border-2 border-gray-800 p-6 rounded-lg min-h-[400px]">
+                    {/* Big Boys Game Board Layout */}
+                    <h3 className="text-center text-white text-2xl font-bold mb-6">BIG BOYS GAME</h3>
+                    
+                    {/* Stone Layout - Row 1 */}
+                    <div className="flex justify-between mb-4">
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">29</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">40</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">32</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">81</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">7</div>
                     </div>
-                  )}
-                </div>
+                    
+                    {/* Stone Layout - Row 2 */}
+                    <div className="flex justify-between mb-4">
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">13</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">64</div>
+                      <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm border-4 border-yellow-700 shadow-xl">1000</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">101</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">4</div>
+                    </div>
+                    
+                    {/* Stone Layout - Row 3 (Super Stones) */}
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center text-white font-bold text-xs border-4 border-red-800 shadow-2xl animate-pulse">3355</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">65</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">12</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">22</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">9</div>
+                      <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center text-white font-bold text-xs border-4 border-purple-800 shadow-2xl animate-pulse">6624</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">44</div>
+                    </div>
+                    
+                    {/* Stone Layout - Row 4 */}
+                    <div className="flex justify-between mb-4">
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">28</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">21</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">105</div>
+                      <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm border-4 border-green-700 shadow-xl">500</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">99</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">20</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">82</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">3</div>
+                    </div>
+                    
+                    {/* Stone Layout - Row 5 */}
+                    <div className="flex justify-between mb-4">
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">11</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">37</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">72</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">17</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">42</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">8</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">30</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">91</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">27</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">5</div>
+                    </div>
+                    
+                    {/* Stone Layout - Row 6 */}
+                    <div className="flex justify-between">
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">6</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">80</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">3</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">26</div>
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm border-4 border-blue-700 shadow-xl">100</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">19</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">14</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">43</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">16</div>
+                      <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-600 shadow-lg">71</div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
               
               <CardFooter className="px-3 lg:px-6 py-3 lg:py-4 border-t">
