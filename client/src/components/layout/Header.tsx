@@ -33,29 +33,59 @@ const Header = ({ user }: HeaderProps) => {
             </h1>
           </Link>
           
-          <nav className="hidden lg:flex ml-6 xl:ml-10 space-x-6">
-            <Link href="/" className="flex items-center text-white hover:text-secondary transition-colors">
-              <Home className="h-4 w-4 mr-1" />
-              Games
-            </Link>
-            <Link href="/dashboard" className="flex items-center text-white hover:text-secondary transition-colors">
-              <LayoutDashboard className="h-4 w-4 mr-1" />
-              Dashboard
-            </Link>
-            <Link href="/wallet" className="flex items-center text-white hover:text-secondary transition-colors">
-              <Wallet className="h-4 w-4 mr-1" />
-              Wallet
-            </Link>
-            <Link href="/settings" className="flex items-center text-white hover:text-secondary transition-colors">
-              <Settings className="h-4 w-4 mr-1" />
-              Settings
-            </Link>
-            {isAdmin && (
-              <Link href="/admin" className="flex items-center text-white hover:text-secondary transition-colors">
-                <Shield className="h-4 w-4 mr-1" />
-                Admin
+          <nav className="hidden lg:flex ml-6 xl:ml-10 space-x-4">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold"
+              onClick={() => window.location.href = '/?action=quick-match'}
+            >
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-green-300 rounded-full mr-2 animate-pulse" />
+                Quick Match
+              </div>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-blue-600 hover:bg-blue-700 text-white border-blue-500 font-semibold"
+              onClick={() => window.location.href = '/?action=practice'}
+            >
+              <div className="flex items-center">
+                <UserIcon className="h-3 w-3 mr-1" />
+                Practice with AI
+              </div>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-orange-600 hover:bg-orange-700 text-white border-orange-500 font-semibold"
+              onClick={() => window.location.href = '/?action=create'}
+            >
+              <div className="flex items-center">
+                <Settings className="h-3 w-3 mr-1" />
+                Create Game
+              </div>
+            </Button>
+            
+            <div className="border-l border-white/20 pl-4 ml-2 space-x-4 flex">
+              <Link href="/dashboard" className="flex items-center text-white hover:text-secondary transition-colors">
+                <LayoutDashboard className="h-4 w-4 mr-1" />
+                Dashboard
               </Link>
-            )}
+              <Link href="/wallet" className="flex items-center text-white hover:text-secondary transition-colors">
+                <Wallet className="h-4 w-4 mr-1" />
+                Wallet
+              </Link>
+              {isAdmin && (
+                <Link href="/admin" className="flex items-center text-white hover:text-secondary transition-colors">
+                  <Shield className="h-4 w-4 mr-1" />
+                  Admin
+                </Link>
+              )}
+            </div>
           </nav>
         </div>
         
