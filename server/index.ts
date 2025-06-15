@@ -18,7 +18,7 @@ async function createTestUsers() {
         password: "demo123",
         avatarInitials: "DM",
         isAdmin: false,
-        balance: 200000
+        balance: 500000
       },
       {
         username: "admin",
@@ -34,15 +34,31 @@ async function createTestUsers() {
         password: "12345678",
         avatarInitials: "JD",
         isAdmin: false,
-        balance: 150000
+        balance: 500000
       }
     ];
 
     for (const testUser of testUsers) {
       console.log(`Checking if ${testUser.username} user exists...`);
       const existingUser = await storage.getUserByUsername(testUser.username);
+      
       if (existingUser) {
-        console.log(`${testUser.username} user already exists`);
+        console.log(`${testUser.username} user already exists, updating balance and verification...`);
+        
+        // Update balance to 500,000 if less
+        if (existingUser.walletBalance < 500000) {
+          await storage.updateUserBalance(existingUser.id, 500000);
+          console.log(`Updated ${testUser.username} balance to ₦500,000`);
+        }
+        
+        // Verify email and set admin status
+        const updates: any = { emailVerified: true };
+        if (testUser.isAdmin) {
+          updates.isAdmin = true;
+          console.log(`${testUser.username} set as admin`);
+        }
+        await storage.updateUserProfile(existingUser.id, updates);
+        console.log(`${testUser.username} email verified automatically`);
         continue;
       }
       
@@ -66,11 +82,14 @@ async function createTestUsers() {
       console.log(`Adding initial funds to ${testUser.username} user...`);
       await storage.updateUserBalance(user.id, testUser.balance);
       
-      // Set admin status if needed
+      // Set admin status and verify email for test users
+      const updates: any = { emailVerified: true };
       if (testUser.isAdmin) {
-        await storage.updateUserProfile(user.id, { isAdmin: true });
+        updates.isAdmin = true;
         console.log(`${testUser.username} set as admin`);
       }
+      await storage.updateUserProfile(user.id, updates);
+      console.log(`${testUser.username} email verified automatically`);
       
       console.log(`${testUser.username} user created successfully with ID:`, user.id);
     }
