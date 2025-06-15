@@ -8,40 +8,74 @@ import { initializeEmailTransport } from "./utils/email";
 import { addTransactionDescriptionField } from "./migrations/add-transaction-description";
 import { maintenanceMiddleware } from "./utils/maintenance";
 
-// Create a demo user function for testing
-async function createDemoUser() {
+// Create test users function for development
+async function createTestUsers() {
   try {
-    // Check if demo user already exists
-    console.log("Checking if demo user exists...");
-    const existingUser = await storage.getUserByUsername("demo");
-    if (existingUser) {
-      console.log("Demo user already exists");
-      return;
+    const testUsers = [
+      {
+        username: "demo",
+        email: "demo@bigboysgame.com",
+        password: "demo123",
+        avatarInitials: "DM",
+        isAdmin: false,
+        balance: 200000
+      },
+      {
+        username: "admin",
+        email: "admin@bigboysgame.com",
+        password: "admin123",
+        avatarInitials: "AD",
+        isAdmin: true,
+        balance: 500000
+      },
+      {
+        username: "Jane",
+        email: "jane@bigboysgame.com",
+        password: "12345678",
+        avatarInitials: "JD",
+        isAdmin: false,
+        balance: 150000
+      }
+    ];
+
+    for (const testUser of testUsers) {
+      console.log(`Checking if ${testUser.username} user exists...`);
+      const existingUser = await storage.getUserByUsername(testUser.username);
+      if (existingUser) {
+        console.log(`${testUser.username} user already exists`);
+        continue;
+      }
+      
+      // Hash password
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(testUser.password, saltRounds);
+      
+      console.log(`Creating ${testUser.username} user...`);
+      
+      // Create user based on the schema
+      const user = await storage.createUser({
+        username: testUser.username,
+        email: testUser.email,
+        password: hashedPassword,
+        avatarInitials: testUser.avatarInitials,
+      });
+      
+      console.log(`${testUser.username} user created with ID:`, user.id);
+      
+      // Give them initial funds
+      console.log(`Adding initial funds to ${testUser.username} user...`);
+      await storage.updateUserBalance(user.id, testUser.balance);
+      
+      // Set admin status if needed
+      if (testUser.isAdmin) {
+        await storage.updateUserProfile(user.id, { isAdmin: true });
+        console.log(`${testUser.username} set as admin`);
+      }
+      
+      console.log(`${testUser.username} user created successfully with ID:`, user.id);
     }
-    
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash("demo123", saltRounds);
-    
-    console.log("Creating demo user...");
-    
-    // Create user based on the schema
-    const user = await storage.createUser({
-      username: "demo",
-      email: "demo@bigboysgame.com",
-      password: hashedPassword,
-      avatarInitials: "DM",
-    });
-    
-    console.log("Demo user created with ID:", user.id);
-    
-    // Give them some initial funds
-    console.log("Adding initial funds to demo user...");
-    await storage.updateUserBalance(user.id, 200000); // ₦200,000
-    
-    console.log("Demo user created successfully with ID:", user.id);
   } catch (error) {
-    console.error("Failed to create demo user:", error);
+    console.error("Failed to create test users:", error);
   }
 }
 
@@ -103,7 +137,7 @@ app.use((req, res, next) => {
     await initializeEmailTransport();
     
     // Create demo user for testing
-    await createDemoUser();
+    await createTestUsers();
     
     server = await registerRoutes(app);
 
